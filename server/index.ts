@@ -346,9 +346,10 @@ app.post('/api/superadmin/consultancies/:id/users', async (req, res) => {
   }
 })
 
-// Estatísticas gerais do SaaS
+// Estatísticas gerais do SaaS (expandidas)
 app.get('/api/superadmin/stats', async (_req, res) => {
   try {
+    // Contadores básicos
     const [totalConsultancies] = await pool.query<RowDataPacket[]>(
       'SELECT COUNT(*) as total FROM consultancies'
     )
@@ -357,6 +358,12 @@ app.get('/api/superadmin/stats', async (_req, res) => {
     )
     const [trialConsultancies] = await pool.query<RowDataPacket[]>(
       "SELECT COUNT(*) as total FROM consultancies WHERE status = 'trial'"
+    )
+    const [suspendedConsultancies] = await pool.query<RowDataPacket[]>(
+      "SELECT COUNT(*) as total FROM consultancies WHERE status = 'suspended'"
+    )
+    const [cancelledConsultancies] = await pool.query<RowDataPacket[]>(
+      "SELECT COUNT(*) as total FROM consultancies WHERE status = 'cancelled'"
     )
     const [totalRevenue] = await pool.query<RowDataPacket[]>(
       "SELECT SUM(price_monthly) as total FROM consultancies WHERE status = 'active'"
@@ -367,16 +374,159 @@ app.get('/api/superadmin/stats', async (_req, res) => {
     const [totalPatients] = await pool.query<RowDataPacket[]>(
       "SELECT COUNT(*) as total FROM users WHERE role = 'athlete'"
     )
+    
+    // Contagem por módulos
+    const [modulesCount] = await pool.query<RowDataPacket[]>(`
+      SELECT 
+        SUM(has_training) as training,
+        SUM(has_nutrition) as nutrition,
+        SUM(has_medical) as medical,
+        SUM(has_rehab) as rehab
+      FROM consultancies
+    `)
+    
+    // Consultorias criadas por mês (últimos 6 meses)
+    const [monthlyGrowth] = await pool.query<RowDataPacket[]>(`
+      SELECT 
+        DATE_FORMAT(created_at, '%Y-%m') as month,
+        COUNT(*) as count
+      FROM consultancies
+      WHERE created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
+      GROUP BY DATE_FORMAT(created_at, '%Y-%m')
+      ORDER BY month ASC
+    `)
+    
+    // Top 5 consultorias por pacientes
+    const [topConsultancies] = await pool.query<RowDataPacket[]>(`
+      SELECT 
+        c.id, c.name, c.status, c.price_monthly,
+        (SELECT COUNT(*) FROM users u WHERE u.consultancy_id = c.id AND u.role = 'athlete') as patients_count,
+        (SELECT COUNT(*) FROM users u WHERE u.consultancy_id = c.id AND u.role != 'athlete') as professionals_count
+      FROM consultancies c
+      ORDER BY patients_count DESC
+      LIMIT 5
+    `)
+    
+    // Consultorias recentes
+    const [recentConsultancies] = await pool.query<RowDataPacket[]>(`
+      SELECT id, name, email, status, created_at, price_monthly
+      FROM consultancies
+      ORDER BY created_at DESC
+      LIMIT 5
+    `)
+    
+    // Distribuição por plano
+    const [planDistribution] = await pool.query<RowDataPacket[]>(`
+      SELECT plan, COUNT(*) as count
+      FROM consultancies
+      GROUP BY plan
+    `)
 
     res.json({
       totalConsultancies: totalConsultancies[0].total,
       activeConsultancies: activeConsultancies[0].total,
       trialConsultancies: trialConsultancies[0].total,
+      suspendedConsultancies: suspendedConsultancies[0].total,
+      cancelledConsultancies: cancelledConsultancies[0].total,
       monthlyRevenue: totalRevenue[0].total || 0,
       totalProfessionals: totalProfessionals[0].total,
-      totalPatients: totalPatients[0].total
+      totalPatients: totalPatients[0].total,
+      modulesCount: modulesCount[0],
+      monthlyGrowth,
+      topConsultancies,
+      recentConsultancies,
+      planDistribution
     })
   } catch (error) {
+    res.status(500).json({ error: String(error) })
+  }
+})
+
+// Detalhes completos de uma consultoria
+app.get('/api/superadmin/consultancies/:id/details', async (req, res) => {
+  try {
+    const consultancyId = req.params.id
+    
+    // Dados básicos da consultoria
+    const [consultancy] = await pool.query<RowDataPacket[]>(
+      `SELECT * FROM consultancies WHERE id = ?`,
+      [consultancyId]
+    )
+    
+    if (consultancy.length === 0) {
+      return res.status(404).json({ error: 'Consultoria não encontrada' })
+    }
+    
+    // Profissionais
+    const [professionals] = await pool.query<RowDataPacket[]>(
+      `SELECT id, name, email, role, phone, is_active, created_at, avatar_url
+       FROM users 
+       WHERE consultancy_id = ? AND role != 'athlete'
+       ORDER BY created_at DESC`,
+      [consultancyId]
+    )
+    
+    // Pacientes
+    const [patients] = await pool.query<RowDataPacket[]>(
+      `SELECT u.id, u.name, u.email, u.is_active, u.created_at,
+              a.sport, a.club
+       FROM users u
+       LEFT JOIN athletes a ON u.id = a.user_id
+       WHERE u.consultancy_id = ? AND u.role = 'athlete'
+       ORDER BY u.created_at DESC`,
+      [consultancyId]
+    )
+    
+    // Estatísticas de uso
+    const [trainingPlans] = await pool.query<RowDataPacket[]>(
+      `SELECT COUNT(*) as total FROM training_plans tp
+       JOIN athletes a ON tp.athlete_id = a.id
+       JOIN users u ON a.user_id = u.id
+       WHERE u.consultancy_id = ?`,
+      [consultancyId]
+    )
+    
+    const [nutritionPlans] = await pool.query<RowDataPacket[]>(
+      `SELECT COUNT(*) as total FROM nutrition_plans np
+       JOIN athletes a ON np.athlete_id = a.id
+       JOIN users u ON a.user_id = u.id
+       WHERE u.consultancy_id = ?`,
+      [consultancyId]
+    )
+    
+    const [appointments] = await pool.query<RowDataPacket[]>(
+      `SELECT COUNT(*) as total FROM appointments ap
+       JOIN athletes a ON ap.athlete_id = a.id
+       JOIN users u ON a.user_id = u.id
+       WHERE u.consultancy_id = ?`,
+      [consultancyId]
+    )
+    
+    // Atividade recente (últimos logins - simulado pelos últimos usuários criados)
+    const [recentActivity] = await pool.query<RowDataPacket[]>(
+      `SELECT u.name, u.email, u.role, u.created_at as last_activity
+       FROM users u
+       WHERE u.consultancy_id = ?
+       ORDER BY u.updated_at DESC
+       LIMIT 10`,
+      [consultancyId]
+    )
+
+    res.json({
+      ...consultancy[0],
+      professionals,
+      patients,
+      stats: {
+        trainingPlans: trainingPlans[0].total,
+        nutritionPlans: nutritionPlans[0].total,
+        appointments: appointments[0].total,
+        professionalsCount: professionals.length,
+        patientsCount: patients.length
+      },
+      recentActivity
+    })
+  } catch (error) {
+    console.error('Error fetching consultancy details:', error)
     res.status(500).json({ error: String(error) })
   }
 })

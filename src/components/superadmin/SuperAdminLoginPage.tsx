@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ArrowLeft, Crown, Loader2 } from 'lucide-react';
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 export interface SuperAdminUser {
   id: number;
