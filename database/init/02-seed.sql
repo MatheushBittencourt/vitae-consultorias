@@ -207,13 +207,13 @@ INSERT INTO nutrition_plans (id, athlete_id, nutritionist_id, name, description,
 (3, 3, 2, 'Plano Hipertrofia - Pedro', 'Dieta hipercalórica para ganho de massa', 3800, 220, 450, 110, '2024-01-01', '2024-05-31', 'active');
 
 -- Refeições do plano do João
-INSERT INTO meals (plan_id, name, time, description, calories) VALUES
-(1, 'Café da Manhã', '07:00:00', 'Ovos mexidos (4), pão integral (2), banana, suco de laranja', 650),
-(1, 'Lanche da Manhã', '10:00:00', 'Whey protein com aveia e frutas vermelhas', 350),
-(1, 'Almoço', '13:00:00', 'Arroz integral, frango grelhado (200g), legumes, salada verde', 800),
-(1, 'Lanche da Tarde', '16:00:00', 'Sanduíche natural de atum, maçã', 400),
-(1, 'Jantar', '20:00:00', 'Batata doce, carne vermelha magra (150g), brócolis', 700),
-(1, 'Ceia', '22:00:00', 'Caseína, pasta de amendoim', 300);
+INSERT INTO meals (plan_id, name, time, description, order_index) VALUES
+(1, 'Café da Manhã', '07:00:00', 'Ovos mexidos (4), pão integral (2), banana, suco de laranja', 1),
+(1, 'Lanche da Manhã', '10:00:00', 'Whey protein com aveia e frutas vermelhas', 2),
+(1, 'Almoço', '13:00:00', 'Arroz integral, frango grelhado (200g), legumes, salada verde', 3),
+(1, 'Lanche da Tarde', '16:00:00', 'Sanduíche natural de atum, maçã', 4),
+(1, 'Jantar', '20:00:00', 'Batata doce, carne vermelha magra (150g), brócolis', 5),
+(1, 'Ceia', '22:00:00', 'Caseína, pasta de amendoim', 6);
 
 -- ===============================
 -- REGISTROS MÉDICOS
