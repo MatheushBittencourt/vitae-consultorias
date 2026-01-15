@@ -90,3 +90,4 @@ uploads/
 # Backups de banco
 *.sql.gz
 backup_*.sql
+dist-node
