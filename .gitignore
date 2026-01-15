@@ -1,0 +1,92 @@
+# ===========================================
+# VITAE - Git Ignore
+# ===========================================
+
+# Dependências
+node_modules/
+.pnp
+.pnp.js
+
+# Build
+dist/
+dist-ssr/
+build/
+*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Ambiente e configurações locais
+.env
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE e editores
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+*.sublime-project
+
+# Sistema operacional
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*.lnk
+
+# Testes
+coverage/
+.nyc_output/
+
+# Cache
+.cache/
+.parcel-cache/
+.eslintcache
+.stylelintcache
+*.tsbuildinfo
+
+# Temporários
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Dados sensíveis
+*.pem
+*.key
+*.cert
+secrets/
+
+# Docker volumes (apenas dados locais)
+mysql_data/
+
+# PM2
+.pm2/
+
+# Uploads de usuários (se houver)
+uploads/
+!uploads/.gitkeep
+
+# Backups de banco
+*.sql.gz
+backup_*.sql

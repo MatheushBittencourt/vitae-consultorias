@@ -1,0 +1,42 @@
+# ===========================================
+# VITAE - Docker Compose (APENAS DESENVOLVIMENTO)
+# ===========================================
+# Este arquivo é usado APENAS para desenvolvimento local.
+# Em produção/QA, use MySQL instalado diretamente no servidor.
+#
+# Comandos úteis:
+#   docker-compose up -d          # Iniciar banco de dados
+#   docker-compose down           # Parar banco de dados
+#   docker-compose down -v        # Parar e remover dados (reset)
+#   docker-compose logs -f mysql  # Ver logs do MySQL
+# ===========================================
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: vitae_mysql_dev
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-consultoria_edu}
+      MYSQL_USER: ${MYSQL_USER:-app_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-app_password}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Configurações otimizadas para desenvolvimento
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --default-authentication-plugin=mysql_native_password
+
+volumes:
+  mysql_data:
+    name: vitae_mysql_data
