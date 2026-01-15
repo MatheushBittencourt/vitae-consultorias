@@ -213,8 +213,6 @@ export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
         throw new Error('Número do cartão inválido');
       }
 
-      console.log('Criando token do cartão...');
-      
       let cardTokenResponse;
       try {
         cardTokenResponse = await mpInstance.createCardToken({
@@ -257,8 +255,6 @@ export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
         console.error('Token response:', cardTokenResponse);
         throw new Error('Não foi possível processar o cartão. Verifique os dados.');
       }
-
-      console.log('Token criado com sucesso:', cardTokenResponse.id);
 
       // Gerar slug automaticamente
       const slug = generateSlug(formData.consultancyName) + '-' + Date.now().toString(36);

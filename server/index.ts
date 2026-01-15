@@ -1,5 +1,8 @@
 import express from 'express'
 import cors from 'cors'
+import helmet from 'helmet'
+import rateLimit from 'express-rate-limit'
+import bcrypt from 'bcryptjs'
 import { createPool, RowDataPacket } from 'mysql2/promise'
 import { MercadoPagoConfig, PreApproval, Payment } from 'mercadopago'
 
@@ -62,6 +65,29 @@ const mercadoPagoClient = new MercadoPagoConfig({
 // ===========================================
 const app = express()
 
+// Helmet - Headers de segurança
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  contentSecurityPolicy: IS_PRODUCTION ? undefined : false,
+}))
+
+// Rate Limiting - Proteção contra brute force
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: IS_PRODUCTION ? 10 : 100, // 10 tentativas em prod, 100 em dev
+  message: { error: 'Muitas tentativas de login. Tente novamente em 15 minutos.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+})
+
+const apiLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minuto
+  max: IS_PRODUCTION ? 100 : 1000, // 100 req/min em prod
+  message: { error: 'Muitas requisições. Tente novamente em breve.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+})
+
 // CORS configurado para permitir frontend
 const allowedOrigins = [
   'http://localhost:5173',
@@ -74,7 +100,37 @@ app.use(cors({
   credentials: true
 }))
 
-app.use(express.json())
+app.use(express.json({ limit: '10mb' })) // Limite de payload
+
+// Rate limit global para API
+app.use('/api/', apiLimiter)
+
+// ===========================================
+// FUNÇÕES DE VALIDAÇÃO E SANITIZAÇÃO
+// ===========================================
+
+// Validar formato de email
+const isValidEmail = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return emailRegex.test(email)
+}
+
+// Validar senha forte (mínimo 6 caracteres)
+const isValidPassword = (password: string): boolean => {
+  return password && password.length >= 6
+}
+
+// Sanitizar string para prevenir XSS
+const sanitizeString = (str: string): string => {
+  if (!str) return ''
+  return str.replace(/[<>]/g, '').trim()
+}
+
+// Validar ID numérico
+const isValidId = (id: unknown): id is number => {
+  const num = Number(id)
+  return !isNaN(num) && num > 0 && Number.isInteger(num)
+}
 
 // Health check
 app.get('/api/health', async (_req, res) => {
@@ -90,7 +146,8 @@ app.get('/api/health', async (_req, res) => {
 // SUPER ADMIN - Autenticação
 // ===============================
 
-app.post('/api/superadmin/login', async (req, res) => {
+// Rate limit específico para login
+app.post('/api/superadmin/login', authLimiter, async (req, res) => {
   try {
     const { email, password } = req.body
     
@@ -98,9 +155,10 @@ app.post('/api/superadmin/login', async (req, res) => {
       return res.status(400).json({ error: 'Email e senha são obrigatórios' })
     }
 
+    // Buscar usuário pelo email
     const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT id, email, name FROM super_admins WHERE email = ? AND password_hash = ?`,
-      [email.toLowerCase(), password]
+      `SELECT id, email, name, password_hash FROM super_admins WHERE email = ?`,
+      [email.toLowerCase()]
     )
 
     if (rows.length === 0) {
@@ -108,6 +166,16 @@ app.post('/api/superadmin/login', async (req, res) => {
     }
 
     const user = rows[0]
+    
+    // Verificar senha com bcrypt (ou comparação direta para senhas antigas)
+    const isValidPassword = user.password_hash?.startsWith('$2') 
+      ? await bcrypt.compare(password, user.password_hash)
+      : password === user.password_hash // Fallback para senhas antigas não hasheadas
+    
+    if (!isValidPassword) {
+      return res.status(401).json({ error: 'Credenciais inválidas' })
+    }
+
     res.json({
       success: true,
       user: {
@@ -254,10 +322,13 @@ app.post('/api/superadmin/consultancies/:id/users', async (req, res) => {
       return res.status(400).json({ error: 'Email já cadastrado' })
     }
 
+    // Hash da senha antes de salvar
+    const hashedPassword = await bcrypt.hash(password, 10)
+    
     const [result] = await pool.query(
       `INSERT INTO users (consultancy_id, email, password_hash, name, role, phone)
        VALUES (?, ?, ?, ?, ?, ?)`,
-      [consultancyId, email, password, name, role, phone]
+      [consultancyId, email, hashedPassword, name, role, phone]
     )
     
     // Se for atleta, criar registro na tabela athletes
@@ -315,22 +386,26 @@ app.get('/api/superadmin/stats', async (_req, res) => {
 // ===============================
 
 // Login de profissionais (admin, coach, nutritionist, physio)
-app.post('/api/auth/admin/login', async (req, res) => {
+app.post('/api/auth/admin/login', authLimiter, async (req, res) => {
   try {
     const { email, password } = req.body
     
     if (!email || !password) {
       return res.status(400).json({ error: 'Email e senha são obrigatórios' })
     }
+    
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ error: 'Formato de email inválido' })
+    }
 
     const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT u.id, u.email, u.name, u.role, u.avatar_url, u.phone, u.consultancy_id,
+      `SELECT u.id, u.email, u.name, u.role, u.avatar_url, u.phone, u.consultancy_id, u.password_hash,
               c.name as consultancy_name, c.slug as consultancy_slug,
               c.has_training, c.has_nutrition, c.has_medical, c.has_rehab
        FROM users u
        LEFT JOIN consultancies c ON u.consultancy_id = c.id
-       WHERE u.email = ? AND u.password_hash = ? AND u.role IN ('admin', 'coach', 'nutritionist', 'physio')`,
-      [email.toLowerCase(), password]
+       WHERE u.email = ? AND u.role IN ('admin', 'coach', 'nutritionist', 'physio')`,
+      [email.toLowerCase()]
     )
 
     if (rows.length === 0) {
@@ -338,6 +413,15 @@ app.post('/api/auth/admin/login', async (req, res) => {
     }
 
     const user = rows[0]
+    
+    // Verificar senha com bcrypt (ou comparação direta para senhas antigas)
+    const isValidPassword = user.password_hash?.startsWith('$2') 
+      ? await bcrypt.compare(password, user.password_hash)
+      : password === user.password_hash
+    
+    if (!isValidPassword) {
+      return res.status(401).json({ error: 'Email ou senha incorretos' })
+    }
 
     res.json({
       success: true,
@@ -345,13 +429,12 @@ app.post('/api/auth/admin/login', async (req, res) => {
         id: user.id,
         email: user.email,
         name: user.name,
-        role: user.role, // Manter o role original do banco (admin, coach, nutritionist, physio)
+        role: user.role,
         avatarUrl: user.avatar_url,
         phone: user.phone,
         consultancyId: user.consultancy_id,
         consultancyName: user.consultancy_name,
         consultancySlug: user.consultancy_slug,
-        // Módulos habilitados para esta consultoria
         modules: {
           training: user.has_training === 1,
           nutrition: user.has_nutrition === 1,
@@ -367,21 +450,25 @@ app.post('/api/auth/admin/login', async (req, res) => {
 })
 
 // Login de pacientes (athletes)
-app.post('/api/auth/patient/login', async (req, res) => {
+app.post('/api/auth/patient/login', authLimiter, async (req, res) => {
   try {
     const { email, password } = req.body
     
     if (!email || !password) {
       return res.status(400).json({ error: 'Email e senha são obrigatórios' })
     }
+    
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ error: 'Formato de email inválido' })
+    }
 
     const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT u.id, u.email, u.name, u.avatar_url, u.phone,
+      `SELECT u.id, u.email, u.name, u.avatar_url, u.phone, u.password_hash,
               a.id as athlete_id, a.sport, a.club, a.position
        FROM users u
        LEFT JOIN athletes a ON u.id = a.user_id
-       WHERE u.email = ? AND u.password_hash = ? AND u.role = 'athlete'`,
-      [email.toLowerCase(), password]
+       WHERE u.email = ? AND u.role = 'athlete'`,
+      [email.toLowerCase()]
     )
 
     if (rows.length === 0) {
@@ -389,6 +476,15 @@ app.post('/api/auth/patient/login', async (req, res) => {
     }
 
     const user = rows[0]
+    
+    // Verificar senha com bcrypt (ou comparação direta para senhas antigas)
+    const isValidPassword = user.password_hash?.startsWith('$2') 
+      ? await bcrypt.compare(password, user.password_hash)
+      : password === user.password_hash
+    
+    if (!isValidPassword) {
+      return res.status(401).json({ error: 'Email ou senha incorretos' })
+    }
     const athleteId = user.athlete_id
 
     // Verificar módulos ativos do atleta
@@ -575,11 +671,14 @@ app.post('/api/consultancy/:id/professionals', async (req, res) => {
       return res.status(400).json({ error: 'Este email já está cadastrado' })
     }
     
+    // Hash da senha antes de salvar
+    const hashedPassword = await bcrypt.hash(password, 10)
+    
     // Criar usuário
     const [result] = await pool.query(
       `INSERT INTO users (consultancy_id, email, password_hash, name, role, phone, is_active)
        VALUES (?, ?, ?, ?, ?, ?, TRUE)`,
-      [consultancyId, email.toLowerCase(), password, name, role, phone || null]
+      [consultancyId, email.toLowerCase(), hashedPassword, name, role, phone || null]
     )
     
     const userId = (result as { insertId: number }).insertId
@@ -945,10 +1044,13 @@ app.post('/api/signup/consultancy', async (req, res) => {
 
       const consultancyId = (consultancyResult as { insertId: number }).insertId
 
+      // Hash da senha antes de salvar
+      const hashedPassword = await bcrypt.hash(adminPassword, 10)
+      
       const [userResult] = await pool.query(
         `INSERT INTO users (consultancy_id, email, password_hash, name, role, phone, is_active)
          VALUES (?, ?, ?, ?, 'admin', ?, TRUE)`,
-        [consultancyId, adminEmail.toLowerCase(), adminPassword, adminName, adminPhone || null]
+        [consultancyId, adminEmail.toLowerCase(), hashedPassword, adminName, adminPhone || null]
       )
 
       const userId = (userResult as { insertId: number }).insertId
@@ -1091,6 +1193,9 @@ app.post('/api/signup/consultancy', async (req, res) => {
 
     const consultancyId = (consultancyResult as { insertId: number }).insertId
 
+    // Hash da senha antes de salvar
+    const hashedAdminPassword = await bcrypt.hash(adminPassword, 10)
+
     // Criar o usuário admin
     const [userResult] = await pool.query(
       `INSERT INTO users (consultancy_id, email, password_hash, name, role, phone, is_active)
@@ -1098,7 +1203,7 @@ app.post('/api/signup/consultancy', async (req, res) => {
       [
         consultancyId,
         adminEmail.toLowerCase(),
-        adminPassword, // Em produção: await bcrypt.hash(adminPassword, 10)
+        hashedAdminPassword,
         adminName,
         adminPhone || null
       ]
