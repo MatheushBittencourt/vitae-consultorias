@@ -7,6 +7,9 @@ SET CHARACTER SET utf8mb4;
 
 -- Limpar dados existentes (para re-execução)
 SET FOREIGN_KEY_CHECKS = 0;
+TRUNCATE TABLE food_substitutions;
+TRUNCATE TABLE meal_foods;
+TRUNCATE TABLE food_library;
 TRUNCATE TABLE rehab_sessions;
 TRUNCATE TABLE athlete_progress;
 TRUNCATE TABLE messages;
@@ -251,3 +254,131 @@ INSERT INTO messages (sender_id, receiver_id, subject, content, is_read, created
 (3, 4, 'Treino de amanhã', 'João, amanhã teremos treino focado em membros inferiores. Lembre de descansar bem hoje!', TRUE, DATE_SUB(NOW(), INTERVAL 3 DAY)),
 (4, 1, 'Dúvida sobre medicamento', 'Dr. Ricardo, posso tomar anti-inflamatório antes do treino?', TRUE, DATE_SUB(NOW(), INTERVAL 4 DAY)),
 (1, 5, 'Próxima consulta', 'Maria, sua próxima consulta está agendada para a semana que vem.', FALSE, DATE_SUB(NOW(), INTERVAL 1 DAY));
+
+-- ===============================
+-- BIBLIOTECA DE ALIMENTOS (Global)
+-- ===============================
+INSERT INTO food_library (consultancy_id, name, category, serving_size, calories, protein, carbs, fat, fiber, is_global) VALUES
+-- PROTEÍNAS
+(NULL, 'Frango grelhado', 'proteina', '100g', 165, 31, 0, 3.6, 0, TRUE),
+(NULL, 'Peito de peru', 'proteina', '100g', 104, 17, 4, 2, 0, TRUE),
+(NULL, 'Carne bovina magra', 'proteina', '100g', 250, 26, 0, 15, 0, TRUE),
+(NULL, 'Patinho moído', 'proteina', '100g', 137, 21, 0, 5, 0, TRUE),
+(NULL, 'Salmão', 'proteina', '100g', 208, 20, 0, 13, 0, TRUE),
+(NULL, 'Tilápia', 'proteina', '100g', 96, 20, 0, 1.7, 0, TRUE),
+(NULL, 'Atum em água', 'proteina', '100g', 116, 26, 0, 1, 0, TRUE),
+(NULL, 'Ovo inteiro', 'proteina', '1 unidade (50g)', 72, 6, 0.4, 5, 0, TRUE),
+(NULL, 'Clara de ovo', 'proteina', '1 unidade (33g)', 17, 3.6, 0.2, 0, 0, TRUE),
+(NULL, 'Tofu firme', 'proteina', '100g', 144, 17, 3, 9, 2, TRUE),
+(NULL, 'Queijo cottage', 'proteina', '100g', 98, 11, 3, 4, 0, TRUE),
+(NULL, 'Iogurte grego natural', 'proteina', '100g', 97, 9, 4, 5, 0, TRUE),
+
+-- CARBOIDRATOS
+(NULL, 'Arroz integral', 'carboidrato', '100g cozido', 111, 2.6, 23, 0.9, 1.8, TRUE),
+(NULL, 'Arroz branco', 'carboidrato', '100g cozido', 130, 2.7, 28, 0.3, 0.4, TRUE),
+(NULL, 'Batata doce', 'carboidrato', '100g cozida', 86, 1.6, 20, 0.1, 3, TRUE),
+(NULL, 'Batata inglesa', 'carboidrato', '100g cozida', 77, 2, 17, 0.1, 1.4, TRUE),
+(NULL, 'Mandioca cozida', 'carboidrato', '100g', 125, 1.2, 30, 0.2, 1.5, TRUE),
+(NULL, 'Macarrão integral', 'carboidrato', '100g cozido', 124, 5, 25, 1, 4, TRUE),
+(NULL, 'Pão integral', 'carboidrato', '1 fatia (30g)', 69, 3.5, 12, 1, 2, TRUE),
+(NULL, 'Aveia em flocos', 'carboidrato', '30g', 117, 4.5, 20, 2.5, 3, TRUE),
+(NULL, 'Quinoa cozida', 'carboidrato', '100g', 120, 4.4, 21, 1.9, 2.8, TRUE),
+(NULL, 'Feijão preto cozido', 'carboidrato', '100g', 77, 4.5, 14, 0.5, 8.7, TRUE),
+(NULL, 'Grão-de-bico cozido', 'carboidrato', '100g', 164, 9, 27, 2.6, 8, TRUE),
+(NULL, 'Lentilha cozida', 'carboidrato', '100g', 116, 9, 20, 0.4, 8, TRUE),
+
+-- GORDURAS
+(NULL, 'Azeite de oliva', 'gordura', '1 colher (13ml)', 119, 0, 0, 13.5, 0, TRUE),
+(NULL, 'Óleo de coco', 'gordura', '1 colher (13ml)', 117, 0, 0, 13.5, 0, TRUE),
+(NULL, 'Abacate', 'gordura', '100g', 160, 2, 9, 15, 7, TRUE),
+(NULL, 'Castanha de caju', 'gordura', '30g', 157, 5, 9, 12, 1, TRUE),
+(NULL, 'Castanha-do-pará', 'gordura', '3 unidades (15g)', 99, 2, 2, 10, 1, TRUE),
+(NULL, 'Amêndoas', 'gordura', '30g', 173, 6, 6, 15, 4, TRUE),
+(NULL, 'Nozes', 'gordura', '30g', 196, 5, 4, 20, 2, TRUE),
+(NULL, 'Pasta de amendoim', 'gordura', '1 colher (20g)', 118, 5, 4, 10, 2, TRUE),
+(NULL, 'Semente de chia', 'gordura', '15g', 73, 2.5, 6, 5, 5, TRUE),
+(NULL, 'Linhaça', 'gordura', '15g', 80, 3, 4, 6, 4, TRUE),
+
+-- VEGETAIS
+(NULL, 'Brócolis cozido', 'vegetal', '100g', 35, 2.4, 7, 0.4, 3.3, TRUE),
+(NULL, 'Espinafre cru', 'vegetal', '100g', 23, 2.9, 3.6, 0.4, 2.2, TRUE),
+(NULL, 'Couve refogada', 'vegetal', '100g', 90, 3, 8, 6, 4, TRUE),
+(NULL, 'Alface', 'vegetal', '100g', 15, 1.4, 2.9, 0.2, 1.3, TRUE),
+(NULL, 'Tomate', 'vegetal', '100g', 18, 0.9, 3.9, 0.2, 1.2, TRUE),
+(NULL, 'Pepino', 'vegetal', '100g', 15, 0.7, 3.6, 0.1, 0.5, TRUE),
+(NULL, 'Cenoura crua', 'vegetal', '100g', 41, 0.9, 10, 0.2, 2.8, TRUE),
+(NULL, 'Abobrinha', 'vegetal', '100g', 17, 1.2, 3.1, 0.3, 1, TRUE),
+(NULL, 'Berinjela', 'vegetal', '100g', 25, 1, 6, 0.2, 3, TRUE),
+(NULL, 'Pimentão', 'vegetal', '100g', 26, 1, 6, 0.2, 2.1, TRUE),
+
+-- FRUTAS
+(NULL, 'Banana', 'fruta', '1 unidade (100g)', 89, 1.1, 23, 0.3, 2.6, TRUE),
+(NULL, 'Maçã', 'fruta', '1 unidade (150g)', 78, 0.4, 21, 0.2, 3.6, TRUE),
+(NULL, 'Laranja', 'fruta', '1 unidade (180g)', 85, 1.7, 21, 0.2, 4.4, TRUE),
+(NULL, 'Morango', 'fruta', '100g', 32, 0.7, 8, 0.3, 2, TRUE),
+(NULL, 'Mamão papaya', 'fruta', '100g', 43, 0.5, 11, 0.3, 1.7, TRUE),
+(NULL, 'Manga', 'fruta', '100g', 60, 0.8, 15, 0.4, 1.6, TRUE),
+(NULL, 'Melancia', 'fruta', '100g', 30, 0.6, 8, 0.2, 0.4, TRUE),
+(NULL, 'Uva', 'fruta', '100g', 69, 0.7, 18, 0.2, 0.9, TRUE),
+(NULL, 'Abacaxi', 'fruta', '100g', 50, 0.5, 13, 0.1, 1.4, TRUE),
+(NULL, 'Kiwi', 'fruta', '1 unidade (80g)', 49, 0.9, 12, 0.4, 2.4, TRUE),
+
+-- LATICÍNIOS
+(NULL, 'Leite desnatado', 'lacteo', '200ml', 70, 7, 10, 0.2, 0, TRUE),
+(NULL, 'Leite integral', 'lacteo', '200ml', 122, 6.4, 9.4, 6.6, 0, TRUE),
+(NULL, 'Queijo minas frescal', 'lacteo', '30g', 73, 5, 1, 6, 0, TRUE),
+(NULL, 'Ricota', 'lacteo', '50g', 87, 6, 2, 6, 0, TRUE),
+(NULL, 'Requeijão light', 'lacteo', '30g', 42, 3, 2, 3, 0, TRUE),
+
+-- SUPLEMENTOS
+(NULL, 'Whey Protein', 'suplemento', '1 scoop (30g)', 120, 24, 3, 1, 0, TRUE),
+(NULL, 'Caseína', 'suplemento', '1 scoop (30g)', 110, 24, 2, 0.5, 0, TRUE),
+(NULL, 'Albumina', 'suplemento', '30g', 117, 25, 1.5, 0.5, 0, TRUE),
+(NULL, 'Maltodextrina', 'suplemento', '30g', 114, 0, 28, 0, 0, TRUE),
+(NULL, 'Creatina', 'suplemento', '5g', 0, 0, 0, 0, 0, TRUE),
+(NULL, 'BCAA', 'suplemento', '5g', 20, 5, 0, 0, 0, TRUE),
+
+-- BEBIDAS
+(NULL, 'Água de coco', 'bebida', '200ml', 46, 0.4, 10, 0.2, 0, TRUE),
+(NULL, 'Suco de laranja natural', 'bebida', '200ml', 88, 1.4, 21, 0.4, 0.4, TRUE),
+(NULL, 'Café sem açúcar', 'bebida', '100ml', 2, 0.1, 0, 0, 0, TRUE),
+(NULL, 'Chá verde', 'bebida', '200ml', 2, 0, 0, 0, 0, TRUE);
+
+-- ===============================
+-- ALIMENTOS NAS REFEIÇÕES (meal_foods)
+-- ===============================
+-- Café da Manhã do João (meal_id = 1)
+INSERT INTO meal_foods (meal_id, food_id, name, quantity, unit, calories, protein, carbs, fat, order_index) VALUES
+(1, NULL, 'Ovos mexidos', 4, 'unidades', 288, 24, 1.6, 20, 1),
+(1, NULL, 'Pão integral', 2, 'fatias', 138, 7, 24, 2, 2),
+(1, NULL, 'Banana', 1, 'unidade', 89, 1.1, 23, 0.3, 3),
+(1, NULL, 'Suco de laranja natural', 200, 'ml', 88, 1.4, 21, 0.4, 4);
+
+-- Lanche da Manhã do João (meal_id = 2)
+INSERT INTO meal_foods (meal_id, food_id, name, quantity, unit, calories, protein, carbs, fat, order_index) VALUES
+(2, NULL, 'Whey Protein', 1, 'scoop', 120, 24, 3, 1, 1),
+(2, NULL, 'Aveia em flocos', 30, 'g', 117, 4.5, 20, 2.5, 2),
+(2, NULL, 'Morango', 100, 'g', 32, 0.7, 8, 0.3, 3);
+
+-- Almoço do João (meal_id = 3)
+INSERT INTO meal_foods (meal_id, food_id, name, quantity, unit, calories, protein, carbs, fat, order_index) VALUES
+(3, NULL, 'Arroz integral', 150, 'g', 166, 3.9, 34.5, 1.4, 1),
+(3, NULL, 'Frango grelhado', 200, 'g', 330, 62, 0, 7.2, 2),
+(3, NULL, 'Brócolis cozido', 100, 'g', 35, 2.4, 7, 0.4, 3),
+(3, NULL, 'Salada verde', 1, 'porção', 30, 2, 5, 0.5, 4),
+(3, NULL, 'Azeite de oliva', 1, 'colher', 119, 0, 0, 13.5, 5);
+
+-- ===============================
+-- SUBSTITUIÇÕES DE ALIMENTOS
+-- ===============================
+-- Substituições para o Frango grelhado (meal_food_id = 6 - almoço)
+INSERT INTO food_substitutions (meal_food_id, name, quantity, unit, calories, protein, carbs, fat, order_index) VALUES
+(6, 'Patinho moído', 200, 'g', 274, 42, 0, 10, 1),
+(6, 'Tilápia grelhada', 200, 'g', 192, 40, 0, 3.4, 2),
+(6, 'Peito de peru', 200, 'g', 208, 34, 8, 4, 3);
+
+-- Substituições para o Arroz integral (meal_food_id = 5 - almoço)
+INSERT INTO food_substitutions (meal_food_id, name, quantity, unit, calories, protein, carbs, fat, order_index) VALUES
+(5, 'Batata doce', 200, 'g', 172, 3.2, 40, 0.2, 1),
+(5, 'Quinoa cozida', 150, 'g', 180, 6.6, 31.5, 2.9, 2),
+(5, 'Macarrão integral', 150, 'g', 186, 7.5, 37.5, 1.5, 3);

@@ -76,7 +76,7 @@ export function AdminDashboard({ onLogout, adminUser }: AdminDashboardProps) {
       case 'training':
         return <AdminTrainingSection consultancyId={consultancyId} adminUser={adminUser} />;
       case 'nutrition':
-        return <AdminNutritionSection onSelectPatient={handleSelectPatient} consultancyId={consultancyId} />;
+        return <AdminNutritionSection onSelectPatient={handleSelectPatient} consultancyId={consultancyId} adminUserId={adminUser.id} />;
       case 'medical':
         return <AdminMedicalSection onSelectPatient={handleSelectPatient} consultancyId={consultancyId} />;
       case 'rehab':

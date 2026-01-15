@@ -274,10 +274,113 @@ CREATE TABLE IF NOT EXISTS meals (
     name VARCHAR(255) NOT NULL,
     time TIME,
     description TEXT,
-    calories INT,
+    order_index INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (plan_id) REFERENCES nutrition_plans(id) ON DELETE CASCADE
 );
+
+-- ===============================
+-- BIBLIOTECA DE ALIMENTOS (Global por consultoria)
+-- ===============================
+CREATE TABLE IF NOT EXISTS food_library (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    consultancy_id INT,
+    
+    -- Dados básicos
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    
+    -- Classificação
+    category ENUM('proteina', 'carboidrato', 'gordura', 'vegetal', 'fruta', 'lacteo', 'bebida', 'suplemento', 'outros') NOT NULL DEFAULT 'outros',
+    
+    -- Informações nutricionais (por 100g ou porção)
+    serving_size VARCHAR(50) DEFAULT '100g',
+    calories DECIMAL(8,2) DEFAULT 0,
+    protein DECIMAL(8,2) DEFAULT 0,
+    carbs DECIMAL(8,2) DEFAULT 0,
+    fat DECIMAL(8,2) DEFAULT 0,
+    fiber DECIMAL(8,2) DEFAULT 0,
+    sodium DECIMAL(8,2) DEFAULT 0,
+    
+    -- Mídia
+    image_url VARCHAR(500),
+    
+    -- Sistema
+    is_global BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (consultancy_id) REFERENCES consultancies(id) ON DELETE CASCADE
+);
+
+-- ===============================
+-- ALIMENTOS DA REFEIÇÃO
+-- ===============================
+CREATE TABLE IF NOT EXISTS meal_foods (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    meal_id INT NOT NULL,
+    food_id INT,
+    
+    -- Se não usar biblioteca, dados manuais
+    name VARCHAR(255) NOT NULL,
+    
+    -- Quantidade
+    quantity DECIMAL(8,2) NOT NULL DEFAULT 1,
+    unit VARCHAR(50) DEFAULT 'porção',
+    
+    -- Informações nutricionais calculadas
+    calories DECIMAL(8,2) DEFAULT 0,
+    protein DECIMAL(8,2) DEFAULT 0,
+    carbs DECIMAL(8,2) DEFAULT 0,
+    fat DECIMAL(8,2) DEFAULT 0,
+    
+    -- Notas
+    notes TEXT,
+    
+    -- Ordem
+    order_index INT DEFAULT 0,
+    
+    -- Grupo de opção (0 = principal, 1 = substituição 1, 2 = substituição 2, etc.)
+    option_group INT DEFAULT 0,
+    
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (meal_id) REFERENCES meals(id) ON DELETE CASCADE,
+    FOREIGN KEY (food_id) REFERENCES food_library(id) ON DELETE SET NULL
+);
+
+-- ===============================
+-- SUBSTITUIÇÕES DE ALIMENTOS
+-- ===============================
+CREATE TABLE IF NOT EXISTS food_substitutions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    meal_food_id INT NOT NULL,
+    food_id INT,
+    
+    -- Se não usar biblioteca, dados manuais
+    name VARCHAR(255) NOT NULL,
+    
+    -- Quantidade equivalente
+    quantity DECIMAL(8,2) NOT NULL DEFAULT 1,
+    unit VARCHAR(50) DEFAULT 'porção',
+    
+    -- Informações nutricionais
+    calories DECIMAL(8,2) DEFAULT 0,
+    protein DECIMAL(8,2) DEFAULT 0,
+    carbs DECIMAL(8,2) DEFAULT 0,
+    fat DECIMAL(8,2) DEFAULT 0,
+    
+    -- Ordem de preferência
+    order_index INT DEFAULT 0,
+    
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (meal_food_id) REFERENCES meal_foods(id) ON DELETE CASCADE,
+    FOREIGN KEY (food_id) REFERENCES food_library(id) ON DELETE SET NULL
+);
+
+-- Índices para nutrição
+CREATE INDEX idx_food_library_consultancy ON food_library(consultancy_id);
+CREATE INDEX idx_food_library_category ON food_library(category);
+CREATE INDEX idx_meal_foods_meal ON meal_foods(meal_id);
+CREATE INDEX idx_food_substitutions_meal_food ON food_substitutions(meal_food_id);
 
 -- Prontuário médico
 CREATE TABLE IF NOT EXISTS medical_records (

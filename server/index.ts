@@ -416,12 +416,12 @@ app.post('/api/auth/patient/login', async (req, res) => {
       )
       if (medicalRecords[0].count > 0) activeModules.push('medical')
 
-      // Reabilitação - verifica se tem plano de reabilitação ativo
-      const [rehabPlans] = await pool.query<RowDataPacket[]>(
-        `SELECT COUNT(*) as count FROM rehab_plans WHERE athlete_id = ? AND status = 'active'`,
+      // Reabilitação - verifica se tem sessões de reabilitação
+      const [rehabSessions] = await pool.query<RowDataPacket[]>(
+        `SELECT COUNT(*) as count FROM rehab_sessions WHERE athlete_id = ?`,
         [athleteId]
       )
-      if (rehabPlans[0].count > 0) activeModules.push('rehab')
+      if (rehabSessions[0].count > 0) activeModules.push('rehab')
     }
 
     res.json({
@@ -975,10 +975,30 @@ app.post('/api/signup/consultancy', async (req, res) => {
         )
       }
 
+      // Copiar biblioteca de alimentos padrão para a nova consultoria
+      const [globalFoods] = await pool.query<RowDataPacket[]>(
+        `SELECT name, description, category, serving_size, calories, protein, carbs, fat, fiber, sodium, image_url
+         FROM food_library 
+         WHERE is_global = TRUE OR consultancy_id IS NULL`
+      )
+
+      if (globalFoods.length > 0) {
+        const foodInsertValues = globalFoods.map((food: RowDataPacket) => [
+          consultancyId, food.name, food.description, food.category, food.serving_size,
+          food.calories, food.protein, food.carbs, food.fat, food.fiber, food.sodium, food.image_url, false
+        ])
+        await pool.query(
+          `INSERT INTO food_library 
+           (consultancy_id, name, description, category, serving_size, calories, protein, carbs, fat, fiber, sodium, image_url, is_global)
+           VALUES ?`,
+          [foodInsertValues]
+        )
+      }
+
       return res.status(201).json({
         success: true,
         message: 'Consultoria criada (modo desenvolvimento - sem pagamento)',
-        data: { consultancyId, userId, consultancyName, consultancySlug: consultancySlug.toLowerCase(), adminEmail: adminEmail.toLowerCase(), exercisesCopied: globalExercises.length }
+        data: { consultancyId, userId, consultancyName, consultancySlug: consultancySlug.toLowerCase(), adminEmail: adminEmail.toLowerCase(), exercisesCopied: globalExercises.length, foodsCopied: globalFoods.length }
       })
     }
     
@@ -1119,6 +1139,26 @@ app.post('/api/signup/consultancy', async (req, res) => {
       )
     }
 
+    // Copiar biblioteca de alimentos padrão para a nova consultoria
+    const [globalFoods] = await pool.query<RowDataPacket[]>(
+      `SELECT name, description, category, serving_size, calories, protein, carbs, fat, fiber, sodium, image_url
+       FROM food_library 
+       WHERE is_global = TRUE OR consultancy_id IS NULL`
+    )
+
+    if (globalFoods.length > 0) {
+      const foodInsertValues = globalFoods.map((food: RowDataPacket) => [
+        consultancyId, food.name, food.description, food.category, food.serving_size,
+        food.calories, food.protein, food.carbs, food.fat, food.fiber, food.sodium, food.image_url, false
+      ])
+      await pool.query(
+        `INSERT INTO food_library 
+         (consultancy_id, name, description, category, serving_size, calories, protein, carbs, fat, fiber, sodium, image_url, is_global)
+         VALUES ?`,
+        [foodInsertValues]
+      )
+    }
+
     res.status(201).json({
       success: true,
       message: 'Consultoria criada com sucesso! Pagamento aprovado.',
@@ -1129,6 +1169,7 @@ app.post('/api/signup/consultancy', async (req, res) => {
         consultancySlug: consultancySlug.toLowerCase(),
         adminEmail: adminEmail.toLowerCase(),
         exercisesCopied: globalExercises.length,
+        foodsCopied: globalFoods.length,
         payment: {
           id: paymentResult.id,
           status: paymentResult.status,
@@ -1228,17 +1269,26 @@ app.get('/api/users/:id', async (req, res) => {
 app.get('/api/athletes', async (req, res) => {
   try {
     const consultancyId = req.query.consultancy_id
+    const userId = req.query.user_id
     
     if (!consultancyId) {
       return res.status(400).json({ error: 'consultancy_id é obrigatório' })
     }
     
-    const [rows] = await pool.query(`
+    let query = `
       SELECT a.*, u.name, u.email, u.avatar_url 
       FROM athletes a 
       JOIN users u ON a.user_id = u.id
       WHERE u.consultancy_id = ?
-    `, [consultancyId])
+    `
+    const params: (string | number)[] = [Number(consultancyId)]
+    
+    if (userId) {
+      query += ' AND a.user_id = ?'
+      params.push(Number(userId))
+    }
+    
+    const [rows] = await pool.query(query, params)
     res.json(rows)
   } catch (error) {
     res.status(500).json({ error: String(error) })
@@ -1865,10 +1915,10 @@ app.get('/api/meals', async (req, res) => {
 
 app.post('/api/meals', async (req, res) => {
   try {
-    const { plan_id, name, time, description, calories } = req.body
+    const { plan_id, name, time, description, order_index } = req.body
     const [result] = await pool.query(
-      `INSERT INTO meals (plan_id, name, time, description, calories) VALUES (?, ?, ?, ?, ?)`,
-      [plan_id, name, time, description, calories]
+      `INSERT INTO meals (plan_id, name, time, description, order_index) VALUES (?, ?, ?, ?, ?)`,
+      [plan_id, name, time, description, order_index || 0]
     )
     res.status(201).json({ id: (result as { insertId: number }).insertId, message: 'Refeição adicionada' })
   } catch (error) {
@@ -1878,10 +1928,10 @@ app.post('/api/meals', async (req, res) => {
 
 app.put('/api/meals/:id', async (req, res) => {
   try {
-    const { name, time, description, calories } = req.body
+    const { name, time, description, order_index } = req.body
     await pool.query(
-      `UPDATE meals SET name = ?, time = ?, description = ?, calories = ? WHERE id = ?`,
-      [name, time, description, calories, req.params.id]
+      `UPDATE meals SET name = ?, time = ?, description = ?, order_index = ? WHERE id = ?`,
+      [name, time, description, order_index, req.params.id]
     )
     res.json({ message: 'Refeição atualizada' })
   } catch (error) {
@@ -1893,6 +1943,318 @@ app.delete('/api/meals/:id', async (req, res) => {
   try {
     await pool.query('DELETE FROM meals WHERE id = ?', [req.params.id])
     res.json({ message: 'Refeição excluída' })
+  } catch (error) {
+    res.status(500).json({ error: String(error) })
+  }
+})
+
+// ===============================
+// BIBLIOTECA DE ALIMENTOS
+// ===============================
+
+// Listar alimentos da consultoria (igual exercícios)
+app.get('/api/food-library', async (req, res) => {
+  try {
+    const consultancyId = req.query.consultancy_id
+    const category = req.query.category
+    const search = req.query.search
+    
+    // Mostrar apenas alimentos da consultoria específica
+    if (!consultancyId) {
+      return res.json([])
+    }
+    
+    let query = `SELECT * FROM food_library WHERE consultancy_id = ?`
+    const params: (string | number)[] = [Number(consultancyId)]
+    
+    if (category) {
+      query += ' AND category = ?'
+      params.push(String(category))
+    }
+    
+    if (search) {
+      query += ' AND name LIKE ?'
+      params.push(`%${search}%`)
+    }
+    
+    query += ' ORDER BY category, name'
+    
+    const [rows] = await pool.query(query, params)
+    res.json(rows)
+  } catch (error) {
+    res.status(500).json({ error: String(error) })
+  }
+})
+
+// Buscar alimento por ID
+app.get('/api/food-library/:id', async (req, res) => {
+  try {
+    const [rows] = await pool.query<RowDataPacket[]>(
+      'SELECT * FROM food_library WHERE id = ?',
+      [req.params.id]
+    )
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Alimento não encontrado' })
+    }
+    res.json(rows[0])
+  } catch (error) {
+    res.status(500).json({ error: String(error) })
+  }
+})
+
+// Criar alimento na biblioteca
+app.post('/api/food-library', async (req, res) => {
+  try {
+    const { consultancy_id, name, description, category, serving_size, calories, protein, carbs, fat, fiber, sodium, image_url } = req.body
+    
+    if (!consultancy_id) {
+      return res.status(400).json({ error: 'consultancy_id é obrigatório' })
+    }
+    
+    const [result] = await pool.query(
+      `INSERT INTO food_library (consultancy_id, name, description, category, serving_size, calories, protein, carbs, fat, fiber, sodium, image_url, is_global)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, FALSE)`,
+      [consultancy_id, name, description, category || 'outros', serving_size || '100g', calories || 0, protein || 0, carbs || 0, fat || 0, fiber || 0, sodium || 0, image_url]
+    )
+    res.status(201).json({ id: (result as { insertId: number }).insertId, message: 'Alimento adicionado' })
+  } catch (error) {
+    res.status(500).json({ error: String(error) })
+  }
+})
+
+// Atualizar alimento na biblioteca
+app.put('/api/food-library/:id', async (req, res) => {
+  try {
+    const { consultancy_id, name, description, category, serving_size, calories, protein, carbs, fat, fiber, sodium, image_url } = req.body
+    
+    if (!consultancy_id) {
+      return res.status(400).json({ error: 'consultancy_id é obrigatório' })
+    }
+    
+    // Verificar se o alimento pertence à consultoria
+    const [existing] = await pool.query<RowDataPacket[]>(
+      'SELECT id FROM food_library WHERE id = ? AND consultancy_id = ?',
+      [req.params.id, consultancy_id]
+    )
+    if (existing.length === 0) {
+      return res.status(403).json({ error: 'Você não tem permissão para editar este alimento' })
+    }
+    
+    await pool.query(
+      `UPDATE food_library SET name = ?, description = ?, category = ?, serving_size = ?, calories = ?, protein = ?, carbs = ?, fat = ?, fiber = ?, sodium = ?, image_url = ? WHERE id = ? AND consultancy_id = ?`,
+      [name, description, category, serving_size, calories, protein, carbs, fat, fiber, sodium, image_url, req.params.id, consultancy_id]
+    )
+    res.json({ message: 'Alimento atualizado' })
+  } catch (error) {
+    res.status(500).json({ error: String(error) })
+  }
+})
+
+// Excluir alimento da biblioteca
+app.delete('/api/food-library/:id', async (req, res) => {
+  try {
+    const consultancy_id = req.query.consultancy_id
+    
+    if (!consultancy_id) {
+      return res.status(400).json({ error: 'consultancy_id é obrigatório' })
+    }
+    
+    // Verificar se o alimento pertence à consultoria
+    const [rows] = await pool.query<RowDataPacket[]>(
+      'SELECT id, consultancy_id FROM food_library WHERE id = ?',
+      [req.params.id]
+    )
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Alimento não encontrado' })
+    }
+    
+    if (rows[0].consultancy_id !== Number(consultancy_id)) {
+      return res.status(403).json({ error: 'Você não tem permissão para excluir este alimento' })
+    }
+    
+    await pool.query('DELETE FROM food_library WHERE id = ? AND consultancy_id = ?', [req.params.id, consultancy_id])
+    res.json({ message: 'Alimento excluído' })
+  } catch (error) {
+    res.status(500).json({ error: String(error) })
+  }
+})
+
+// Listar categorias de alimentos disponíveis
+app.get('/api/food-categories', async (_req, res) => {
+  const categories = [
+    { value: 'proteina', label: 'Proteínas' },
+    { value: 'carboidrato', label: 'Carboidratos' },
+    { value: 'gordura', label: 'Gorduras' },
+    { value: 'vegetal', label: 'Vegetais' },
+    { value: 'fruta', label: 'Frutas' },
+    { value: 'lacteo', label: 'Laticínios' },
+    { value: 'suplemento', label: 'Suplementos' },
+    { value: 'bebida', label: 'Bebidas' },
+    { value: 'outros', label: 'Outros' }
+  ]
+  res.json(categories)
+})
+
+// ===============================
+// ALIMENTOS DA REFEIÇÃO (meal_foods)
+// ===============================
+
+app.get('/api/meal-foods', async (req, res) => {
+  try {
+    const mealId = req.query.meal_id
+    if (!mealId) {
+      return res.status(400).json({ error: 'meal_id é obrigatório' })
+    }
+    const [rows] = await pool.query(
+      `SELECT mf.*, fl.name as food_library_name, fl.category, fl.image_url as food_image
+       FROM meal_foods mf
+       LEFT JOIN food_library fl ON mf.food_id = fl.id
+       WHERE mf.meal_id = ?
+       ORDER BY mf.order_index`,
+      [mealId]
+    )
+    res.json(rows)
+  } catch (error) {
+    res.status(500).json({ error: String(error) })
+  }
+})
+
+app.post('/api/meal-foods', async (req, res) => {
+  try {
+    const { meal_id, food_id, name, quantity, unit, calories, protein, carbs, fat, notes, order_index, option_group } = req.body
+    const [result] = await pool.query(
+      `INSERT INTO meal_foods (meal_id, food_id, name, quantity, unit, calories, protein, carbs, fat, notes, order_index, option_group)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [meal_id, food_id || null, name, quantity || 1, unit || 'porção', calories || 0, protein || 0, carbs || 0, fat || 0, notes, order_index || 0, option_group || 0]
+    )
+    res.status(201).json({ id: (result as { insertId: number }).insertId, message: 'Alimento adicionado à refeição' })
+  } catch (error) {
+    res.status(500).json({ error: String(error) })
+  }
+})
+
+app.put('/api/meal-foods/:id', async (req, res) => {
+  try {
+    const { name, quantity, unit, calories, protein, carbs, fat, notes, order_index, option_group } = req.body
+    await pool.query(
+      `UPDATE meal_foods SET name = ?, quantity = ?, unit = ?, calories = ?, protein = ?, carbs = ?, fat = ?, notes = ?, order_index = ?, option_group = ? WHERE id = ?`,
+      [name, quantity, unit, calories, protein, carbs, fat, notes, order_index, option_group || 0, req.params.id]
+    )
+    res.json({ message: 'Alimento atualizado' })
+  } catch (error) {
+    res.status(500).json({ error: String(error) })
+  }
+})
+
+app.delete('/api/meal-foods/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM meal_foods WHERE id = ?', [req.params.id])
+    res.json({ message: 'Alimento removido da refeição' })
+  } catch (error) {
+    res.status(500).json({ error: String(error) })
+  }
+})
+
+// ===============================
+// SUBSTITUIÇÕES DE ALIMENTOS
+// ===============================
+
+app.get('/api/food-substitutions', async (req, res) => {
+  try {
+    const mealFoodId = req.query.meal_food_id
+    if (!mealFoodId) {
+      return res.status(400).json({ error: 'meal_food_id é obrigatório' })
+    }
+    const [rows] = await pool.query(
+      `SELECT fs.*, fl.name as food_library_name, fl.category
+       FROM food_substitutions fs
+       LEFT JOIN food_library fl ON fs.food_id = fl.id
+       WHERE fs.meal_food_id = ?
+       ORDER BY fs.order_index`,
+      [mealFoodId]
+    )
+    res.json(rows)
+  } catch (error) {
+    res.status(500).json({ error: String(error) })
+  }
+})
+
+app.post('/api/food-substitutions', async (req, res) => {
+  try {
+    const { meal_food_id, food_id, name, quantity, unit, calories, protein, carbs, fat, order_index } = req.body
+    const [result] = await pool.query(
+      `INSERT INTO food_substitutions (meal_food_id, food_id, name, quantity, unit, calories, protein, carbs, fat, order_index)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [meal_food_id, food_id || null, name, quantity || 1, unit || 'porção', calories || 0, protein || 0, carbs || 0, fat || 0, order_index || 0]
+    )
+    res.status(201).json({ id: (result as { insertId: number }).insertId, message: 'Substituição adicionada' })
+  } catch (error) {
+    res.status(500).json({ error: String(error) })
+  }
+})
+
+app.delete('/api/food-substitutions/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM food_substitutions WHERE id = ?', [req.params.id])
+    res.json({ message: 'Substituição removida' })
+  } catch (error) {
+    res.status(500).json({ error: String(error) })
+  }
+})
+
+// Buscar plano nutricional completo (com refeições e opções de alimentos)
+app.get('/api/nutrition-plans/:id/complete', async (req, res) => {
+  try {
+    const planId = req.params.id
+    
+    // Buscar plano
+    const [planRows] = await pool.query<RowDataPacket[]>(
+      `SELECT np.*, u.name as nutritionist_name
+       FROM nutrition_plans np
+       JOIN users u ON np.nutritionist_id = u.id
+       WHERE np.id = ?`,
+      [planId]
+    )
+    
+    if (planRows.length === 0) {
+      return res.status(404).json({ error: 'Plano não encontrado' })
+    }
+    
+    const plan = planRows[0]
+    
+    // Buscar refeições
+    const [mealRows] = await pool.query<RowDataPacket[]>(
+      'SELECT * FROM meals WHERE plan_id = ? ORDER BY order_index, time',
+      [planId]
+    )
+    
+    // Para cada refeição, buscar alimentos agrupados por option_group
+    const mealsWithFoods = await Promise.all(mealRows.map(async (meal: RowDataPacket) => {
+      const [foodRows] = await pool.query<RowDataPacket[]>(
+        'SELECT * FROM meal_foods WHERE meal_id = ? ORDER BY option_group, order_index',
+        [meal.id]
+      )
+      
+      // Agrupar alimentos por option_group
+      const optionGroups: Record<number, RowDataPacket[]> = {}
+      foodRows.forEach((food: RowDataPacket) => {
+        const group = food.option_group || 0
+        if (!optionGroups[group]) optionGroups[group] = []
+        optionGroups[group].push(food)
+      })
+      
+      // Converter para array de opções
+      const options = Object.entries(optionGroups).map(([groupNum, foods]) => ({
+        optionNumber: Number(groupNum),
+        label: Number(groupNum) === 0 ? 'Opção Principal' : `Substituição ${groupNum}`,
+        foods: foods
+      })).sort((a, b) => a.optionNumber - b.optionNumber)
+      
+      return { ...meal, options, foods: foodRows }
+    }))
+    
+    res.json({ ...plan, meals: mealsWithFoods })
   } catch (error) {
     res.status(500).json({ error: String(error) })
   }

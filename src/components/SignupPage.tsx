@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowLeft, ArrowRight, Check, Building2, User, Mail, Phone, Lock, Sparkles, Loader2, Dumbbell, Apple, Stethoscope, HeartPulse, Users, AlertCircle, CheckCircle, CreditCard, Shield } from 'lucide-react';
 import api from '../services/api';
 
@@ -13,26 +13,23 @@ interface SignupPageProps {
   onSuccess: () => void;
 }
 
-type Step = 1 | 2 | 3 | 4;
+type Step = 1 | 2 | 3;
 
 export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
   const [step, setStep] = useState<Step>(1);
   const [loading, setLoading] = useState(false);
   const [mpLoaded, setMpLoaded] = useState(false);
   const [mpInstance, setMpInstance] = useState<any>(null);
-  const cardFormRef = useRef<any>(null);
   
   const [formData, setFormData] = useState({
-    // Step 1 - Consultoria
+    // Step 1 - Consultoria e Admin
     consultancyName: '',
-    consultancySlug: '',
-    // Step 2 - Admin
     adminName: '',
     adminEmail: '',
     adminPhone: '',
     adminPassword: '',
     adminPasswordConfirm: '',
-    // Step 3 - Módulos e Capacidade
+    // Step 2 - Módulos e Capacidade
     modules: {
       training: false,
       nutrition: false,
@@ -41,7 +38,7 @@ export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
     },
     maxProfessionals: 3,
     maxPatients: 30,
-    // Step 4 - Pagamento
+    // Step 3 - Pagamento
     cardNumber: '',
     cardholderName: '',
     cardExpiry: '',
@@ -57,9 +54,7 @@ export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
     adminEmail: string;
     paymentId: string;
   } | null>(null);
-  const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
   const [emailAvailable, setEmailAvailable] = useState<boolean | null>(null);
-  const [checkingSlug, setCheckingSlug] = useState(false);
   const [checkingEmail, setCheckingEmail] = useState(false);
 
   // Carregar SDK do Mercado Pago
@@ -67,17 +62,16 @@ export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
     const script = document.createElement('script');
     script.src = 'https://sdk.mercadopago.com/js/v2';
     script.async = true;
-    script.onload = () => {
-      setMpLoaded(true);
-    };
+    script.onload = () => setMpLoaded(true);
     document.body.appendChild(script);
-
     return () => {
-      document.body.removeChild(script);
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
     };
   }, []);
 
-  // Inicializar Mercado Pago quando carregar
+  // Inicializar Mercado Pago
   useEffect(() => {
     if (mpLoaded && window.MercadoPago) {
       const publicKey = 'TEST-8f2e0407-fba9-4767-8bd1-6a61411d9d1c';
@@ -86,21 +80,15 @@ export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
     }
   }, [mpLoaded]);
 
-  // Verificar disponibilidade do slug
-  const checkSlugAvailability = async (slug: string) => {
-    if (!slug || slug.length < 3) {
-      setSlugAvailable(null);
-      return;
-    }
-    setCheckingSlug(true);
-    try {
-      const response = await api.get(`/signup/check-slug/${slug.toLowerCase()}`);
-      setSlugAvailable(response.data.available);
-    } catch {
-      setSlugAvailable(null);
-    } finally {
-      setCheckingSlug(false);
-    }
+  // Gerar slug a partir do nome (uso interno)
+  const generateSlug = (name: string) => {
+    return name
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+      .substring(0, 50);
   };
 
   // Verificar disponibilidade do email
@@ -120,33 +108,12 @@ export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
     }
   };
 
-  const generateSlug = (name: string) => {
-    return name
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '');
-  };
-
   const validateStep1 = () => {
     const newErrors: Record<string, string> = {};
+    
     if (!formData.consultancyName.trim()) {
       newErrors.consultancyName = 'Nome da consultoria é obrigatório';
     }
-    if (!formData.consultancySlug.trim()) {
-      newErrors.consultancySlug = 'URL é obrigatória';
-    } else if (!/^[a-z0-9-]+$/.test(formData.consultancySlug)) {
-      newErrors.consultancySlug = 'URL deve conter apenas letras minúsculas, números e hífens';
-    } else if (slugAvailable === false) {
-      newErrors.consultancySlug = 'Esta URL já está em uso';
-    }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const validateStep2 = () => {
-    const newErrors: Record<string, string> = {};
     if (!formData.adminName.trim()) {
       newErrors.adminName = 'Nome é obrigatório';
     }
@@ -165,15 +132,16 @@ export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
     if (formData.adminPassword !== formData.adminPasswordConfirm) {
       newErrors.adminPasswordConfirm = 'Senhas não conferem';
     }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const validateStep3 = () => {
+  const validateStep2 = () => {
     return selectedModulesCount > 0;
   };
 
-  const validateStep4 = () => {
+  const validateStep3 = () => {
     const newErrors: Record<string, string> = {};
     
     if (!formData.cardNumber.replace(/\s/g, '').match(/^\d{13,19}$/)) {
@@ -201,8 +169,6 @@ export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
       setStep(2);
     } else if (step === 2 && validateStep2()) {
       setStep(3);
-    } else if (step === 3 && validateStep3()) {
-      setStep(4);
     }
   };
 
@@ -229,13 +195,12 @@ export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
   };
 
   const handleSubmit = async () => {
-    if (!validateStep4()) return;
+    if (!validateStep3()) return;
     
     setLoading(true);
     setApiError(null);
     
     try {
-      // Criar token do cartão com Mercado Pago
       if (!mpInstance) {
         throw new Error('SDK do Mercado Pago não carregado. Aguarde ou recarregue a página.');
       }
@@ -244,7 +209,6 @@ export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
       const cardNumber = formData.cardNumber.replace(/\s/g, '');
       const docNumber = formData.docNumber.replace(/\D/g, '');
       
-      // Validar formato do número do cartão
       if (cardNumber.length < 13 || cardNumber.length > 19) {
         throw new Error('Número do cartão inválido');
       }
@@ -264,7 +228,6 @@ export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
         });
       } catch (tokenError: any) {
         console.error('Erro ao criar token:', tokenError);
-        // Tratamento específico para erros do MP
         if (tokenError?.cause) {
           const causes = tokenError.cause;
           if (Array.isArray(causes) && causes.length > 0) {
@@ -297,22 +260,20 @@ export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
 
       console.log('Token criado com sucesso:', cardTokenResponse.id);
 
-      // Enviar para o backend
+      // Gerar slug automaticamente
+      const slug = generateSlug(formData.consultancyName) + '-' + Date.now().toString(36);
+
       const response = await api.post('/signup/consultancy', {
-        // Dados da consultoria
         consultancyName: formData.consultancyName,
-        consultancySlug: formData.consultancySlug,
-        // Dados do admin
+        consultancySlug: slug,
         adminName: formData.adminName,
         adminEmail: formData.adminEmail,
         adminPhone: formData.adminPhone,
         adminPassword: formData.adminPassword,
-        // Módulos e capacidade
         modules: formData.modules,
         maxProfessionals: formData.maxProfessionals,
         maxPatients: formData.maxPatients,
         priceMonthly: totalPrice,
-        // Token do cartão
         cardToken: cardTokenResponse.id,
         payerDocType: docNumber.length === 11 ? 'CPF' : 'CNPJ',
         payerDocNumber: docNumber,
@@ -332,7 +293,6 @@ export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
         const errorMsg = axiosError.response?.data?.error || 'Erro ao criar consultoria. Tente novamente.';
         const statusDetail = axiosError.response?.data?.paymentStatusDetail;
         
-        // Traduzir status_detail do MP
         const statusMessages: Record<string, string> = {
           'cc_rejected_bad_filled_card_number': 'Número do cartão incorreto',
           'cc_rejected_bad_filled_date': 'Data de validade incorreta',
@@ -361,7 +321,7 @@ export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
     }
   };
 
-  // Configuração de módulos disponíveis
+  // Configuração de módulos
   const availableModules = [
     { id: 'training' as const, name: 'Treinamento', description: 'Personal trainers e preparadores físicos', icon: Dumbbell, price: 97, color: 'bg-orange-100 text-orange-600' },
     { id: 'nutrition' as const, name: 'Nutrição', description: 'Nutricionistas e dietistas', icon: Apple, price: 97, color: 'bg-green-100 text-green-600' },
@@ -369,7 +329,6 @@ export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
     { id: 'rehab' as const, name: 'Reabilitação', description: 'Fisioterapeutas e reabilitadores', icon: HeartPulse, price: 97, color: 'bg-pink-100 text-pink-600' },
   ];
 
-  // Configuração de capacidade
   const capacityOptions = [
     { professionals: 3, patients: 30, basePrice: 0, label: 'Starter' },
     { professionals: 5, patients: 50, basePrice: 50, label: 'Growth' },
@@ -377,7 +336,6 @@ export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
     { professionals: 20, patients: 250, basePrice: 350, label: 'Enterprise' },
   ];
 
-  // Calcular preço total
   const calculatePrice = () => {
     const selectedModules = Object.entries(formData.modules)
       .filter(([, selected]) => selected)
@@ -469,28 +427,29 @@ export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
         <div className="flex-1 flex items-center justify-center px-6 sm:px-8 pb-12">
           <div className="w-full max-w-lg">
             {/* Progress Steps */}
-            <div className="flex items-center justify-center gap-2 mb-12">
-              {[1, 2, 3, 4].map((s) => (
-                <div key={s} className="flex items-center gap-2">
+            <div className="flex items-center justify-center gap-3 mb-12">
+              {[1, 2, 3].map((s) => (
+                <div key={s} className="flex items-center gap-3">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-colors ${
                     step >= s ? 'bg-lime-500 text-black' : 'bg-zinc-200 text-zinc-500'
                   }`}>
                     {step > s ? <Check className="w-5 h-5" /> : s}
                   </div>
-                  {s < 4 && <div className={`w-8 sm:w-12 h-1 rounded ${step > s ? 'bg-lime-500' : 'bg-zinc-200'}`} />}
+                  {s < 3 && <div className={`w-12 sm:w-16 h-1 rounded ${step > s ? 'bg-lime-500' : 'bg-zinc-200'}`} />}
                 </div>
               ))}
             </div>
 
-            {/* Step 1 - Consultoria */}
+            {/* Step 1 - Dados da Consultoria e Admin */}
             {step === 1 && (
-              <div className="space-y-8">
+              <div className="space-y-6">
                 <div className="text-center">
                   <h1 className="text-3xl sm:text-4xl font-bold mb-3">Crie sua consultoria</h1>
-                  <p className="text-zinc-600 text-lg">Vamos começar com as informações básicas</p>
+                  <p className="text-zinc-600 text-lg">Preencha os dados para começar</p>
                 </div>
 
-                <div className="space-y-5">
+                <div className="space-y-4">
+                  {/* Nome da Consultoria */}
                   <div>
                     <label className="block text-sm font-semibold text-zinc-700 mb-2">Nome da Consultoria *</label>
                     <div className="relative">
@@ -498,61 +457,17 @@ export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
                       <input
                         type="text"
                         value={formData.consultancyName}
-                        onChange={(e) => {
-                          const name = e.target.value;
-                          setFormData({ ...formData, consultancyName: name, consultancySlug: generateSlug(name) });
-                        }}
-                        className={`w-full pl-12 pr-4 py-4 border-2 rounded-xl outline-none transition-colors ${
+                        onChange={(e) => setFormData({ ...formData, consultancyName: e.target.value })}
+                        className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none transition-colors ${
                           errors.consultancyName ? 'border-red-300 bg-red-50' : 'border-zinc-200 focus:border-lime-500'
                         }`}
                         placeholder="Ex: Performance Elite"
                       />
                     </div>
-                    {errors.consultancyName && <p className="mt-2 text-sm text-red-500">{errors.consultancyName}</p>}
+                    {errors.consultancyName && <p className="mt-1 text-sm text-red-500">{errors.consultancyName}</p>}
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-semibold text-zinc-700 mb-2">URL da sua plataforma *</label>
-                    <div className="flex items-center">
-                      <span className="px-4 py-4 bg-zinc-100 border-2 border-r-0 border-zinc-200 rounded-l-xl text-zinc-500 text-sm">vitae.app/</span>
-                      <div className="flex-1 relative">
-                        <input
-                          type="text"
-                          value={formData.consultancySlug}
-                          onChange={(e) => { setFormData({ ...formData, consultancySlug: e.target.value.toLowerCase() }); setSlugAvailable(null); }}
-                          onBlur={() => checkSlugAvailability(formData.consultancySlug)}
-                          className={`w-full px-4 py-4 border-2 rounded-r-xl outline-none transition-colors pr-12 ${
-                            errors.consultancySlug || slugAvailable === false ? 'border-red-300 bg-red-50' : slugAvailable === true ? 'border-lime-500 bg-lime-50' : 'border-zinc-200 focus:border-lime-500'
-                          }`}
-                          placeholder="performance-elite"
-                        />
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                          {checkingSlug && <Loader2 className="w-5 h-5 animate-spin text-zinc-400" />}
-                          {!checkingSlug && slugAvailable === true && <CheckCircle className="w-5 h-5 text-lime-500" />}
-                          {!checkingSlug && slugAvailable === false && <AlertCircle className="w-5 h-5 text-red-500" />}
-                        </div>
-                      </div>
-                    </div>
-                    {errors.consultancySlug && <p className="mt-2 text-sm text-red-500">{errors.consultancySlug}</p>}
-                    {!errors.consultancySlug && slugAvailable === true && <p className="mt-2 text-sm text-lime-600">✓ URL disponível!</p>}
-                  </div>
-                </div>
-
-                <button onClick={handleNext} className="w-full py-4 bg-black text-white font-semibold rounded-xl hover:bg-lime-500 hover:text-black transition-colors flex items-center justify-center gap-2">
-                  Continuar <ArrowRight className="w-5 h-5" />
-                </button>
-              </div>
-            )}
-
-            {/* Step 2 - Admin */}
-            {step === 2 && (
-              <div className="space-y-8">
-                <div className="text-center">
-                  <h1 className="text-3xl sm:text-4xl font-bold mb-3">Sua conta</h1>
-                  <p className="text-zinc-600 text-lg">Dados do administrador da consultoria</p>
-                </div>
-
-                <div className="space-y-5">
+                  {/* Seu nome */}
                   <div>
                     <label className="block text-sm font-semibold text-zinc-700 mb-2">Seu nome completo *</label>
                     <div className="relative">
@@ -561,13 +476,16 @@ export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
                         type="text"
                         value={formData.adminName}
                         onChange={(e) => setFormData({ ...formData, adminName: e.target.value })}
-                        className={`w-full pl-12 pr-4 py-4 border-2 rounded-xl outline-none transition-colors ${errors.adminName ? 'border-red-300 bg-red-50' : 'border-zinc-200 focus:border-lime-500'}`}
+                        className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none transition-colors ${
+                          errors.adminName ? 'border-red-300 bg-red-50' : 'border-zinc-200 focus:border-lime-500'
+                        }`}
                         placeholder="João Silva"
                       />
                     </div>
-                    {errors.adminName && <p className="mt-2 text-sm text-red-500">{errors.adminName}</p>}
+                    {errors.adminName && <p className="mt-1 text-sm text-red-500">{errors.adminName}</p>}
                   </div>
 
+                  {/* Email e Telefone */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-semibold text-zinc-700 mb-2">Email *</label>
@@ -578,18 +496,18 @@ export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
                           value={formData.adminEmail}
                           onChange={(e) => { setFormData({ ...formData, adminEmail: e.target.value }); setEmailAvailable(null); }}
                           onBlur={() => checkEmailAvailability(formData.adminEmail)}
-                          className={`w-full pl-12 pr-12 py-4 border-2 rounded-xl outline-none transition-colors ${
+                          className={`w-full pl-12 pr-10 py-3 border-2 rounded-xl outline-none transition-colors ${
                             errors.adminEmail || emailAvailable === false ? 'border-red-300 bg-red-50' : emailAvailable === true ? 'border-lime-500 bg-lime-50' : 'border-zinc-200 focus:border-lime-500'
                           }`}
-                          placeholder="joao@email.com"
+                          placeholder="email@exemplo.com"
                         />
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                          {checkingEmail && <Loader2 className="w-5 h-5 animate-spin text-zinc-400" />}
-                          {!checkingEmail && emailAvailable === true && <CheckCircle className="w-5 h-5 text-lime-500" />}
-                          {!checkingEmail && emailAvailable === false && <AlertCircle className="w-5 h-5 text-red-500" />}
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          {checkingEmail && <Loader2 className="w-4 h-4 animate-spin text-zinc-400" />}
+                          {!checkingEmail && emailAvailable === true && <CheckCircle className="w-4 h-4 text-lime-500" />}
+                          {!checkingEmail && emailAvailable === false && <AlertCircle className="w-4 h-4 text-red-500" />}
                         </div>
                       </div>
-                      {errors.adminEmail && <p className="mt-2 text-sm text-red-500">{errors.adminEmail}</p>}
+                      {errors.adminEmail && <p className="mt-1 text-sm text-red-500">{errors.adminEmail}</p>}
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-zinc-700 mb-2">Telefone</label>
@@ -599,13 +517,14 @@ export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
                           type="tel"
                           value={formData.adminPhone}
                           onChange={(e) => setFormData({ ...formData, adminPhone: e.target.value })}
-                          className="w-full pl-12 pr-4 py-4 border-2 border-zinc-200 rounded-xl outline-none focus:border-lime-500 transition-colors"
+                          className="w-full pl-12 pr-4 py-3 border-2 border-zinc-200 rounded-xl outline-none focus:border-lime-500 transition-colors"
                           placeholder="(11) 99999-9999"
                         />
                       </div>
                     </div>
                   </div>
 
+                  {/* Senhas */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-semibold text-zinc-700 mb-2">Senha *</label>
@@ -615,49 +534,50 @@ export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
                           type="password"
                           value={formData.adminPassword}
                           onChange={(e) => setFormData({ ...formData, adminPassword: e.target.value })}
-                          className={`w-full pl-12 pr-4 py-4 border-2 rounded-xl outline-none transition-colors ${errors.adminPassword ? 'border-red-300 bg-red-50' : 'border-zinc-200 focus:border-lime-500'}`}
+                          className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none transition-colors ${
+                            errors.adminPassword ? 'border-red-300 bg-red-50' : 'border-zinc-200 focus:border-lime-500'
+                          }`}
                           placeholder="••••••••"
                         />
                       </div>
-                      {errors.adminPassword && <p className="mt-2 text-sm text-red-500">{errors.adminPassword}</p>}
+                      {errors.adminPassword && <p className="mt-1 text-sm text-red-500">{errors.adminPassword}</p>}
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-zinc-700 mb-2">Confirmar senha *</label>
+                      <label className="block text-sm font-semibold text-zinc-700 mb-2">Confirmar *</label>
                       <div className="relative">
                         <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
                         <input
                           type="password"
                           value={formData.adminPasswordConfirm}
                           onChange={(e) => setFormData({ ...formData, adminPasswordConfirm: e.target.value })}
-                          className={`w-full pl-12 pr-4 py-4 border-2 rounded-xl outline-none transition-colors ${errors.adminPasswordConfirm ? 'border-red-300 bg-red-50' : 'border-zinc-200 focus:border-lime-500'}`}
+                          className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none transition-colors ${
+                            errors.adminPasswordConfirm ? 'border-red-300 bg-red-50' : 'border-zinc-200 focus:border-lime-500'
+                          }`}
                           placeholder="••••••••"
                         />
                       </div>
-                      {errors.adminPasswordConfirm && <p className="mt-2 text-sm text-red-500">{errors.adminPasswordConfirm}</p>}
+                      {errors.adminPasswordConfirm && <p className="mt-1 text-sm text-red-500">{errors.adminPasswordConfirm}</p>}
                     </div>
                   </div>
                 </div>
 
-                <div className="flex gap-4">
-                  <button onClick={() => setStep(1)} className="flex-1 py-4 border-2 border-zinc-300 text-zinc-700 font-semibold rounded-xl hover:border-black hover:text-black transition-colors">Voltar</button>
-                  <button onClick={handleNext} className="flex-1 py-4 bg-black text-white font-semibold rounded-xl hover:bg-lime-500 hover:text-black transition-colors flex items-center justify-center gap-2">
-                    Continuar <ArrowRight className="w-5 h-5" />
-                  </button>
-                </div>
+                <button onClick={handleNext} className="w-full py-4 bg-black text-white font-semibold rounded-xl hover:bg-lime-500 hover:text-black transition-colors flex items-center justify-center gap-2">
+                  Continuar <ArrowRight className="w-5 h-5" />
+                </button>
               </div>
             )}
 
-            {/* Step 3 - Módulos e Capacidade */}
-            {step === 3 && (
-              <div className="space-y-8">
+            {/* Step 2 - Módulos e Capacidade */}
+            {step === 2 && (
+              <div className="space-y-6">
                 <div className="text-center">
                   <h1 className="text-3xl sm:text-4xl font-bold mb-3">Monte seu plano</h1>
-                  <p className="text-zinc-600 text-lg">Escolha os módulos e a capacidade que precisa</p>
+                  <p className="text-zinc-600 text-lg">Escolha os módulos e a capacidade</p>
                 </div>
 
                 {/* Módulos */}
                 <div>
-                  <label className="block text-sm font-semibold text-zinc-700 mb-3">Quais profissionais vão usar a plataforma?</label>
+                  <label className="block text-sm font-semibold text-zinc-700 mb-3">Quais profissionais vão usar?</label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {availableModules.map((module) => {
                       const Icon = module.icon;
@@ -690,7 +610,7 @@ export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
                 {/* Capacidade */}
                 <div>
                   <label className="block text-sm font-semibold text-zinc-700 mb-3">
-                    <Users className="w-4 h-4 inline mr-2" />Qual o tamanho da sua equipe?
+                    <Users className="w-4 h-4 inline mr-2" />Tamanho da equipe
                   </label>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {capacityOptions.map((option) => {
@@ -710,56 +630,52 @@ export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
                 </div>
 
                 {/* Resumo do Preço */}
-                <div className="bg-zinc-900 text-white p-6 rounded-xl">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-zinc-400">Seu plano personalizado</span>
-                  </div>
+                <div className="bg-zinc-900 text-white p-5 rounded-xl">
                   <div className="space-y-2 mb-4 pb-4 border-b border-zinc-700">
                     {Object.entries(formData.modules).filter(([, selected]) => selected).map(([id]) => {
                       const module = availableModules.find(m => m.id === id)!;
                       return (
                         <div key={id} className="flex justify-between text-sm">
-                          <span>Módulo {module.name}</span><span>R$ {module.price}</span>
+                          <span>{module.name}</span><span>R$ {module.price}</span>
                         </div>
                       );
                     })}
                     {capacityOptions.find(c => c.professionals === formData.maxProfessionals)?.basePrice! > 0 && (
                       <div className="flex justify-between text-sm">
-                        <span>Capacidade ({formData.maxProfessionals} prof.)</span>
+                        <span>Capacidade extra</span>
                         <span>R$ {capacityOptions.find(c => c.professionals === formData.maxProfessionals)?.basePrice}</span>
                       </div>
                     )}
-                    {selectedModulesCount === 0 && <div className="text-sm text-zinc-500 text-center py-2">Selecione os módulos acima</div>}
                   </div>
                   <div className="flex items-end justify-between">
                     <div>
                       <div className="text-sm text-zinc-400">Total mensal</div>
-                      <div className="text-3xl font-bold">
-                        {selectedModulesCount > 0 ? <>R$ {totalPrice}<span className="text-lg text-zinc-400">/mês</span></> : <span className="text-zinc-500">R$ --</span>}
+                      <div className="text-2xl font-bold">
+                        {selectedModulesCount > 0 ? <>R$ {totalPrice}<span className="text-base text-zinc-400">/mês</span></> : <span className="text-zinc-500">R$ --</span>}
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <div className="flex gap-4">
-                  <button onClick={() => setStep(2)} className="flex-1 py-4 border-2 border-zinc-300 text-zinc-700 font-semibold rounded-xl hover:border-black hover:text-black transition-colors">Voltar</button>
+                  <button onClick={() => setStep(1)} className="flex-1 py-4 border-2 border-zinc-300 text-zinc-700 font-semibold rounded-xl hover:border-black hover:text-black transition-colors">Voltar</button>
                   <button onClick={handleNext} disabled={selectedModulesCount === 0}
                     className="flex-1 py-4 bg-black text-white font-semibold rounded-xl hover:bg-lime-500 hover:text-black transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                    Continuar para pagamento <ArrowRight className="w-5 h-5" />
+                    Continuar <ArrowRight className="w-5 h-5" />
                   </button>
                 </div>
               </div>
             )}
 
-            {/* Step 4 - Pagamento */}
-            {step === 4 && (
-              <div className="space-y-8">
+            {/* Step 3 - Pagamento */}
+            {step === 3 && (
+              <div className="space-y-6">
                 <div className="text-center">
                   <h1 className="text-3xl sm:text-4xl font-bold mb-3">Pagamento</h1>
-                  <p className="text-zinc-600 text-lg">Insira os dados do cartão de crédito</p>
+                  <p className="text-zinc-600 text-lg">Dados do cartão de crédito</p>
                 </div>
 
-                {/* Resumo do valor */}
+                {/* Resumo */}
                 <div className="bg-lime-50 border-2 border-lime-200 p-4 rounded-xl flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-lime-500 rounded-lg flex items-center justify-center">
@@ -776,8 +692,8 @@ export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
                   </div>
                 </div>
 
-                {/* Formulário do cartão */}
-                <div className="space-y-5">
+                {/* Formulário */}
+                <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-semibold text-zinc-700 mb-2">Número do Cartão *</label>
                     <div className="relative">
@@ -787,11 +703,11 @@ export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
                         value={formData.cardNumber}
                         onChange={(e) => setFormData({ ...formData, cardNumber: formatCardNumber(e.target.value) })}
                         maxLength={19}
-                        className={`w-full pl-12 pr-4 py-4 border-2 rounded-xl outline-none transition-colors ${errors.cardNumber ? 'border-red-300 bg-red-50' : 'border-zinc-200 focus:border-lime-500'}`}
+                        className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none transition-colors ${errors.cardNumber ? 'border-red-300 bg-red-50' : 'border-zinc-200 focus:border-lime-500'}`}
                         placeholder="1234 5678 9012 3456"
                       />
                     </div>
-                    {errors.cardNumber && <p className="mt-2 text-sm text-red-500">{errors.cardNumber}</p>}
+                    {errors.cardNumber && <p className="mt-1 text-sm text-red-500">{errors.cardNumber}</p>}
                   </div>
 
                   <div>
@@ -802,11 +718,11 @@ export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
                         type="text"
                         value={formData.cardholderName}
                         onChange={(e) => setFormData({ ...formData, cardholderName: e.target.value.toUpperCase() })}
-                        className={`w-full pl-12 pr-4 py-4 border-2 rounded-xl outline-none transition-colors ${errors.cardholderName ? 'border-red-300 bg-red-50' : 'border-zinc-200 focus:border-lime-500'}`}
+                        className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none transition-colors ${errors.cardholderName ? 'border-red-300 bg-red-50' : 'border-zinc-200 focus:border-lime-500'}`}
                         placeholder="JOÃO SILVA"
                       />
                     </div>
-                    {errors.cardholderName && <p className="mt-2 text-sm text-red-500">{errors.cardholderName}</p>}
+                    {errors.cardholderName && <p className="mt-1 text-sm text-red-500">{errors.cardholderName}</p>}
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -817,10 +733,10 @@ export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
                         value={formData.cardExpiry}
                         onChange={(e) => setFormData({ ...formData, cardExpiry: formatExpiry(e.target.value) })}
                         maxLength={5}
-                        className={`w-full px-4 py-4 border-2 rounded-xl outline-none transition-colors ${errors.cardExpiry ? 'border-red-300 bg-red-50' : 'border-zinc-200 focus:border-lime-500'}`}
+                        className={`w-full px-4 py-3 border-2 rounded-xl outline-none transition-colors ${errors.cardExpiry ? 'border-red-300 bg-red-50' : 'border-zinc-200 focus:border-lime-500'}`}
                         placeholder="MM/AA"
                       />
-                      {errors.cardExpiry && <p className="mt-2 text-sm text-red-500">{errors.cardExpiry}</p>}
+                      {errors.cardExpiry && <p className="mt-1 text-sm text-red-500">{errors.cardExpiry}</p>}
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-zinc-700 mb-2">CVV *</label>
@@ -829,10 +745,10 @@ export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
                         value={formData.cardCvv}
                         onChange={(e) => setFormData({ ...formData, cardCvv: e.target.value.replace(/\D/g, '') })}
                         maxLength={4}
-                        className={`w-full px-4 py-4 border-2 rounded-xl outline-none transition-colors ${errors.cardCvv ? 'border-red-300 bg-red-50' : 'border-zinc-200 focus:border-lime-500'}`}
+                        className={`w-full px-4 py-3 border-2 rounded-xl outline-none transition-colors ${errors.cardCvv ? 'border-red-300 bg-red-50' : 'border-zinc-200 focus:border-lime-500'}`}
                         placeholder="123"
                       />
-                      {errors.cardCvv && <p className="mt-2 text-sm text-red-500">{errors.cardCvv}</p>}
+                      {errors.cardCvv && <p className="mt-1 text-sm text-red-500">{errors.cardCvv}</p>}
                     </div>
                   </div>
 
@@ -843,10 +759,10 @@ export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
                       value={formData.docNumber}
                       onChange={(e) => setFormData({ ...formData, docNumber: formatCPF(e.target.value) })}
                       maxLength={18}
-                      className={`w-full px-4 py-4 border-2 rounded-xl outline-none transition-colors ${errors.docNumber ? 'border-red-300 bg-red-50' : 'border-zinc-200 focus:border-lime-500'}`}
+                      className={`w-full px-4 py-3 border-2 rounded-xl outline-none transition-colors ${errors.docNumber ? 'border-red-300 bg-red-50' : 'border-zinc-200 focus:border-lime-500'}`}
                       placeholder="000.000.000-00"
                     />
-                    {errors.docNumber && <p className="mt-2 text-sm text-red-500">{errors.docNumber}</p>}
+                    {errors.docNumber && <p className="mt-1 text-sm text-red-500">{errors.docNumber}</p>}
                   </div>
                 </div>
 
@@ -856,7 +772,7 @@ export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
                   <span>Seus dados estão protegidos com criptografia SSL</span>
                 </div>
 
-                {/* Erro da API */}
+                {/* Erro */}
                 {apiError && (
                   <div className="bg-red-50 border-2 border-red-200 text-red-700 p-4 rounded-xl flex items-start gap-3">
                     <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
@@ -868,14 +784,14 @@ export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
                 )}
 
                 <div className="flex gap-4">
-                  <button onClick={() => setStep(3)} className="flex-1 py-4 border-2 border-zinc-300 text-zinc-700 font-semibold rounded-xl hover:border-black hover:text-black transition-colors">Voltar</button>
+                  <button onClick={() => setStep(2)} className="flex-1 py-4 border-2 border-zinc-300 text-zinc-700 font-semibold rounded-xl hover:border-black hover:text-black transition-colors">Voltar</button>
                   <button onClick={handleSubmit} disabled={loading || !mpLoaded}
                     className="flex-1 py-4 bg-lime-500 text-black font-semibold rounded-xl hover:bg-lime-400 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                     {loading ? <><Loader2 className="w-5 h-5 animate-spin" /> Processando...</> : <>Pagar R$ {totalPrice} <Check className="w-5 h-5" /></>}
                   </button>
                 </div>
 
-                <p className="text-center text-sm text-zinc-500">
+                <p className="text-center text-xs text-zinc-500">
                   Ao confirmar, você concorda com os{' '}
                   <a href="#" className="text-lime-600 hover:underline">Termos de Uso</a> e{' '}
                   <a href="#" className="text-lime-600 hover:underline">Política de Privacidade</a>

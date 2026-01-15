@@ -22,7 +22,8 @@ import {
   Target,
   Clock,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Loader2
 } from 'lucide-react';
 import { Patient } from './AdminDashboard';
 
@@ -150,8 +151,8 @@ export function PatientDetail({ patient, onBack, consultancyId }: PatientDetailP
             onSave={handleSave}
           />
         )}
-        {activeTab === 'training' && <TrainingTab patient={patient} />}
-        {activeTab === 'nutrition' && <NutritionTab patient={patient} />}
+        {activeTab === 'training' && <TrainingTab patient={patient} consultancyId={consultancyId} />}
+        {activeTab === 'nutrition' && <NutritionTab patient={patient} consultancyId={consultancyId} />}
         {activeTab === 'medical' && <MedicalTab patient={patient} />}
         {activeTab === 'rehab' && <RehabTab patient={patient} />}
         {activeTab === 'progress' && <ProgressTab patient={patient} />}
@@ -460,7 +461,7 @@ const OBJECTIVES: Record<string, string> = {
 };
 
 
-function TrainingTab({ patient }: { patient: Patient }) {
+function TrainingTab({ patient, consultancyId }: { patient: Patient; consultancyId?: number }) {
   const [plans, setPlans] = useState<TrainingPlan[]>([]);
   const [trainingDays, setTrainingDays] = useState<TrainingDay[]>([]);
   const [exercisesByDay, setExercisesByDay] = useState<Record<number, TrainingExercise[]>>({});
@@ -470,13 +471,13 @@ function TrainingTab({ patient }: { patient: Patient }) {
 
   useEffect(() => {
     loadPlans();
-  }, [patient.id]);
+  }, [patient.id, consultancyId]);
 
   const loadPlans = async () => {
     try {
-      const athleteRes = await fetch(`${API_URL}/athletes`);
+      const athleteRes = await fetch(`${API_URL}/athletes?user_id=${patient.id}&consultancy_id=${consultancyId}`);
       const athletes = await athleteRes.json();
-      const athlete = athletes.find((a: { user_id: number }) => a.user_id === patient.id);
+      const athlete = athletes[0];
       
       if (athlete) {
         const response = await fetch(`${API_URL}/training-plans?athlete_id=${athlete.id}`);
@@ -691,53 +692,129 @@ function TrainingTab({ patient }: { patient: Patient }) {
   );
 }
 
-function NutritionTab({ patient }: { patient: Patient }) {
-  const nutritionPlan = {
-    name: 'Plano Hipertrofia',
-    nutritionist: 'Dra. Marina Costa',
-    dailyCalories: 2800,
-    protein: 180,
-    carbs: 320,
-    fat: 90,
-    meals: [
-      { time: '07:00', name: 'Café da manhã', description: '4 ovos, 2 fatias pão integral, 1 banana, whey protein' },
-      { time: '10:00', name: 'Lanche', description: 'Mix de castanhas, iogurte grego' },
-      { time: '12:30', name: 'Almoço', description: '200g frango, 150g arroz, 100g feijão, salada verde' },
-      { time: '15:30', name: 'Pré-treino', description: 'Batata doce, frango desfiado' },
-      { time: '18:30', name: 'Pós-treino', description: 'Whey protein, banana, aveia' },
-      { time: '20:30', name: 'Jantar', description: '200g peixe, legumes, quinoa' },
-    ]
+interface NutritionPlan {
+  id: number;
+  name: string;
+  nutritionist_name: string;
+  daily_calories: number;
+  protein_grams: number;
+  carbs_grams: number;
+  fat_grams: number;
+  meals?: NutritionMeal[];
+}
+
+interface NutritionMeal {
+  id: number;
+  name: string;
+  time: string;
+  foods?: NutritionFood[];
+}
+
+interface NutritionFood {
+  id: number;
+  name: string;
+  quantity: number;
+  unit: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  option_group: number;
+}
+
+function NutritionTab({ patient, consultancyId }: { patient: Patient; consultancyId?: number }) {
+  const [loading, setLoading] = useState(true);
+  const [plan, setPlan] = useState<NutritionPlan | null>(null);
+
+  useEffect(() => {
+    loadNutritionPlan();
+  }, [patient.id, consultancyId]);
+
+  const loadNutritionPlan = async () => {
+    try {
+      // Primeiro buscar o athlete_id
+      const athleteRes = await fetch(`http://localhost:3001/api/athletes?user_id=${patient.id}&consultancy_id=${consultancyId}`);
+      const athletes = await athleteRes.json();
+      
+      if (athletes.length === 0) {
+        setLoading(false);
+        return;
+      }
+
+      const athleteId = athletes[0].id;
+      
+      // Buscar planos do atleta
+      const plansRes = await fetch(`http://localhost:3001/api/nutrition-plans?athlete_id=${athleteId}`);
+      const plans = await plansRes.json();
+      
+      const activePlan = plans.find((p: NutritionPlan) => p.status === 'active') || plans[0];
+      
+      if (activePlan) {
+        // Buscar plano completo
+        const completeRes = await fetch(`http://localhost:3001/api/nutrition-plans/${activePlan.id}/complete`);
+        const completeData = await completeRes.json();
+        setPlan(completeData);
+      }
+    } catch (error) {
+      console.error('Error loading nutrition plan:', error);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const getOptionGroups = (foods: NutritionFood[] | undefined): Record<number, NutritionFood[]> => {
+    if (!foods) return {};
+    const groups: Record<number, NutritionFood[]> = {};
+    foods.forEach(food => {
+      const group = food.option_group || 0;
+      if (!groups[group]) groups[group] = [];
+      groups[group].push(food);
+    });
+    return groups;
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-lime-500" />
+      </div>
+    );
+  }
+
+  if (!plan) {
+    return (
+      <div className="text-center py-12 text-zinc-500">
+        <Apple className="w-12 h-12 mx-auto mb-4 text-zinc-300" />
+        <p>Nenhum plano nutricional cadastrado para este paciente.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold">{nutritionPlan.name}</h2>
-          <p className="text-sm text-zinc-600">Nutricionista: {nutritionPlan.nutritionist}</p>
+          <h2 className="text-xl font-bold">{plan.name}</h2>
+          <p className="text-sm text-zinc-600">Nutricionista: {plan.nutritionist_name}</p>
         </div>
-        <button className="flex items-center gap-2 px-3 py-2 bg-lime-500 text-black font-bold hover:bg-lime-400 transition-colors text-sm">
-          <Edit className="w-4 h-4" />
-          Editar Plano
-        </button>
       </div>
 
       {/* Macros */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="bg-lime-500/20 p-3 text-center">
-          <div className="text-2xl font-bold text-lime-700">{nutritionPlan.dailyCalories}</div>
+          <div className="text-2xl font-bold text-lime-700">{plan.daily_calories}</div>
           <div className="text-xs text-lime-700">kcal/dia</div>
         </div>
         <div className="bg-zinc-100 p-3 text-center">
-          <div className="text-2xl font-bold">{nutritionPlan.protein}g</div>
+          <div className="text-2xl font-bold">{plan.protein_grams}g</div>
           <div className="text-xs text-zinc-600">Proteína</div>
         </div>
         <div className="bg-zinc-100 p-3 text-center">
-          <div className="text-2xl font-bold">{nutritionPlan.carbs}g</div>
+          <div className="text-2xl font-bold">{plan.carbs_grams}g</div>
           <div className="text-xs text-zinc-600">Carboidrato</div>
         </div>
         <div className="bg-zinc-100 p-3 text-center">
-          <div className="text-2xl font-bold">{nutritionPlan.fat}g</div>
+          <div className="text-2xl font-bold">{plan.fat_grams}g</div>
           <div className="text-xs text-zinc-600">Gordura</div>
         </div>
       </div>
@@ -745,24 +822,46 @@ function NutritionTab({ patient }: { patient: Patient }) {
       {/* Meals */}
       <div className="space-y-4">
         <h3 className="text-xl font-bold">Refeições</h3>
-        {nutritionPlan.meals.map((meal, idx) => (
-          <div key={idx} className="flex items-start gap-4 p-4 border border-zinc-200 hover:border-lime-500 transition-colors">
-            <div className="text-center min-w-[60px]">
-              <div className="text-lg font-bold">{meal.time}</div>
-            </div>
-            <div className="flex-1">
-              <div className="font-bold mb-1">{meal.name}</div>
-              <div className="text-zinc-600">{meal.description}</div>
-            </div>
-            <button className="text-zinc-400 hover:text-black transition-colors">
-              <Edit className="w-4 h-4" />
-            </button>
-          </div>
-        ))}
-        <button className="w-full py-3 border-2 border-dashed border-zinc-300 text-zinc-500 hover:border-lime-500 hover:text-lime-600 transition-colors flex items-center justify-center gap-2">
-          <Plus className="w-5 h-5" />
-          Adicionar Refeição
-        </button>
+        {plan.meals && plan.meals.length > 0 ? (
+          plan.meals.map((meal) => {
+            const optionGroups = getOptionGroups(meal.foods);
+            const availableOptions = Object.keys(optionGroups).map(Number).sort((a, b) => a - b);
+            
+            return (
+              <div key={meal.id} className="p-4 border border-zinc-200 hover:border-lime-500 transition-colors">
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="text-center min-w-[60px]">
+                    <div className="text-lg font-bold">{meal.time?.substring(0, 5) || '--:--'}</div>
+                  </div>
+                  <div className="font-bold text-lg">{meal.name}</div>
+                </div>
+                
+                {availableOptions.map(optNum => {
+                  const foods = optionGroups[optNum] || [];
+                  if (foods.length === 0) return null;
+                  
+                  return (
+                    <div key={optNum} className={`ml-[76px] mb-3 pl-3 border-l-2 ${optNum === 0 ? 'border-lime-500' : 'border-orange-400'}`}>
+                      <div className={`text-xs font-bold mb-1 ${optNum === 0 ? 'text-lime-600' : 'text-orange-500'}`}>
+                        {optNum === 0 ? '🍽️ PRINCIPAL' : `🔄 SUBSTITUIÇÃO ${optNum}`}
+                      </div>
+                      <div className="text-sm text-zinc-600">
+                        {foods.map((food, idx) => (
+                          <span key={food.id}>
+                            {food.name} ({food.quantity} {food.unit})
+                            {idx < foods.length - 1 ? ', ' : ''}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })
+        ) : (
+          <p className="text-zinc-500 text-center py-4">Nenhuma refeição cadastrada.</p>
+        )}
       </div>
     </div>
   );
