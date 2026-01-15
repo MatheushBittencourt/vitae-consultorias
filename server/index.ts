@@ -27,7 +27,7 @@ const dbConfig = {
   port: parseInt(process.env.MYSQL_PORT || '3306'),
   user: process.env.MYSQL_USER || 'app_user',
   password: process.env.MYSQL_PASSWORD || 'app_password',
-  database: process.env.MYSQL_DATABASE || 'consultoria_edu',
+  database: process.env.MYSQL_DATABASE || 'vitae_db',
   waitForConnections: true,
   connectionLimit: IS_PRODUCTION ? 20 : 10,
   queueLimit: 0,
