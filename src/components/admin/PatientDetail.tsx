@@ -700,6 +700,7 @@ interface NutritionPlan {
   protein_grams: number;
   carbs_grams: number;
   fat_grams: number;
+  status?: string;
   meals?: NutritionMeal[];
 }
 

@@ -43,7 +43,7 @@ export function Dashboard({ onLogout, patient }: DashboardProps) {
       case 'progress':
         return <ProgressSection athleteId={patient.athleteId} />;
       default:
-        return <DashboardOverview onNavigate={setCurrentView} patientName={patient.name} />;
+        return <DashboardOverview onNavigate={setCurrentView} patientName={patient.name} athleteId={patient.athleteId} activeModules={patient.activeModules || []} />;
     }
   };
 

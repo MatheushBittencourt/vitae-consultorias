@@ -99,7 +99,7 @@ export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
     }
     setCheckingEmail(true);
     try {
-      const response = await api.get(`/signup/check-email/${email.toLowerCase()}`);
+      const response = await api.get<{ available: boolean }>(`/signup/check-email/${email.toLowerCase()}`);
       setEmailAvailable(response.data.available);
     } catch {
       setEmailAvailable(null);
@@ -259,7 +259,16 @@ export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
       // Gerar slug automaticamente
       const slug = generateSlug(formData.consultancyName) + '-' + Date.now().toString(36);
 
-      const response = await api.post('/signup/consultancy', {
+      interface SignupResponse {
+        success: boolean;
+        data: {
+          consultancyName: string;
+          adminEmail: string;
+          payment?: { id: string };
+        };
+      }
+      
+      const response = await api.post<SignupResponse>('/signup/consultancy', {
         consultancyName: formData.consultancyName,
         consultancySlug: slug,
         adminName: formData.adminName,
