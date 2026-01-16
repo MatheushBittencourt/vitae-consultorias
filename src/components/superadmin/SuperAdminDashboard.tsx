@@ -31,7 +31,8 @@ import {
   User,
   Lock,
   Save,
-  Shield
+  Shield,
+  Menu
 } from 'lucide-react';
 import { SuperAdminUser } from './SuperAdminLoginPage';
 
@@ -149,6 +150,7 @@ export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps
   const [selectedConsultancy, setSelectedConsultancy] = useState<ConsultancyDetails | null>(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   
   // Settings state
   const [settingsTab, setSettingsTab] = useState<'profile' | 'security'>('profile');
@@ -396,81 +398,81 @@ export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps
     if (!selectedConsultancy) return null;
 
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 lg:space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 lg:gap-4">
           <button
             onClick={() => {
               setCurrentView('consultancies');
               setSelectedConsultancy(null);
             }}
-            className="p-2 hover:bg-zinc-100 transition-colors"
+            className="self-start p-2 hover:bg-zinc-100 transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex-1">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-black text-lime-500 flex items-center justify-center font-bold text-xl">
+              <div className="w-10 lg:w-12 h-10 lg:h-12 bg-black text-lime-500 flex items-center justify-center font-bold text-lg lg:text-xl flex-shrink-0">
                 {selectedConsultancy.name.charAt(0)}
               </div>
-              <div>
-                <h1 className="text-2xl font-bold">{selectedConsultancy.name}</h1>
-                <p className="text-zinc-500">{selectedConsultancy.email}</p>
+              <div className="min-w-0">
+                <h1 className="text-xl lg:text-2xl font-bold truncate">{selectedConsultancy.name}</h1>
+                <p className="text-sm lg:text-base text-zinc-500 truncate">{selectedConsultancy.email}</p>
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mt-2 sm:mt-0">
             {getStatusBadge(selectedConsultancy.status)}
             {getPlanBadge(selectedConsultancy.plan)}
           </div>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-white p-4 border-l-4 border-lime-500">
-            <div className="flex items-center gap-3">
-              <Users className="w-6 h-6 text-lime-500" />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+          <div className="bg-white p-3 lg:p-4 border-l-4 border-lime-500">
+            <div className="flex items-center gap-2 lg:gap-3">
+              <Users className="w-5 lg:w-6 h-5 lg:h-6 text-lime-500 flex-shrink-0" />
               <div>
-                <p className="text-2xl font-bold">{selectedConsultancy.stats.patientsCount}</p>
-                <p className="text-xs text-zinc-500 tracking-wider">PACIENTES</p>
+                <p className="text-xl lg:text-2xl font-bold">{selectedConsultancy.stats.patientsCount}</p>
+                <p className="text-[10px] lg:text-xs text-zinc-500 tracking-wider">PACIENTES</p>
               </div>
             </div>
           </div>
-          <div className="bg-white p-4 border-l-4 border-blue-500">
-            <div className="flex items-center gap-3">
-              <UserCheck className="w-6 h-6 text-blue-500" />
+          <div className="bg-white p-3 lg:p-4 border-l-4 border-blue-500">
+            <div className="flex items-center gap-2 lg:gap-3">
+              <UserCheck className="w-5 lg:w-6 h-5 lg:h-6 text-blue-500 flex-shrink-0" />
               <div>
-                <p className="text-2xl font-bold">{selectedConsultancy.stats.professionalsCount}</p>
-                <p className="text-xs text-zinc-500 tracking-wider">PROFISSIONAIS</p>
+                <p className="text-xl lg:text-2xl font-bold">{selectedConsultancy.stats.professionalsCount}</p>
+                <p className="text-[10px] lg:text-xs text-zinc-500 tracking-wider">PROFISSIONAIS</p>
               </div>
             </div>
           </div>
-          <div className="bg-white p-4 border-l-4 border-orange-500">
-            <div className="flex items-center gap-3">
-              <Dumbbell className="w-6 h-6 text-orange-500" />
+          <div className="bg-white p-3 lg:p-4 border-l-4 border-orange-500">
+            <div className="flex items-center gap-2 lg:gap-3">
+              <Dumbbell className="w-5 lg:w-6 h-5 lg:h-6 text-orange-500 flex-shrink-0" />
               <div>
-                <p className="text-2xl font-bold">{selectedConsultancy.stats.trainingPlans}</p>
-                <p className="text-xs text-zinc-500 tracking-wider">PLANOS TREINO</p>
+                <p className="text-xl lg:text-2xl font-bold">{selectedConsultancy.stats.trainingPlans}</p>
+                <p className="text-[10px] lg:text-xs text-zinc-500 tracking-wider">PLANOS TREINO</p>
               </div>
             </div>
           </div>
-          <div className="bg-white p-4 border-l-4 border-green-500">
-            <div className="flex items-center gap-3">
-              <Apple className="w-6 h-6 text-green-500" />
+          <div className="bg-white p-3 lg:p-4 border-l-4 border-green-500">
+            <div className="flex items-center gap-2 lg:gap-3">
+              <Apple className="w-5 lg:w-6 h-5 lg:h-6 text-green-500 flex-shrink-0" />
               <div>
-                <p className="text-2xl font-bold">{selectedConsultancy.stats.nutritionPlans}</p>
-                <p className="text-xs text-zinc-500 tracking-wider">PLANOS NUTRIÇÃO</p>
+                <p className="text-xl lg:text-2xl font-bold">{selectedConsultancy.stats.nutritionPlans}</p>
+                <p className="text-[10px] lg:text-xs text-zinc-500 tracking-wider">PLANOS NUTRIÇÃO</p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Info Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
           {/* Informações Gerais */}
-          <div className="bg-white p-6">
-            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-              <Building2 className="w-5 h-5 text-lime-500" />
+          <div className="bg-white p-4 lg:p-6">
+            <h3 className="text-base lg:text-lg font-bold mb-3 lg:mb-4 flex items-center gap-2">
+              <Building2 className="w-4 lg:w-5 h-4 lg:h-5 text-lime-500" />
               Informações Gerais
             </h3>
             <div className="space-y-3">
@@ -532,9 +534,9 @@ export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps
           </div>
 
           {/* Atividade Recente */}
-          <div className="bg-white p-6">
-            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-              <Activity className="w-5 h-5 text-lime-500" />
+          <div className="bg-white p-4 lg:p-6">
+            <h3 className="text-base lg:text-lg font-bold mb-3 lg:mb-4 flex items-center gap-2">
+              <Activity className="w-4 lg:w-5 h-4 lg:h-5 text-lime-500" />
               Atividade Recente
             </h3>
             <div className="space-y-3">
@@ -559,29 +561,29 @@ export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps
         </div>
 
         {/* Profissionais e Pacientes */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
           {/* Profissionais */}
-          <div className="bg-white p-6">
-            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-              <UserCheck className="w-5 h-5 text-blue-500" />
+          <div className="bg-white p-4 lg:p-6">
+            <h3 className="text-base lg:text-lg font-bold mb-3 lg:mb-4 flex items-center gap-2">
+              <UserCheck className="w-4 lg:w-5 h-4 lg:h-5 text-blue-500" />
               Profissionais ({selectedConsultancy.professionals.length})
             </h3>
-            <div className="space-y-2 max-h-80 overflow-y-auto">
+            <div className="space-y-2 max-h-60 lg:max-h-80 overflow-y-auto">
               {selectedConsultancy.professionals.length === 0 ? (
-                <p className="text-zinc-400 text-center py-4">Nenhum profissional cadastrado</p>
+                <p className="text-zinc-400 text-center py-4 text-sm">Nenhum profissional cadastrado</p>
               ) : (
                 selectedConsultancy.professionals.map((prof) => (
-                  <div key={prof.id} className="flex items-center gap-3 p-3 border border-zinc-100 hover:border-zinc-200">
-                    <div className="w-10 h-10 bg-zinc-100 rounded-full flex items-center justify-center font-bold">
+                  <div key={prof.id} className="flex items-center gap-2 lg:gap-3 p-2 lg:p-3 border border-zinc-100 hover:border-zinc-200">
+                    <div className="w-8 lg:w-10 h-8 lg:h-10 bg-zinc-100 rounded-full flex items-center justify-center font-bold text-sm lg:text-base flex-shrink-0">
                       {prof.name.charAt(0)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{prof.name}</p>
-                      <p className="text-xs text-zinc-500 flex items-center gap-1">
-                        <Mail className="w-3 h-3" /> {prof.email}
+                      <p className="font-medium truncate text-sm lg:text-base">{prof.name}</p>
+                      <p className="text-[10px] lg:text-xs text-zinc-500 flex items-center gap-1 truncate">
+                        <Mail className="w-3 h-3 flex-shrink-0" /> {prof.email}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 lg:gap-2 flex-shrink-0">
                       {getRoleBadge(prof.role)}
                       {prof.is_active ? (
                         <span className="w-2 h-2 bg-lime-500 rounded-full" title="Ativo" />
@@ -596,27 +598,27 @@ export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps
           </div>
 
           {/* Pacientes */}
-          <div className="bg-white p-6">
-            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-              <Users className="w-5 h-5 text-lime-500" />
+          <div className="bg-white p-4 lg:p-6">
+            <h3 className="text-base lg:text-lg font-bold mb-3 lg:mb-4 flex items-center gap-2">
+              <Users className="w-4 lg:w-5 h-4 lg:h-5 text-lime-500" />
               Pacientes ({selectedConsultancy.patients.length})
             </h3>
-            <div className="space-y-2 max-h-80 overflow-y-auto">
+            <div className="space-y-2 max-h-60 lg:max-h-80 overflow-y-auto">
               {selectedConsultancy.patients.length === 0 ? (
-                <p className="text-zinc-400 text-center py-4">Nenhum paciente cadastrado</p>
+                <p className="text-zinc-400 text-center py-4 text-sm">Nenhum paciente cadastrado</p>
               ) : (
                 selectedConsultancy.patients.map((patient) => (
-                  <div key={patient.id} className="flex items-center gap-3 p-3 border border-zinc-100 hover:border-zinc-200">
-                    <div className="w-10 h-10 bg-lime-100 rounded-full flex items-center justify-center font-bold text-lime-700">
+                  <div key={patient.id} className="flex items-center gap-2 lg:gap-3 p-2 lg:p-3 border border-zinc-100 hover:border-zinc-200">
+                    <div className="w-8 lg:w-10 h-8 lg:h-10 bg-lime-100 rounded-full flex items-center justify-center font-bold text-lime-700 text-sm lg:text-base flex-shrink-0">
                       {patient.name.charAt(0)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{patient.name}</p>
-                      <p className="text-xs text-zinc-500 flex items-center gap-1">
-                        <Mail className="w-3 h-3" /> {patient.email}
+                      <p className="font-medium truncate text-sm lg:text-base">{patient.name}</p>
+                      <p className="text-[10px] lg:text-xs text-zinc-500 flex items-center gap-1 truncate">
+                        <Mail className="w-3 h-3 flex-shrink-0" /> {patient.email}
                       </p>
                     </div>
-                    <div className="text-right text-xs text-zinc-500">
+                    <div className="text-right text-[10px] lg:text-xs text-zinc-500 flex-shrink-0">
                       <p>{patient.sport || '-'}</p>
                       <p>{patient.club || '-'}</p>
                     </div>
@@ -628,7 +630,7 @@ export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps
         </div>
 
         {/* Actions */}
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-3">
           <button
             onClick={() => {
               const c = selectedConsultancy;
@@ -638,7 +640,7 @@ export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps
                 patients_count: c.stats.patientsCount
               });
             }}
-            className="flex items-center gap-2 px-4 py-2 bg-lime-500 text-black font-bold hover:bg-lime-400 transition-colors"
+            className="flex items-center justify-center gap-2 px-4 py-2 lg:py-3 bg-lime-500 text-black font-bold hover:bg-lime-400 transition-colors text-sm lg:text-base"
           >
             <Edit className="w-4 h-4" />
             EDITAR CONSULTORIA
@@ -648,7 +650,7 @@ export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps
               setDeletingId(selectedConsultancy.id);
               setShowDeleteConfirm(true);
             }}
-            className="flex items-center gap-2 px-4 py-2 border-2 border-red-500 text-red-500 font-bold hover:bg-red-500 hover:text-white transition-colors"
+            className="flex items-center justify-center gap-2 px-4 py-2 lg:py-3 border-2 border-red-500 text-red-500 font-bold hover:bg-red-500 hover:text-white transition-colors text-sm lg:text-base"
           >
             <Trash2 className="w-4 h-4" />
             EXCLUIR
@@ -665,12 +667,12 @@ export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps
 
     if (currentView === 'overview') {
       return (
-        <div className="space-y-8">
+        <div className="space-y-6 lg:space-y-8">
           <div>
-            <h1 className="text-4xl font-bold tracking-tighter mb-2">
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tighter mb-2">
               Olá, <span className="text-lime-500">{user.name.split(' ')[0]}</span>
             </h1>
-            <p className="text-zinc-600">
+            <p className="text-sm md:text-base text-zinc-600">
               Aqui está o resumo completo do seu SaaS.
             </p>
           </div>
@@ -678,84 +680,84 @@ export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps
           {stats && (
             <>
               {/* Main Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="bg-white p-6 border-l-4 border-lime-500">
-                  <div className="flex items-center gap-4">
-                    <Building2 className="w-8 h-8 text-lime-500" />
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
+                <div className="bg-white p-4 lg:p-6 border-l-4 border-lime-500">
+                  <div className="flex items-center gap-2 lg:gap-4">
+                    <Building2 className="w-6 lg:w-8 h-6 lg:h-8 text-lime-500 flex-shrink-0" />
                     <div>
-                      <p className="text-3xl font-bold">{stats.totalConsultancies}</p>
-                      <p className="text-sm text-zinc-500 tracking-wider">CONSULTORIAS</p>
+                      <p className="text-xl lg:text-3xl font-bold">{stats.totalConsultancies}</p>
+                      <p className="text-xs lg:text-sm text-zinc-500 tracking-wider">CONSULTORIAS</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-white p-6 border-l-4 border-green-500">
-                  <div className="flex items-center gap-4">
-                    <TrendingUp className="w-8 h-8 text-green-500" />
+                <div className="bg-white p-4 lg:p-6 border-l-4 border-green-500">
+                  <div className="flex items-center gap-2 lg:gap-4">
+                    <TrendingUp className="w-6 lg:w-8 h-6 lg:h-8 text-green-500 flex-shrink-0" />
                     <div>
-                      <p className="text-3xl font-bold">{stats.activeConsultancies}</p>
-                      <p className="text-sm text-zinc-500 tracking-wider">ATIVAS</p>
+                      <p className="text-xl lg:text-3xl font-bold">{stats.activeConsultancies}</p>
+                      <p className="text-xs lg:text-sm text-zinc-500 tracking-wider">ATIVAS</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-white p-6 border-l-4 border-emerald-500">
-                  <div className="flex items-center gap-4">
-                    <DollarSign className="w-8 h-8 text-emerald-500" />
+                <div className="bg-white p-4 lg:p-6 border-l-4 border-emerald-500">
+                  <div className="flex items-center gap-2 lg:gap-4">
+                    <DollarSign className="w-6 lg:w-8 h-6 lg:h-8 text-emerald-500 flex-shrink-0" />
                     <div>
-                      <p className="text-3xl font-bold">
+                      <p className="text-lg lg:text-3xl font-bold">
                         {formatCurrency(stats.monthlyRevenue)}
                       </p>
-                      <p className="text-sm text-zinc-500 tracking-wider">MRR</p>
+                      <p className="text-xs lg:text-sm text-zinc-500 tracking-wider">MRR</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-white p-6 border-l-4 border-blue-500">
-                  <div className="flex items-center gap-4">
-                    <Users className="w-8 h-8 text-blue-500" />
+                <div className="bg-white p-4 lg:p-6 border-l-4 border-blue-500">
+                  <div className="flex items-center gap-2 lg:gap-4">
+                    <Users className="w-6 lg:w-8 h-6 lg:h-8 text-blue-500 flex-shrink-0" />
                     <div>
-                      <p className="text-3xl font-bold">{stats.totalPatients}</p>
-                      <p className="text-sm text-zinc-500 tracking-wider">PACIENTES</p>
+                      <p className="text-xl lg:text-3xl font-bold">{stats.totalPatients}</p>
+                      <p className="text-xs lg:text-sm text-zinc-500 tracking-wider">PACIENTES</p>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Secondary Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-white p-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+                <div className="bg-white p-3 lg:p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-zinc-500">Trial</span>
-                    <span className="text-xl font-bold text-yellow-600">{stats.trialConsultancies}</span>
+                    <span className="text-xs lg:text-base text-zinc-500">Trial</span>
+                    <span className="text-lg lg:text-xl font-bold text-yellow-600">{stats.trialConsultancies}</span>
                   </div>
                 </div>
-                <div className="bg-white p-4">
+                <div className="bg-white p-3 lg:p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-zinc-500">Suspensas</span>
-                    <span className="text-xl font-bold text-red-600">{stats.suspendedConsultancies}</span>
+                    <span className="text-xs lg:text-base text-zinc-500">Suspensas</span>
+                    <span className="text-lg lg:text-xl font-bold text-red-600">{stats.suspendedConsultancies}</span>
                   </div>
                 </div>
-                <div className="bg-white p-4">
+                <div className="bg-white p-3 lg:p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-zinc-500">Profissionais</span>
-                    <span className="text-xl font-bold">{stats.totalProfessionals}</span>
+                    <span className="text-xs lg:text-base text-zinc-500">Profissionais</span>
+                    <span className="text-lg lg:text-xl font-bold">{stats.totalProfessionals}</span>
                   </div>
                 </div>
-                <div className="bg-white p-4">
+                <div className="bg-white p-3 lg:p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-zinc-500">Canceladas</span>
-                    <span className="text-xl font-bold text-zinc-500">{stats.cancelledConsultancies}</span>
+                    <span className="text-xs lg:text-base text-zinc-500">Canceladas</span>
+                    <span className="text-lg lg:text-xl font-bold text-zinc-500">{stats.cancelledConsultancies}</span>
                   </div>
                 </div>
               </div>
 
               {/* Charts Row */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
                 {/* Módulos */}
-                <div className="bg-white p-6">
-                  <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                    <PieChart className="w-5 h-5 text-lime-500" />
+                <div className="bg-white p-4 lg:p-6">
+                  <h3 className="text-base lg:text-lg font-bold mb-3 lg:mb-4 flex items-center gap-2">
+                    <PieChart className="w-4 lg:w-5 h-4 lg:h-5 text-lime-500" />
                     Módulos Contratados
                   </h3>
                   <div className="space-y-4">
@@ -819,12 +821,12 @@ export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps
                 </div>
 
                 {/* Crescimento Mensal */}
-                <div className="bg-white p-6">
-                  <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                    <BarChart3 className="w-5 h-5 text-lime-500" />
+                <div className="bg-white p-4 lg:p-6">
+                  <h3 className="text-base lg:text-lg font-bold mb-3 lg:mb-4 flex items-center gap-2">
+                    <BarChart3 className="w-4 lg:w-5 h-4 lg:h-5 text-lime-500" />
                     Crescimento (últimos 6 meses)
                   </h3>
-                  <div className="flex items-end gap-2 h-40">
+                  <div className="flex items-end gap-1 lg:gap-2 h-32 lg:h-40">
                     {stats.monthlyGrowth.length === 0 ? (
                       <p className="text-zinc-400 text-center w-full">Sem dados suficientes</p>
                     ) : (
@@ -848,12 +850,12 @@ export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps
               </div>
 
               {/* Top Consultancies & Recent */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
                 {/* Top Consultorias */}
-                <div className="bg-white p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-lg font-bold flex items-center gap-2">
-                      <TrendingUp className="w-5 h-5 text-lime-500" />
+                <div className="bg-white p-4 lg:p-6">
+                  <div className="flex items-center justify-between mb-4 lg:mb-6">
+                    <h2 className="text-base lg:text-lg font-bold flex items-center gap-2">
+                      <TrendingUp className="w-4 lg:w-5 h-4 lg:h-5 text-lime-500" />
                       Top Consultorias
                     </h2>
                   </div>
@@ -876,10 +878,10 @@ export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps
                 </div>
 
                 {/* Consultorias Recentes */}
-                <div className="bg-white p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-lg font-bold flex items-center gap-2">
-                      <Clock className="w-5 h-5 text-lime-500" />
+                <div className="bg-white p-4 lg:p-6">
+                  <div className="flex items-center justify-between mb-4 lg:mb-6">
+                    <h2 className="text-base lg:text-lg font-bold flex items-center gap-2">
+                      <Clock className="w-4 lg:w-5 h-4 lg:h-5 text-lime-500" />
                       Recentes
                     </h2>
                     <button
@@ -916,16 +918,16 @@ export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps
               </div>
 
               {/* Plan Distribution */}
-              <div className="bg-white p-6">
-                <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                  <PieChart className="w-5 h-5 text-lime-500" />
+              <div className="bg-white p-4 lg:p-6">
+                <h3 className="text-base lg:text-lg font-bold mb-3 lg:mb-4 flex items-center gap-2">
+                  <PieChart className="w-4 lg:w-5 h-4 lg:h-5 text-lime-500" />
                   Distribuição por Plano
                 </h3>
-                <div className="flex items-center gap-8">
+                <div className="flex flex-wrap items-center gap-4 lg:gap-8">
                   {stats.planDistribution.map((item) => (
-                    <div key={item.plan} className="flex items-center gap-3">
+                    <div key={item.plan} className="flex items-center gap-2 lg:gap-3">
                       {getPlanBadge(item.plan as Consultancy['plan'])}
-                      <span className="text-2xl font-bold">{item.count}</span>
+                      <span className="text-xl lg:text-2xl font-bold">{item.count}</span>
                     </div>
                   ))}
                 </div>
@@ -938,14 +940,14 @@ export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps
 
     if (currentView === 'consultancies') {
       return (
-        <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <h1 className="text-3xl font-bold tracking-tighter">Consultorias</h1>
-            <div className="flex items-center gap-3">
+        <div className="space-y-4 lg:space-y-6">
+          <div className="flex flex-col gap-4">
+            <h1 className="text-2xl lg:text-3xl font-bold tracking-tighter">Consultorias</h1>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2 border-2 border-zinc-200 focus:border-lime-500 outline-none"
+                className="px-3 py-2 border-2 border-zinc-200 focus:border-lime-500 outline-none text-sm lg:text-base"
               >
                 <option value="all">Todos</option>
                 <option value="active">Ativas</option>
@@ -953,22 +955,23 @@ export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps
                 <option value="suspended">Suspensas</option>
                 <option value="cancelled">Canceladas</option>
               </select>
-              <div className="relative">
+              <div className="relative flex-1 sm:flex-initial">
                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
                 <input
                   type="text"
                   placeholder="Buscar..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2 border-2 border-zinc-200 focus:border-lime-500 outline-none"
+                  className="w-full sm:w-auto pl-10 pr-4 py-2 border-2 border-zinc-200 focus:border-lime-500 outline-none text-sm lg:text-base"
                 />
               </div>
               <button
                 onClick={openAddModal}
-                className="flex items-center gap-2 px-4 py-2 bg-lime-500 text-black font-bold hover:bg-lime-400 transition-colors"
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-lime-500 text-black font-bold hover:bg-lime-400 transition-colors text-sm lg:text-base"
               >
                 <Plus className="w-4 h-4" />
-                NOVA
+                <span className="hidden sm:inline">NOVA</span>
+                <span className="sm:hidden">NOVA CONSULTORIA</span>
               </button>
             </div>
           </div>
@@ -982,107 +985,199 @@ export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps
               Nenhuma consultoria encontrada
             </div>
           ) : (
-            <div className="bg-white overflow-hidden">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b-2 border-black">
-                    <th className="text-left p-4 text-sm font-bold tracking-wider">CONSULTORIA</th>
-                    <th className="text-left p-4 text-sm font-bold tracking-wider">PLANO</th>
-                    <th className="text-left p-4 text-sm font-bold tracking-wider">MÓDULOS</th>
-                    <th className="text-left p-4 text-sm font-bold tracking-wider">USUÁRIOS</th>
-                    <th className="text-left p-4 text-sm font-bold tracking-wider">STATUS</th>
-                    <th className="text-left p-4 text-sm font-bold tracking-wider">VALOR</th>
-                    <th className="text-right p-4 text-sm font-bold tracking-wider">AÇÕES</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredConsultancies.map((consultancy) => (
-                    <tr key={consultancy.id} className="border-b border-zinc-100 hover:bg-zinc-50">
-                      <td className="p-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-black text-lime-500 flex items-center justify-center font-bold">
-                            {consultancy.name.charAt(0)}
-                          </div>
-                          <div>
-                            <p className="font-bold">{consultancy.name}</p>
-                            <p className="text-sm text-zinc-500">{consultancy.email}</p>
-                          </div>
+            <>
+              {/* Mobile: Cards */}
+              <div className="lg:hidden space-y-3">
+                {filteredConsultancies.map((consultancy) => (
+                  <div key={consultancy.id} className="bg-white p-4">
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-black text-lime-500 flex items-center justify-center font-bold flex-shrink-0">
+                          {consultancy.name.charAt(0)}
                         </div>
-                      </td>
-                      <td className="p-4">
+                        <div className="min-w-0">
+                          <p className="font-bold truncate">{consultancy.name}</p>
+                          <p className="text-xs text-zinc-500 truncate">{consultancy.email}</p>
+                        </div>
+                      </div>
+                      {getStatusBadge(consultancy.status)}
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-zinc-500">Plano:</span>
                         {getPlanBadge(consultancy.plan)}
-                      </td>
-                      <td className="p-4">
-                        <div className="flex items-center gap-1">
-                          {consultancy.has_training && (
-                            <span title="Treino" className="w-7 h-7 bg-orange-100 flex items-center justify-center">
-                              <Dumbbell className="w-4 h-4 text-orange-600" />
-                            </span>
-                          )}
-                          {consultancy.has_nutrition && (
-                            <span title="Nutrição" className="w-7 h-7 bg-green-100 flex items-center justify-center">
-                              <Apple className="w-4 h-4 text-green-600" />
-                            </span>
-                          )}
-                          {consultancy.has_medical && (
-                            <span title="Médico" className="w-7 h-7 bg-blue-100 flex items-center justify-center">
-                              <Stethoscope className="w-4 h-4 text-blue-600" />
-                            </span>
-                          )}
-                          {consultancy.has_rehab && (
-                            <span title="Reabilitação" className="w-7 h-7 bg-pink-100 flex items-center justify-center">
-                              <HeartPulse className="w-4 h-4 text-pink-600" />
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        <div className="text-sm">
-                          <p className="font-bold">{consultancy.professionals_count || 0} prof.</p>
-                          <p className="text-zinc-500">{consultancy.patients_count || 0} pac.</p>
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        {getStatusBadge(consultancy.status)}
-                      </td>
-                      <td className="p-4">
-                        <p className="font-bold">{formatCurrency(consultancy.price_monthly)}</p>
-                        <p className="text-xs text-zinc-500">/mês</p>
-                      </td>
-                      <td className="p-4">
-                        <div className="flex items-center justify-end gap-1">
-                          <button
-                            onClick={() => loadConsultancyDetails(consultancy.id)}
-                            className="p-2 text-zinc-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                            title="Ver detalhes"
-                            disabled={loadingDetails}
-                          >
-                            {loadingDetails ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
-                          </button>
-                          <button
-                            onClick={() => openEditModal(consultancy)}
-                            className="p-2 text-zinc-400 hover:text-lime-600 hover:bg-lime-50 transition-colors"
-                            title="Editar"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              setDeletingId(consultancy.id);
-                              setShowDeleteConfirm(true);
-                            }}
-                            className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                            title="Excluir"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
+                      </div>
+                      <div>
+                        <span className="text-zinc-500">Valor: </span>
+                        <span className="font-bold">{formatCurrency(consultancy.price_monthly)}/mês</span>
+                      </div>
+                      <div>
+                        <span className="text-zinc-500">Prof: </span>
+                        <span className="font-bold">{consultancy.professionals_count || 0}</span>
+                      </div>
+                      <div>
+                        <span className="text-zinc-500">Pac: </span>
+                        <span className="font-bold">{consultancy.patients_count || 0}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-1 mb-3">
+                      {consultancy.has_training && (
+                        <span title="Treino" className="w-6 h-6 bg-orange-100 flex items-center justify-center">
+                          <Dumbbell className="w-3 h-3 text-orange-600" />
+                        </span>
+                      )}
+                      {consultancy.has_nutrition && (
+                        <span title="Nutrição" className="w-6 h-6 bg-green-100 flex items-center justify-center">
+                          <Apple className="w-3 h-3 text-green-600" />
+                        </span>
+                      )}
+                      {consultancy.has_medical && (
+                        <span title="Médico" className="w-6 h-6 bg-blue-100 flex items-center justify-center">
+                          <Stethoscope className="w-3 h-3 text-blue-600" />
+                        </span>
+                      )}
+                      {consultancy.has_rehab && (
+                        <span title="Reabilitação" className="w-6 h-6 bg-pink-100 flex items-center justify-center">
+                          <HeartPulse className="w-3 h-3 text-pink-600" />
+                        </span>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center justify-end gap-2 pt-3 border-t border-zinc-100">
+                      <button
+                        onClick={() => loadConsultancyDetails(consultancy.id)}
+                        className="flex items-center gap-1 px-3 py-2 text-sm bg-zinc-100 hover:bg-zinc-200 transition-colors"
+                        disabled={loadingDetails}
+                      >
+                        {loadingDetails ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
+                        Ver
+                      </button>
+                      <button
+                        onClick={() => openEditModal(consultancy)}
+                        className="flex items-center gap-1 px-3 py-2 text-sm bg-zinc-100 hover:bg-zinc-200 transition-colors"
+                      >
+                        <Edit className="w-4 h-4" />
+                        Editar
+                      </button>
+                      <button
+                        onClick={() => {
+                          setDeletingId(consultancy.id);
+                          setShowDeleteConfirm(true);
+                        }}
+                        className="flex items-center gap-1 px-3 py-2 text-sm bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop: Table */}
+              <div className="hidden lg:block bg-white overflow-hidden">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b-2 border-black">
+                      <th className="text-left p-4 text-sm font-bold tracking-wider">CONSULTORIA</th>
+                      <th className="text-left p-4 text-sm font-bold tracking-wider">PLANO</th>
+                      <th className="text-left p-4 text-sm font-bold tracking-wider">MÓDULOS</th>
+                      <th className="text-left p-4 text-sm font-bold tracking-wider">USUÁRIOS</th>
+                      <th className="text-left p-4 text-sm font-bold tracking-wider">STATUS</th>
+                      <th className="text-left p-4 text-sm font-bold tracking-wider">VALOR</th>
+                      <th className="text-right p-4 text-sm font-bold tracking-wider">AÇÕES</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {filteredConsultancies.map((consultancy) => (
+                      <tr key={consultancy.id} className="border-b border-zinc-100 hover:bg-zinc-50">
+                        <td className="p-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-black text-lime-500 flex items-center justify-center font-bold">
+                              {consultancy.name.charAt(0)}
+                            </div>
+                            <div>
+                              <p className="font-bold">{consultancy.name}</p>
+                              <p className="text-sm text-zinc-500">{consultancy.email}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          {getPlanBadge(consultancy.plan)}
+                        </td>
+                        <td className="p-4">
+                          <div className="flex items-center gap-1">
+                            {consultancy.has_training && (
+                              <span title="Treino" className="w-7 h-7 bg-orange-100 flex items-center justify-center">
+                                <Dumbbell className="w-4 h-4 text-orange-600" />
+                              </span>
+                            )}
+                            {consultancy.has_nutrition && (
+                              <span title="Nutrição" className="w-7 h-7 bg-green-100 flex items-center justify-center">
+                                <Apple className="w-4 h-4 text-green-600" />
+                              </span>
+                            )}
+                            {consultancy.has_medical && (
+                              <span title="Médico" className="w-7 h-7 bg-blue-100 flex items-center justify-center">
+                                <Stethoscope className="w-4 h-4 text-blue-600" />
+                              </span>
+                            )}
+                            {consultancy.has_rehab && (
+                              <span title="Reabilitação" className="w-7 h-7 bg-pink-100 flex items-center justify-center">
+                                <HeartPulse className="w-4 h-4 text-pink-600" />
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <div className="text-sm">
+                            <p className="font-bold">{consultancy.professionals_count || 0} prof.</p>
+                            <p className="text-zinc-500">{consultancy.patients_count || 0} pac.</p>
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          {getStatusBadge(consultancy.status)}
+                        </td>
+                        <td className="p-4">
+                          <p className="font-bold">{formatCurrency(consultancy.price_monthly)}</p>
+                          <p className="text-xs text-zinc-500">/mês</p>
+                        </td>
+                        <td className="p-4">
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => loadConsultancyDetails(consultancy.id)}
+                              className="p-2 text-zinc-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                              title="Ver detalhes"
+                              disabled={loadingDetails}
+                            >
+                              {loadingDetails ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                            <button
+                              onClick={() => openEditModal(consultancy)}
+                              className="p-2 text-zinc-400 hover:text-lime-600 hover:bg-lime-50 transition-colors"
+                              title="Editar"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                setDeletingId(consultancy.id);
+                                setShowDeleteConfirm(true);
+                              }}
+                              className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                              title="Excluir"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
       );
@@ -1154,33 +1249,33 @@ export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps
     };
 
     return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold tracking-tighter">Configurações</h1>
+      <div className="space-y-4 lg:space-y-6">
+        <h1 className="text-2xl lg:text-3xl font-bold tracking-tighter">Configurações</h1>
         
         {/* Tabs */}
-        <div className="flex gap-4 border-b border-zinc-200">
+        <div className="flex gap-2 lg:gap-4 border-b border-zinc-200 overflow-x-auto">
           <button
             onClick={() => setSettingsTab('profile')}
-            className={`pb-4 px-2 font-bold text-sm tracking-wider transition-colors ${
+            className={`pb-3 lg:pb-4 px-2 font-bold text-xs lg:text-sm tracking-wider transition-colors whitespace-nowrap ${
               settingsTab === 'profile'
                 ? 'border-b-2 border-lime-500 text-black'
                 : 'text-zinc-400 hover:text-black'
             }`}
           >
-            <span className="flex items-center gap-2">
+            <span className="flex items-center gap-1 lg:gap-2">
               <User className="w-4 h-4" />
               PERFIL
             </span>
           </button>
           <button
             onClick={() => setSettingsTab('security')}
-            className={`pb-4 px-2 font-bold text-sm tracking-wider transition-colors ${
+            className={`pb-3 lg:pb-4 px-2 font-bold text-xs lg:text-sm tracking-wider transition-colors whitespace-nowrap ${
               settingsTab === 'security'
                 ? 'border-b-2 border-lime-500 text-black'
                 : 'text-zinc-400 hover:text-black'
             }`}
           >
-            <span className="flex items-center gap-2">
+            <span className="flex items-center gap-1 lg:gap-2">
               <Lock className="w-4 h-4" />
               SEGURANÇA
             </span>
@@ -1189,14 +1284,14 @@ export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps
 
         {/* Profile Tab */}
         {settingsTab === 'profile' && (
-          <div className="bg-white p-8">
-            <div className="flex items-center gap-4 mb-8">
-              <div className="w-20 h-20 bg-lime-500 rounded-full flex items-center justify-center">
-                <Crown className="w-10 h-10 text-black" />
+          <div className="bg-white p-4 lg:p-8">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 mb-6 lg:mb-8">
+              <div className="w-16 lg:w-20 h-16 lg:h-20 bg-lime-500 rounded-full flex items-center justify-center flex-shrink-0">
+                <Crown className="w-8 lg:w-10 h-8 lg:h-10 text-black" />
               </div>
-              <div>
-                <h2 className="text-2xl font-bold">{profileForm.name}</h2>
-                <p className="text-zinc-500 flex items-center gap-2">
+              <div className="text-center sm:text-left">
+                <h2 className="text-xl lg:text-2xl font-bold">{profileForm.name}</h2>
+                <p className="text-sm lg:text-base text-zinc-500 flex items-center justify-center sm:justify-start gap-2">
                   <Shield className="w-4 h-4" />
                   Super Administrador
                 </p>
@@ -1204,7 +1299,7 @@ export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps
             </div>
 
             {profileMessage && (
-              <div className={`p-4 mb-6 ${
+              <div className={`p-3 lg:p-4 mb-4 lg:mb-6 text-sm lg:text-base ${
                 profileMessage.type === 'success' 
                   ? 'bg-lime-50 border border-lime-500 text-lime-700' 
                   : 'bg-red-50 border border-red-500 text-red-700'
@@ -1213,25 +1308,25 @@ export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps
               </div>
             )}
 
-            <form onSubmit={handleSaveProfile} className="space-y-6 max-w-xl">
+            <form onSubmit={handleSaveProfile} className="space-y-4 lg:space-y-6">
               <div>
-                <label className="block text-sm font-bold mb-2 tracking-wider">NOME COMPLETO</label>
+                <label className="block text-xs lg:text-sm font-bold mb-2 tracking-wider">NOME COMPLETO</label>
                 <input
                   type="text"
                   value={profileForm.name}
                   onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-zinc-200 focus:border-lime-500 outline-none text-lg"
+                  className="w-full px-3 lg:px-4 py-2 lg:py-3 border-2 border-zinc-200 focus:border-lime-500 outline-none text-base lg:text-lg"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-bold mb-2 tracking-wider">EMAIL</label>
+                <label className="block text-xs lg:text-sm font-bold mb-2 tracking-wider">EMAIL</label>
                 <input
                   type="email"
                   value={profileForm.email}
                   onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-zinc-200 focus:border-lime-500 outline-none text-lg"
+                  className="w-full px-3 lg:px-4 py-2 lg:py-3 border-2 border-zinc-200 focus:border-lime-500 outline-none text-base lg:text-lg"
                   required
                 />
               </div>
@@ -1239,12 +1334,12 @@ export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps
               <button
                 type="submit"
                 disabled={savingProfile}
-                className="flex items-center gap-2 px-6 py-3 bg-lime-500 text-black font-bold hover:bg-lime-400 transition-colors disabled:opacity-50"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 lg:px-6 py-2 lg:py-3 bg-lime-500 text-black font-bold hover:bg-lime-400 transition-colors disabled:opacity-50 text-sm lg:text-base"
               >
                 {savingProfile ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <Loader2 className="w-4 lg:w-5 h-4 lg:h-5 animate-spin" />
                 ) : (
-                  <Save className="w-5 h-5" />
+                  <Save className="w-4 lg:w-5 h-4 lg:h-5" />
                 )}
                 SALVAR ALTERAÇÕES
               </button>
@@ -1254,14 +1349,14 @@ export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps
 
         {/* Security Tab */}
         {settingsTab === 'security' && (
-          <div className="bg-white p-8">
-            <div className="flex items-center gap-3 mb-8">
-              <Lock className="w-6 h-6 text-lime-500" />
-              <h2 className="text-xl font-bold">Alterar Senha</h2>
+          <div className="bg-white p-4 lg:p-8">
+            <div className="flex items-center gap-2 lg:gap-3 mb-6 lg:mb-8">
+              <Lock className="w-5 lg:w-6 h-5 lg:h-6 text-lime-500" />
+              <h2 className="text-lg lg:text-xl font-bold">Alterar Senha</h2>
             </div>
 
             {passwordMessage && (
-              <div className={`p-4 mb-6 ${
+              <div className={`p-3 lg:p-4 mb-4 lg:mb-6 text-sm lg:text-base ${
                 passwordMessage.type === 'success' 
                   ? 'bg-lime-50 border border-lime-500 text-lime-700' 
                   : 'bg-red-50 border border-red-500 text-red-700'
@@ -1270,40 +1365,40 @@ export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps
               </div>
             )}
 
-            <form onSubmit={handleChangePassword} className="space-y-6 max-w-xl">
+            <form onSubmit={handleChangePassword} className="space-y-4 lg:space-y-6">
               <div>
-                <label className="block text-sm font-bold mb-2 tracking-wider">SENHA ATUAL</label>
+                <label className="block text-xs lg:text-sm font-bold mb-2 tracking-wider">SENHA ATUAL</label>
                 <input
                   type="password"
                   value={passwordForm.currentPassword}
                   onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-zinc-200 focus:border-lime-500 outline-none text-lg"
+                  className="w-full px-3 lg:px-4 py-2 lg:py-3 border-2 border-zinc-200 focus:border-lime-500 outline-none text-base lg:text-lg"
                   required
                   placeholder="••••••••"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-bold mb-2 tracking-wider">NOVA SENHA</label>
+                <label className="block text-xs lg:text-sm font-bold mb-2 tracking-wider">NOVA SENHA</label>
                 <input
                   type="password"
                   value={passwordForm.newPassword}
                   onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-zinc-200 focus:border-lime-500 outline-none text-lg"
+                  className="w-full px-3 lg:px-4 py-2 lg:py-3 border-2 border-zinc-200 focus:border-lime-500 outline-none text-base lg:text-lg"
                   required
                   placeholder="••••••••"
                   minLength={8}
                 />
-                <p className="text-sm text-zinc-500 mt-1">Mínimo de 8 caracteres</p>
+                <p className="text-xs lg:text-sm text-zinc-500 mt-1">Mínimo de 8 caracteres</p>
               </div>
 
               <div>
-                <label className="block text-sm font-bold mb-2 tracking-wider">CONFIRMAR NOVA SENHA</label>
+                <label className="block text-xs lg:text-sm font-bold mb-2 tracking-wider">CONFIRMAR NOVA SENHA</label>
                 <input
                   type="password"
                   value={passwordForm.confirmPassword}
                   onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-zinc-200 focus:border-lime-500 outline-none text-lg"
+                  className="w-full px-3 lg:px-4 py-2 lg:py-3 border-2 border-zinc-200 focus:border-lime-500 outline-none text-base lg:text-lg"
                   required
                   placeholder="••••••••"
                 />
@@ -1312,27 +1407,27 @@ export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps
               <button
                 type="submit"
                 disabled={savingPassword}
-                className="flex items-center gap-2 px-6 py-3 bg-lime-500 text-black font-bold hover:bg-lime-400 transition-colors disabled:opacity-50"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 lg:px-6 py-2 lg:py-3 bg-lime-500 text-black font-bold hover:bg-lime-400 transition-colors disabled:opacity-50 text-sm lg:text-base"
               >
                 {savingPassword ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <Loader2 className="w-4 lg:w-5 h-4 lg:h-5 animate-spin" />
                 ) : (
-                  <Lock className="w-5 h-5" />
+                  <Lock className="w-4 lg:w-5 h-4 lg:h-5" />
                 )}
                 ALTERAR SENHA
               </button>
             </form>
 
-            <div className="mt-12 pt-8 border-t border-zinc-200">
-              <h3 className="text-lg font-bold mb-4 text-red-600">Zona de Perigo</h3>
-              <p className="text-zinc-600 mb-4">
+            <div className="mt-8 lg:mt-12 pt-6 lg:pt-8 border-t border-zinc-200">
+              <h3 className="text-base lg:text-lg font-bold mb-3 lg:mb-4 text-red-600">Zona de Perigo</h3>
+              <p className="text-sm lg:text-base text-zinc-600 mb-4">
                 Ações irreversíveis que afetam sua conta.
               </p>
               <button
                 onClick={onLogout}
-                className="flex items-center gap-2 px-6 py-3 border-2 border-red-500 text-red-500 font-bold hover:bg-red-500 hover:text-white transition-colors"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 lg:px-6 py-2 lg:py-3 border-2 border-red-500 text-red-500 font-bold hover:bg-red-500 hover:text-white transition-colors text-sm lg:text-base"
               >
-                <LogOut className="w-5 h-5" />
+                <LogOut className="w-4 lg:w-5 h-4 lg:h-5" />
                 SAIR DE TODAS AS SESSÕES
               </button>
             </div>
@@ -1342,37 +1437,75 @@ export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps
     );
   };
 
+  // Título da view atual para o header mobile
+  const getViewTitle = () => {
+    const titles: Record<View, string> = {
+      overview: 'Visão Geral',
+      consultancies: 'Consultorias',
+      settings: 'Configurações',
+      'consultancy-details': 'Detalhes'
+    };
+    return titles[currentView] || 'Dashboard';
+  };
+
+  const handleMenuClick = (viewId: View) => {
+    setCurrentView(viewId);
+    setSelectedConsultancy(null);
+    setSidebarOpen(false); // Fechar sidebar em mobile
+  };
+
   return (
-    <div className="min-h-screen bg-zinc-100 flex">
+    <div className="min-h-screen bg-zinc-100">
+      {/* Overlay para mobile */}
+      <div 
+        className={`fixed inset-0 bg-black/60 z-40 lg:hidden transition-opacity duration-300 ${
+          sidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+        onClick={() => setSidebarOpen(false)}
+      />
+
       {/* Sidebar */}
-      <aside className="w-80 bg-black text-white fixed h-screen flex flex-col">
+      <aside className={`
+        fixed top-0 left-0 h-full w-[280px] lg:w-80 bg-black text-white flex flex-col z-50
+        transform transition-transform duration-300 ease-in-out
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+      `}>
         {/* Logo */}
-        <div className="p-8 border-b border-white/10">
-          <div className="flex items-center gap-3">
-            <Crown className="w-8 h-8 text-lime-500" />
-            <div>
-              <h1 className="text-3xl font-bold tracking-tighter">VITAE</h1>
-              <p className="text-sm text-white/60">Master Admin</p>
+        <div className="p-6 lg:p-8 border-b border-white/10">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Crown className="w-7 lg:w-8 h-7 lg:h-8 text-lime-500" />
+              <div>
+                <h1 className="text-2xl lg:text-3xl font-bold tracking-tighter">VITAE</h1>
+                <p className="text-xs lg:text-sm text-white/60">Master Admin</p>
+              </div>
             </div>
+            {/* Botão fechar em mobile */}
+            <button 
+              onClick={() => setSidebarOpen(false)}
+              className="lg:hidden p-2 hover:bg-white/10 rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
         </div>
 
         {/* User Info */}
-        <div className="p-8 border-b border-white/10">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-lime-500 rounded-full flex items-center justify-center">
-              <Crown className="w-7 h-7 text-black" />
+        <div className="p-6 lg:p-8 border-b border-white/10">
+          <div className="flex items-center gap-3 lg:gap-4">
+            <div className="w-12 lg:w-14 h-12 lg:h-14 bg-lime-500 rounded-full flex items-center justify-center flex-shrink-0">
+              <Crown className="w-6 lg:w-7 h-6 lg:h-7 text-black" />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="font-bold text-lg truncate">{user.name}</div>
-              <div className="text-sm text-lime-500">Super Admin</div>
+              <div className="font-bold text-base lg:text-lg truncate">{user.name}</div>
+              <div className="text-xs lg:text-sm text-lime-500">Super Admin</div>
             </div>
           </div>
         </div>
 
         {/* Menu */}
-        <nav className="flex-1 p-4 overflow-y-auto">
-          <div className="space-y-2">
+        <nav className="flex-1 p-3 lg:p-4 overflow-y-auto">
+          <div className="space-y-1 lg:space-y-2">
             {menuItems.map((item) => {
               const Icon = item.icon;
               const isActive = currentView === item.id || 
@@ -1380,18 +1513,15 @@ export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps
               return (
                 <button
                   key={item.id}
-                  onClick={() => {
-                    setCurrentView(item.id);
-                    setSelectedConsultancy(null);
-                  }}
-                  className={`w-full flex items-center gap-4 px-6 py-4 rounded transition-colors ${
+                  onClick={() => handleMenuClick(item.id)}
+                  className={`w-full flex items-center gap-3 lg:gap-4 px-4 lg:px-6 py-3 lg:py-4 rounded transition-colors ${
                     isActive
                       ? 'bg-lime-500 text-black font-bold'
                       : 'text-white/80 hover:bg-white/10 hover:text-white'
                   }`}
                 >
                   <Icon className="w-5 h-5" />
-                  <span className="tracking-wide">{item.label}</span>
+                  <span className="tracking-wide text-sm lg:text-base">{item.label}</span>
                 </button>
               );
             })}
@@ -1399,20 +1529,32 @@ export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps
         </nav>
 
         {/* Logout */}
-        <div className="p-4 border-t border-white/10">
+        <div className="p-3 lg:p-4 border-t border-white/10">
           <button
             onClick={onLogout}
-            className="w-full flex items-center gap-4 px-6 py-4 rounded text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+            className="w-full flex items-center gap-3 lg:gap-4 px-4 lg:px-6 py-3 lg:py-4 rounded text-white/80 hover:bg-white/10 hover:text-white transition-colors"
           >
             <LogOut className="w-5 h-5" />
-            <span className="tracking-wide">Sair</span>
+            <span className="tracking-wide text-sm lg:text-base">Sair</span>
           </button>
         </div>
       </aside>
 
+      {/* Header mobile */}
+      <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-black text-white flex items-center justify-between px-4 z-30">
+        <button 
+          onClick={() => setSidebarOpen(true)}
+          className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+        >
+          <Menu className="w-6 h-6" />
+        </button>
+        <h1 className="font-bold text-lg">{getViewTitle()}</h1>
+        <div className="w-10" /> {/* Spacer para centralizar o título */}
+      </header>
+
       {/* Main Content */}
-      <main className="flex-1 ml-80">
-        <div className="p-8">
+      <main className="lg:ml-80 pt-16 lg:pt-0">
+        <div className="p-4 lg:p-8">
           {renderContent()}
         </div>
       </main>
