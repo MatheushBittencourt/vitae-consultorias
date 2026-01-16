@@ -1555,6 +1555,421 @@ app.post('/api/signup/consultancy', async (req, res) => {
   }
 })
 
+// ===============================
+// PAGAMENTO PIX - Signup com PIX
+// ===============================
+
+// Interface para armazenar dados pendentes do signup PIX
+interface PendingPixSignup {
+  consultancyName: string;
+  consultancySlug: string;
+  adminName: string;
+  adminEmail: string;
+  adminPhone: string;
+  adminPassword: string;
+  modules: { training: boolean; nutrition: boolean; medical: boolean; rehab: boolean };
+  maxProfessionals: number;
+  maxPatients: number;
+  priceMonthly: number;
+  payerDocType: string;
+  payerDocNumber: string;
+  createdAt: Date;
+}
+
+// Armazenamento temporário de signups pendentes (em produção, usar Redis ou banco)
+const pendingPixSignups = new Map<number, PendingPixSignup>();
+
+// Gerar pagamento PIX para signup
+app.post('/api/signup/consultancy/pix', async (req, res) => {
+  try {
+    const {
+      consultancyName,
+      consultancySlug,
+      adminName,
+      adminEmail,
+      adminPhone,
+      adminPassword,
+      modules,
+      maxProfessionals,
+      maxPatients,
+      priceMonthly,
+      payerDocType,
+      payerDocNumber
+    } = req.body
+
+    // Validações básicas
+    if (!consultancyName || !consultancySlug || !adminName || !adminEmail || !adminPassword) {
+      return res.status(400).json({ error: 'Campos obrigatórios não preenchidos' })
+    }
+
+    // Verificar se o slug já existe
+    const [existingSlug] = await pool.query<RowDataPacket[]>(
+      'SELECT id FROM consultancies WHERE slug = ?',
+      [consultancySlug.toLowerCase()]
+    )
+    if (existingSlug.length > 0) {
+      return res.status(400).json({ error: 'Esta URL já está em uso. Escolha outra.' })
+    }
+
+    // Verificar se o email já existe
+    const [existingEmail] = await pool.query<RowDataPacket[]>(
+      'SELECT id FROM users WHERE email = ?',
+      [adminEmail.toLowerCase()]
+    )
+    if (existingEmail.length > 0) {
+      return res.status(400).json({ error: 'Este email já está cadastrado.' })
+    }
+
+    // Gerar pagamento PIX no Mercado Pago
+    const payment = new Payment(mercadoPagoClient)
+    
+    const nameParts = adminName.trim().split(' ')
+    const firstName = nameParts[0]
+    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : firstName
+
+    // Data de expiração (30 minutos)
+    const expirationDate = new Date()
+    expirationDate.setMinutes(expirationDate.getMinutes() + 30)
+
+    const paymentData = {
+      transaction_amount: priceMonthly || 97,
+      description: `Assinatura VITAE - ${consultancyName}`,
+      payment_method_id: 'pix',
+      payer: {
+        email: adminEmail.toLowerCase(),
+        first_name: firstName,
+        last_name: lastName,
+        identification: payerDocType && payerDocNumber ? {
+          type: payerDocType,
+          number: payerDocNumber
+        } : undefined
+      },
+      date_of_expiration: expirationDate.toISOString()
+    }
+
+    console.log('Creating PIX payment with data:', JSON.stringify(paymentData, null, 2))
+
+    let paymentResult
+    try {
+      paymentResult = await payment.create({ body: paymentData })
+      console.log('PIX payment created:', JSON.stringify(paymentResult, null, 2))
+    } catch (paymentError: any) {
+      console.error('PIX payment error:', paymentError)
+      return res.status(400).json({ 
+        error: 'Erro ao gerar PIX. Tente novamente.',
+        details: paymentError.message 
+      })
+    }
+
+    if (!paymentResult.id) {
+      return res.status(400).json({ error: 'Erro ao gerar PIX. Tente novamente.' })
+    }
+
+    // Extrair dados do PIX
+    const pixInfo = paymentResult.point_of_interaction?.transaction_data
+    if (!pixInfo?.qr_code || !pixInfo?.qr_code_base64) {
+      console.error('PIX info missing:', paymentResult.point_of_interaction)
+      return res.status(400).json({ error: 'Erro ao gerar QR Code PIX. Tente novamente.' })
+    }
+
+    // Armazenar dados do signup pendente
+    pendingPixSignups.set(paymentResult.id, {
+      consultancyName,
+      consultancySlug: consultancySlug.toLowerCase(),
+      adminName,
+      adminEmail: adminEmail.toLowerCase(),
+      adminPhone,
+      adminPassword,
+      modules,
+      maxProfessionals,
+      maxPatients,
+      priceMonthly,
+      payerDocType,
+      payerDocNumber,
+      createdAt: new Date()
+    })
+
+    // Limpar signups antigos (mais de 1 hora)
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000)
+    pendingPixSignups.forEach((value, key) => {
+      if (value.createdAt < oneHourAgo) {
+        pendingPixSignups.delete(key)
+      }
+    })
+
+    res.json({
+      success: true,
+      pixData: {
+        qrCode: pixInfo.qr_code,
+        qrCodeBase64: pixInfo.qr_code_base64,
+        expirationDate: expirationDate.toISOString(),
+        paymentId: paymentResult.id
+      },
+      pendingConsultancy: {
+        consultancyName,
+        adminEmail: adminEmail.toLowerCase()
+      }
+    })
+
+  } catch (error) {
+    console.error('PIX signup error:', error)
+    res.status(500).json({ error: 'Erro ao gerar PIX. Tente novamente.' })
+  }
+})
+
+// Verificar status do pagamento PIX
+app.get('/api/signup/pix/status/:paymentId', async (req, res) => {
+  try {
+    const paymentId = parseInt(req.params.paymentId)
+    
+    if (isNaN(paymentId)) {
+      return res.status(400).json({ error: 'ID de pagamento inválido' })
+    }
+
+    // Buscar status no Mercado Pago
+    const payment = new Payment(mercadoPagoClient)
+    
+    let paymentResult
+    try {
+      paymentResult = await payment.get({ id: paymentId })
+    } catch (error) {
+      console.error('Error fetching payment status:', error)
+      return res.status(400).json({ error: 'Erro ao verificar pagamento' })
+    }
+
+    const status = paymentResult.status
+
+    // Se pagamento foi aprovado, criar a consultoria
+    if (status === 'approved') {
+      const pendingData = pendingPixSignups.get(paymentId)
+      
+      if (pendingData) {
+        // Verificar novamente se não foi criada (evitar duplicação)
+        const [existingSlug] = await pool.query<RowDataPacket[]>(
+          'SELECT id FROM consultancies WHERE slug = ?',
+          [pendingData.consultancySlug]
+        )
+        
+        if (existingSlug.length === 0) {
+          // Criar a consultoria
+          const [consultancyResult] = await pool.query(
+            `INSERT INTO consultancies 
+             (name, slug, email, phone, plan, price_monthly, has_training, has_nutrition, has_medical, has_rehab, max_professionals, max_patients, status, mp_payment_id)
+             VALUES (?, ?, ?, ?, 'professional', ?, ?, ?, ?, ?, ?, ?, 'active', ?)`,
+            [
+              pendingData.consultancyName,
+              pendingData.consultancySlug,
+              pendingData.adminEmail,
+              pendingData.adminPhone || null,
+              pendingData.priceMonthly || 97,
+              pendingData.modules?.training || false,
+              pendingData.modules?.nutrition || false,
+              pendingData.modules?.medical || false,
+              pendingData.modules?.rehab || false,
+              pendingData.maxProfessionals || 3,
+              pendingData.maxPatients || 30,
+              paymentId
+            ]
+          )
+
+          const consultancyId = (consultancyResult as { insertId: number }).insertId
+
+          // Hash da senha
+          const hashedPassword = await bcrypt.hash(pendingData.adminPassword, 10)
+
+          // Criar usuário admin
+          await pool.query(
+            `INSERT INTO users (consultancy_id, email, password_hash, name, role, phone, is_active)
+             VALUES (?, ?, ?, ?, 'admin', ?, TRUE)`,
+            [
+              consultancyId,
+              pendingData.adminEmail,
+              hashedPassword,
+              pendingData.adminName,
+              pendingData.adminPhone || null
+            ]
+          )
+
+          // Copiar biblioteca de exercícios
+          const [globalExercises] = await pool.query<RowDataPacket[]>(
+            `SELECT name, description, muscle_group, secondary_muscle, equipment, 
+                    difficulty, video_url, image_url, instructions, tips
+             FROM exercise_library 
+             WHERE is_global = TRUE OR consultancy_id IS NULL`
+          )
+
+          if (globalExercises.length > 0) {
+            const insertValues = globalExercises.map((ex: RowDataPacket) => [
+              consultancyId, ex.name, ex.description, ex.muscle_group, ex.secondary_muscle,
+              ex.equipment, ex.difficulty, ex.video_url, ex.image_url, ex.instructions, ex.tips, false
+            ])
+            await pool.query(
+              `INSERT INTO exercise_library 
+               (consultancy_id, name, description, muscle_group, secondary_muscle, 
+                equipment, difficulty, video_url, image_url, instructions, tips, is_global)
+               VALUES ?`,
+              [insertValues]
+            )
+          }
+
+          // Copiar biblioteca de alimentos
+          const [globalFoods] = await pool.query<RowDataPacket[]>(
+            `SELECT name, description, category, serving_size, calories, protein, carbs, fat, fiber, sodium, image_url
+             FROM food_library 
+             WHERE is_global = TRUE OR consultancy_id IS NULL`
+          )
+
+          if (globalFoods.length > 0) {
+            const foodInsertValues = globalFoods.map((food: RowDataPacket) => [
+              consultancyId, food.name, food.description, food.category, food.serving_size,
+              food.calories, food.protein, food.carbs, food.fat, food.fiber, food.sodium, food.image_url, false
+            ])
+            await pool.query(
+              `INSERT INTO food_library 
+               (consultancy_id, name, description, category, serving_size, calories, protein, carbs, fat, fiber, sodium, image_url, is_global)
+               VALUES ?`,
+              [foodInsertValues]
+            )
+          }
+
+          console.log(`✅ Consultoria "${pendingData.consultancyName}" criada via PIX!`)
+        }
+
+        // Remover dos pendentes
+        pendingPixSignups.delete(paymentId)
+
+        return res.json({
+          status: 'approved',
+          consultancyData: {
+            consultancyName: pendingData.consultancyName,
+            adminEmail: pendingData.adminEmail,
+            paymentId: String(paymentId)
+          }
+        })
+      } else {
+        // Dados pendentes não encontrados, mas pagamento aprovado
+        // Pode ser que já foi processado antes
+        return res.json({ status: 'approved' })
+      }
+    }
+
+    // Retornar status atual
+    res.json({ status: status || 'pending' })
+
+  } catch (error) {
+    console.error('PIX status check error:', error)
+    res.status(500).json({ error: 'Erro ao verificar status' })
+  }
+})
+
+// Webhook do Mercado Pago para receber notificações de pagamento
+app.post('/api/webhooks/mercadopago', async (req, res) => {
+  try {
+    console.log('Webhook received:', JSON.stringify(req.body, null, 2))
+    
+    const { type, data } = req.body
+
+    // Verificar se é uma notificação de pagamento
+    if (type === 'payment' && data?.id) {
+      const paymentId = data.id
+      
+      // Buscar status do pagamento
+      const payment = new Payment(mercadoPagoClient)
+      const paymentResult = await payment.get({ id: paymentId })
+      
+      if (paymentResult.status === 'approved') {
+        const pendingData = pendingPixSignups.get(paymentId)
+        
+        if (pendingData) {
+          // Processar criação da consultoria (mesmo código do endpoint de status)
+          const [existingSlug] = await pool.query<RowDataPacket[]>(
+            'SELECT id FROM consultancies WHERE slug = ?',
+            [pendingData.consultancySlug]
+          )
+          
+          if (existingSlug.length === 0) {
+            const [consultancyResult] = await pool.query(
+              `INSERT INTO consultancies 
+               (name, slug, email, phone, plan, price_monthly, has_training, has_nutrition, has_medical, has_rehab, max_professionals, max_patients, status, mp_payment_id)
+               VALUES (?, ?, ?, ?, 'professional', ?, ?, ?, ?, ?, ?, ?, 'active', ?)`,
+              [
+                pendingData.consultancyName,
+                pendingData.consultancySlug,
+                pendingData.adminEmail,
+                pendingData.adminPhone || null,
+                pendingData.priceMonthly || 97,
+                pendingData.modules?.training || false,
+                pendingData.modules?.nutrition || false,
+                pendingData.modules?.medical || false,
+                pendingData.modules?.rehab || false,
+                pendingData.maxProfessionals || 3,
+                pendingData.maxPatients || 30,
+                paymentId
+              ]
+            )
+
+            const consultancyId = (consultancyResult as { insertId: number }).insertId
+            const hashedPassword = await bcrypt.hash(pendingData.adminPassword, 10)
+
+            await pool.query(
+              `INSERT INTO users (consultancy_id, email, password_hash, name, role, phone, is_active)
+               VALUES (?, ?, ?, ?, 'admin', ?, TRUE)`,
+              [consultancyId, pendingData.adminEmail, hashedPassword, pendingData.adminName, pendingData.adminPhone || null]
+            )
+
+            // Copiar bibliotecas...
+            const [globalExercises] = await pool.query<RowDataPacket[]>(
+              `SELECT name, description, muscle_group, secondary_muscle, equipment, 
+                      difficulty, video_url, image_url, instructions, tips
+               FROM exercise_library WHERE is_global = TRUE OR consultancy_id IS NULL`
+            )
+            if (globalExercises.length > 0) {
+              const insertValues = globalExercises.map((ex: RowDataPacket) => [
+                consultancyId, ex.name, ex.description, ex.muscle_group, ex.secondary_muscle,
+                ex.equipment, ex.difficulty, ex.video_url, ex.image_url, ex.instructions, ex.tips, false
+              ])
+              await pool.query(
+                `INSERT INTO exercise_library 
+                 (consultancy_id, name, description, muscle_group, secondary_muscle, 
+                  equipment, difficulty, video_url, image_url, instructions, tips, is_global)
+                 VALUES ?`,
+                [insertValues]
+              )
+            }
+
+            const [globalFoods] = await pool.query<RowDataPacket[]>(
+              `SELECT name, description, category, serving_size, calories, protein, carbs, fat, fiber, sodium, image_url
+               FROM food_library WHERE is_global = TRUE OR consultancy_id IS NULL`
+            )
+            if (globalFoods.length > 0) {
+              const foodInsertValues = globalFoods.map((food: RowDataPacket) => [
+                consultancyId, food.name, food.description, food.category, food.serving_size,
+                food.calories, food.protein, food.carbs, food.fat, food.fiber, food.sodium, food.image_url, false
+              ])
+              await pool.query(
+                `INSERT INTO food_library 
+                 (consultancy_id, name, description, category, serving_size, calories, protein, carbs, fat, fiber, sodium, image_url, is_global)
+                 VALUES ?`,
+                [foodInsertValues]
+              )
+            }
+
+            console.log(`✅ Consultoria "${pendingData.consultancyName}" criada via Webhook PIX!`)
+          }
+          
+          pendingPixSignups.delete(paymentId)
+        }
+      }
+    }
+
+    // Responder com 200 para o MP
+    res.status(200).send('OK')
+  } catch (error) {
+    console.error('Webhook error:', error)
+    res.status(200).send('OK') // Sempre retornar 200 para evitar retentativas
+  }
+})
+
 // Verificar disponibilidade do slug
 app.get('/api/signup/check-slug/:slug', async (req, res) => {
   try {

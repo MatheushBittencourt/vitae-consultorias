@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
-import { ArrowLeft, ArrowRight, Check, Building2, User, Mail, Phone, Lock, Sparkles, Loader2, Dumbbell, Apple, Stethoscope, HeartPulse, Users, AlertCircle, CheckCircle, CreditCard, Shield } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { ArrowLeft, ArrowRight, Check, Building2, User, Mail, Phone, Lock, Sparkles, Loader2, Dumbbell, Apple, Stethoscope, HeartPulse, Users, AlertCircle, CheckCircle, CreditCard, Shield, QrCode, Copy, Clock } from 'lucide-react';
 import api from '../services/api';
+
+type PaymentMethod = 'card' | 'pix';
 
 declare global {
   interface Window {
@@ -57,6 +59,20 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
   } | null>(null);
   const [emailAvailable, setEmailAvailable] = useState<boolean | null>(null);
   const [checkingEmail, setCheckingEmail] = useState(false);
+  
+  // Estado para método de pagamento
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('card');
+  
+  // Estado para PIX
+  const [pixData, setPixData] = useState<{
+    qrCode: string;
+    qrCodeBase64: string;
+    expirationDate: string;
+    paymentId: number;
+  } | null>(null);
+  const [pixCopied, setPixCopied] = useState(false);
+  const [checkingPixStatus, setCheckingPixStatus] = useState(false);
+  const pixPollingRef = useRef<NodeJS.Timeout | null>(null);
 
   // Carregar SDK do Mercado Pago
   useEffect(() => {
@@ -149,20 +165,25 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
   const validateStep3 = () => {
     const newErrors: Record<string, string> = {};
     
-    if (!formData.cardNumber.replace(/\s/g, '').match(/^\d{13,19}$/)) {
-      newErrors.cardNumber = 'Número do cartão inválido';
-    }
-    if (!formData.cardholderName.trim()) {
-      newErrors.cardholderName = 'Nome no cartão é obrigatório';
-    }
-    if (!formData.cardExpiry.match(/^\d{2}\/\d{2}$/)) {
-      newErrors.cardExpiry = 'Validade inválida (MM/AA)';
-    }
-    if (!formData.cardCvv.match(/^\d{3,4}$/)) {
-      newErrors.cardCvv = 'CVV inválido';
-    }
+    // CPF é obrigatório para ambos os métodos
     if (!formData.docNumber.replace(/\D/g, '').match(/^\d{11}$|^\d{14}$/)) {
       newErrors.docNumber = 'CPF/CNPJ inválido';
+    }
+    
+    // Validações específicas para cartão
+    if (paymentMethod === 'card') {
+      if (!formData.cardNumber.replace(/\s/g, '').match(/^\d{13,19}$/)) {
+        newErrors.cardNumber = 'Número do cartão inválido';
+      }
+      if (!formData.cardholderName.trim()) {
+        newErrors.cardholderName = 'Nome no cartão é obrigatório';
+      }
+      if (!formData.cardExpiry.match(/^\d{2}\/\d{2}$/)) {
+        newErrors.cardExpiry = 'Validade inválida (MM/AA)';
+      }
+      if (!formData.cardCvv.match(/^\d{3,4}$/)) {
+        newErrors.cardCvv = 'CVV inválido';
+      }
     }
     
     setErrors(newErrors);
@@ -328,6 +349,137 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Handler para pagamento PIX
+  const handlePixSubmit = async () => {
+    if (!validateStep3()) return;
+    
+    setLoading(true);
+    setApiError(null);
+    
+    try {
+      const docNumber = formData.docNumber.replace(/\D/g, '');
+      const slug = generateSlug(formData.consultancyName) + '-' + Date.now().toString(36);
+
+      interface PixResponse {
+        success: boolean;
+        pixData: {
+          qrCode: string;
+          qrCodeBase64: string;
+          expirationDate: string;
+          paymentId: number;
+        };
+        pendingConsultancy: {
+          consultancyName: string;
+          adminEmail: string;
+        };
+      }
+
+      const response = await api.post<PixResponse>('/signup/consultancy/pix', {
+        consultancyName: formData.consultancyName,
+        consultancySlug: slug,
+        adminName: formData.adminName,
+        adminEmail: formData.adminEmail,
+        adminPhone: formData.adminPhone,
+        adminPassword: formData.adminPassword,
+        modules: formData.modules,
+        maxProfessionals: formData.maxProfessionals,
+        maxPatients: formData.maxPatients,
+        priceMonthly: totalPrice,
+        payerDocType: docNumber.length === 11 ? 'CPF' : 'CNPJ',
+        payerDocNumber: docNumber,
+      });
+
+      if (response.data.success && response.data.pixData) {
+        setPixData(response.data.pixData);
+        // Iniciar polling para verificar status do pagamento
+        startPixPolling(response.data.pixData.paymentId);
+      }
+    } catch (error: unknown) {
+      console.error('Erro ao gerar PIX:', error);
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { data?: { error?: string } } };
+        setApiError(axiosError.response?.data?.error || 'Erro ao gerar PIX. Tente novamente.');
+      } else {
+        setApiError('Erro de conexão. Verifique sua internet e tente novamente.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Polling para verificar status do pagamento PIX
+  const startPixPolling = (paymentId: number) => {
+    setCheckingPixStatus(true);
+    
+    // Limpar polling anterior se existir
+    if (pixPollingRef.current) {
+      clearInterval(pixPollingRef.current);
+    }
+    
+    // Verificar a cada 5 segundos
+    pixPollingRef.current = setInterval(async () => {
+      try {
+        interface PixStatusResponse {
+          status: string;
+          consultancyData?: {
+            consultancyName: string;
+            adminEmail: string;
+            paymentId: string;
+          };
+        }
+        
+        const response = await api.get<PixStatusResponse>(`/signup/pix/status/${paymentId}`);
+        
+        if (response.data.status === 'approved') {
+          // Pagamento aprovado! Parar polling e mostrar sucesso
+          if (pixPollingRef.current) {
+            clearInterval(pixPollingRef.current);
+          }
+          setCheckingPixStatus(false);
+          setPixData(null);
+          setSignupSuccess({
+            consultancyName: response.data.consultancyData?.consultancyName || formData.consultancyName,
+            adminEmail: response.data.consultancyData?.adminEmail || formData.adminEmail,
+            paymentId: response.data.consultancyData?.paymentId || String(paymentId),
+          });
+        } else if (response.data.status === 'cancelled' || response.data.status === 'rejected') {
+          // Pagamento cancelado ou rejeitado
+          if (pixPollingRef.current) {
+            clearInterval(pixPollingRef.current);
+          }
+          setCheckingPixStatus(false);
+          setPixData(null);
+          setApiError('Pagamento PIX expirado ou cancelado. Tente novamente.');
+        }
+        // Se ainda estiver pendente, continua o polling
+      } catch (error) {
+        console.error('Erro ao verificar status do PIX:', error);
+      }
+    }, 5000);
+  };
+
+  // Limpar polling quando componente desmontar
+  useEffect(() => {
+    return () => {
+      if (pixPollingRef.current) {
+        clearInterval(pixPollingRef.current);
+      }
+    };
+  }, []);
+
+  // Copiar código PIX
+  const copyPixCode = async () => {
+    if (pixData?.qrCode) {
+      try {
+        await navigator.clipboard.writeText(pixData.qrCode);
+        setPixCopied(true);
+        setTimeout(() => setPixCopied(false), 3000);
+      } catch (error) {
+        console.error('Erro ao copiar:', error);
+      }
     }
   };
 
@@ -748,7 +900,7 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
               <div className="space-y-6">
                 <div className="text-center">
                   <h1 className="text-3xl sm:text-4xl font-bold mb-3">Pagamento</h1>
-                  <p className="text-zinc-600 text-lg">Dados do cartão de crédito</p>
+                  <p className="text-zinc-600 text-lg">Escolha como deseja pagar</p>
                 </div>
 
                 {/* Resumo */}
@@ -768,110 +920,277 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
                   </div>
                 </div>
 
-                {/* Formulário */}
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-zinc-700 mb-2">Número do Cartão *</label>
-                    <div className="relative">
-                      <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
-                      <input
-                        type="text"
-                        value={formData.cardNumber}
-                        onChange={(e) => setFormData({ ...formData, cardNumber: formatCardNumber(e.target.value) })}
-                        maxLength={19}
-                        className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none transition-colors ${errors.cardNumber ? 'border-red-300 bg-red-50' : 'border-zinc-200 focus:border-lime-500'}`}
-                        placeholder="1234 5678 9012 3456"
-                      />
+                {/* Se tiver PIX gerado, mostrar QR Code */}
+                {pixData ? (
+                  <div className="space-y-6">
+                    {/* QR Code PIX */}
+                    <div className="bg-white border-2 border-zinc-200 rounded-xl p-6">
+                      <div className="text-center mb-4">
+                        <div className="inline-flex items-center gap-2 bg-teal-100 text-teal-700 px-3 py-1 rounded-full text-sm font-medium mb-3">
+                          <QrCode className="w-4 h-4" />
+                          PIX
+                        </div>
+                        <h3 className="font-bold text-lg">Escaneie o QR Code para pagar</h3>
+                        <p className="text-sm text-zinc-500">Abra o app do seu banco e escaneie</p>
+                      </div>
+                      
+                      {/* QR Code Image */}
+                      <div className="flex justify-center mb-4">
+                        <div className="bg-white p-4 rounded-xl border-2 border-zinc-100">
+                          <img 
+                            src={`data:image/png;base64,${pixData.qrCodeBase64}`} 
+                            alt="QR Code PIX" 
+                            className="w-48 h-48"
+                          />
+                        </div>
+                      </div>
+                      
+                      {/* Código Copia e Cola */}
+                      <div className="space-y-2">
+                        <label className="block text-sm font-medium text-zinc-600">Ou copie o código PIX:</label>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            readOnly
+                            value={pixData.qrCode}
+                            className="flex-1 px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm font-mono truncate"
+                          />
+                          <button
+                            onClick={copyPixCode}
+                            className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors ${
+                              pixCopied 
+                                ? 'bg-green-500 text-white' 
+                                : 'bg-zinc-900 text-white hover:bg-zinc-800'
+                            }`}
+                          >
+                            {pixCopied ? (
+                              <><CheckCircle className="w-4 h-4" /> Copiado!</>
+                            ) : (
+                              <><Copy className="w-4 h-4" /> Copiar</>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {/* Status de verificação */}
+                      <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                        <div className="flex items-center gap-3">
+                          {checkingPixStatus ? (
+                            <>
+                              <Loader2 className="w-5 h-5 text-amber-600 animate-spin" />
+                              <div>
+                                <p className="font-medium text-amber-800">Aguardando pagamento...</p>
+                                <p className="text-sm text-amber-600">A tela atualizará automaticamente após a confirmação</p>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <Clock className="w-5 h-5 text-amber-600" />
+                              <div>
+                                <p className="font-medium text-amber-800">PIX gerado!</p>
+                                <p className="text-sm text-amber-600">Escaneie o QR Code ou copie o código acima</p>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    {errors.cardNumber && <p className="mt-1 text-sm text-red-500">{errors.cardNumber}</p>}
+                    
+                    {/* Botão para cancelar e voltar */}
+                    <button 
+                      onClick={() => {
+                        setPixData(null);
+                        if (pixPollingRef.current) {
+                          clearInterval(pixPollingRef.current);
+                        }
+                        setCheckingPixStatus(false);
+                      }} 
+                      className="w-full py-3 border-2 border-zinc-300 text-zinc-700 font-semibold rounded-xl hover:border-black hover:text-black transition-colors"
+                    >
+                      Escolher outro método de pagamento
+                    </button>
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-zinc-700 mb-2">Nome no Cartão *</label>
-                    <div className="relative">
-                      <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
-                      <input
-                        type="text"
-                        value={formData.cardholderName}
-                        onChange={(e) => setFormData({ ...formData, cardholderName: e.target.value.toUpperCase() })}
-                        className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none transition-colors ${errors.cardholderName ? 'border-red-300 bg-red-50' : 'border-zinc-200 focus:border-lime-500'}`}
-                        placeholder="JOÃO SILVA"
-                      />
+                ) : (
+                  <>
+                    {/* Seleção de método de pagamento */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMethod('card')}
+                        className={`p-4 rounded-xl border-2 text-left transition-all ${
+                          paymentMethod === 'card' 
+                            ? 'border-lime-500 bg-lime-50' 
+                            : 'border-zinc-200 hover:border-zinc-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                            paymentMethod === 'card' ? 'bg-lime-500' : 'bg-zinc-100'
+                          }`}>
+                            <CreditCard className={`w-5 h-5 ${paymentMethod === 'card' ? 'text-black' : 'text-zinc-500'}`} />
+                          </div>
+                          <div>
+                            <div className="font-semibold">Cartão de Crédito</div>
+                            <div className="text-sm text-zinc-500">Aprovação imediata</div>
+                          </div>
+                        </div>
+                      </button>
+                      
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMethod('pix')}
+                        className={`p-4 rounded-xl border-2 text-left transition-all ${
+                          paymentMethod === 'pix' 
+                            ? 'border-teal-500 bg-teal-50' 
+                            : 'border-zinc-200 hover:border-zinc-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                            paymentMethod === 'pix' ? 'bg-teal-500' : 'bg-zinc-100'
+                          }`}>
+                            <QrCode className={`w-5 h-5 ${paymentMethod === 'pix' ? 'text-white' : 'text-zinc-500'}`} />
+                          </div>
+                          <div>
+                            <div className="font-semibold">PIX</div>
+                            <div className="text-sm text-zinc-500">Pague com QR Code</div>
+                          </div>
+                        </div>
+                      </button>
                     </div>
-                    {errors.cardholderName && <p className="mt-1 text-sm text-red-500">{errors.cardholderName}</p>}
-                  </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                    {/* Formulário de Cartão */}
+                    {paymentMethod === 'card' && (
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-semibold text-zinc-700 mb-2">Número do Cartão *</label>
+                          <div className="relative">
+                            <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+                            <input
+                              type="text"
+                              value={formData.cardNumber}
+                              onChange={(e) => setFormData({ ...formData, cardNumber: formatCardNumber(e.target.value) })}
+                              maxLength={19}
+                              className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none transition-colors ${errors.cardNumber ? 'border-red-300 bg-red-50' : 'border-zinc-200 focus:border-lime-500'}`}
+                              placeholder="1234 5678 9012 3456"
+                            />
+                          </div>
+                          {errors.cardNumber && <p className="mt-1 text-sm text-red-500">{errors.cardNumber}</p>}
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-semibold text-zinc-700 mb-2">Nome no Cartão *</label>
+                          <div className="relative">
+                            <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+                            <input
+                              type="text"
+                              value={formData.cardholderName}
+                              onChange={(e) => setFormData({ ...formData, cardholderName: e.target.value.toUpperCase() })}
+                              className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none transition-colors ${errors.cardholderName ? 'border-red-300 bg-red-50' : 'border-zinc-200 focus:border-lime-500'}`}
+                              placeholder="JOÃO SILVA"
+                            />
+                          </div>
+                          {errors.cardholderName && <p className="mt-1 text-sm text-red-500">{errors.cardholderName}</p>}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-semibold text-zinc-700 mb-2">Validade *</label>
+                            <input
+                              type="text"
+                              value={formData.cardExpiry}
+                              onChange={(e) => setFormData({ ...formData, cardExpiry: formatExpiry(e.target.value) })}
+                              maxLength={5}
+                              className={`w-full px-4 py-3 border-2 rounded-xl outline-none transition-colors ${errors.cardExpiry ? 'border-red-300 bg-red-50' : 'border-zinc-200 focus:border-lime-500'}`}
+                              placeholder="MM/AA"
+                            />
+                            {errors.cardExpiry && <p className="mt-1 text-sm text-red-500">{errors.cardExpiry}</p>}
+                          </div>
+                          <div>
+                            <label className="block text-sm font-semibold text-zinc-700 mb-2">CVV *</label>
+                            <input
+                              type="text"
+                              value={formData.cardCvv}
+                              onChange={(e) => setFormData({ ...formData, cardCvv: e.target.value.replace(/\D/g, '') })}
+                              maxLength={4}
+                              className={`w-full px-4 py-3 border-2 rounded-xl outline-none transition-colors ${errors.cardCvv ? 'border-red-300 bg-red-50' : 'border-zinc-200 focus:border-lime-500'}`}
+                              placeholder="123"
+                            />
+                            {errors.cardCvv && <p className="mt-1 text-sm text-red-500">{errors.cardCvv}</p>}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Formulário de PIX (apenas CPF) */}
+                    {paymentMethod === 'pix' && (
+                      <div className="bg-teal-50 border border-teal-200 rounded-xl p-4">
+                        <div className="flex items-start gap-3">
+                          <QrCode className="w-5 h-5 text-teal-600 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <p className="font-medium text-teal-800">Pagamento via PIX</p>
+                            <p className="text-sm text-teal-600">Após clicar em "Gerar PIX", você receberá um QR Code para pagar</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* CPF - comum para ambos */}
                     <div>
-                      <label className="block text-sm font-semibold text-zinc-700 mb-2">Validade *</label>
+                      <label className="block text-sm font-semibold text-zinc-700 mb-2">
+                        CPF {paymentMethod === 'card' ? 'do Titular' : 'do Pagador'} *
+                      </label>
                       <input
                         type="text"
-                        value={formData.cardExpiry}
-                        onChange={(e) => setFormData({ ...formData, cardExpiry: formatExpiry(e.target.value) })}
-                        maxLength={5}
-                        className={`w-full px-4 py-3 border-2 rounded-xl outline-none transition-colors ${errors.cardExpiry ? 'border-red-300 bg-red-50' : 'border-zinc-200 focus:border-lime-500'}`}
-                        placeholder="MM/AA"
+                        value={formData.docNumber}
+                        onChange={(e) => setFormData({ ...formData, docNumber: formatCPF(e.target.value) })}
+                        maxLength={18}
+                        className={`w-full px-4 py-3 border-2 rounded-xl outline-none transition-colors ${errors.docNumber ? 'border-red-300 bg-red-50' : 'border-zinc-200 focus:border-lime-500'}`}
+                        placeholder="000.000.000-00"
                       />
-                      {errors.cardExpiry && <p className="mt-1 text-sm text-red-500">{errors.cardExpiry}</p>}
+                      {errors.docNumber && <p className="mt-1 text-sm text-red-500">{errors.docNumber}</p>}
                     </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-zinc-700 mb-2">CVV *</label>
-                      <input
-                        type="text"
-                        value={formData.cardCvv}
-                        onChange={(e) => setFormData({ ...formData, cardCvv: e.target.value.replace(/\D/g, '') })}
-                        maxLength={4}
-                        className={`w-full px-4 py-3 border-2 rounded-xl outline-none transition-colors ${errors.cardCvv ? 'border-red-300 bg-red-50' : 'border-zinc-200 focus:border-lime-500'}`}
-                        placeholder="123"
-                      />
-                      {errors.cardCvv && <p className="mt-1 text-sm text-red-500">{errors.cardCvv}</p>}
+
+                    {/* Segurança */}
+                    <div className="flex items-center gap-3 text-sm text-zinc-500">
+                      <Shield className="w-5 h-5 text-lime-500" />
+                      <span>Seus dados estão protegidos com criptografia SSL</span>
                     </div>
-                  </div>
 
-                  <div>
-                    <label className="block text-sm font-semibold text-zinc-700 mb-2">CPF do Titular *</label>
-                    <input
-                      type="text"
-                      value={formData.docNumber}
-                      onChange={(e) => setFormData({ ...formData, docNumber: formatCPF(e.target.value) })}
-                      maxLength={18}
-                      className={`w-full px-4 py-3 border-2 rounded-xl outline-none transition-colors ${errors.docNumber ? 'border-red-300 bg-red-50' : 'border-zinc-200 focus:border-lime-500'}`}
-                      placeholder="000.000.000-00"
-                    />
-                    {errors.docNumber && <p className="mt-1 text-sm text-red-500">{errors.docNumber}</p>}
-                  </div>
-                </div>
+                    {/* Erro */}
+                    {apiError && (
+                      <div className="bg-red-50 border-2 border-red-200 text-red-700 p-4 rounded-xl flex items-start gap-3">
+                        <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-medium">Erro no pagamento</p>
+                          <p className="text-sm">{apiError}</p>
+                        </div>
+                      </div>
+                    )}
 
-                {/* Segurança */}
-                <div className="flex items-center gap-3 text-sm text-zinc-500">
-                  <Shield className="w-5 h-5 text-lime-500" />
-                  <span>Seus dados estão protegidos com criptografia SSL</span>
-                </div>
-
-                {/* Erro */}
-                {apiError && (
-                  <div className="bg-red-50 border-2 border-red-200 text-red-700 p-4 rounded-xl flex items-start gap-3">
-                    <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-medium">Erro no pagamento</p>
-                      <p className="text-sm">{apiError}</p>
+                    <div className="flex gap-4">
+                      <button onClick={() => setStep(2)} className="flex-1 py-4 border-2 border-zinc-300 text-zinc-700 font-semibold rounded-xl hover:border-black hover:text-black transition-colors">Voltar</button>
+                      
+                      {paymentMethod === 'card' ? (
+                        <button onClick={handleSubmit} disabled={loading || !mpLoaded}
+                          className="flex-1 py-4 bg-lime-500 text-black font-semibold rounded-xl hover:bg-lime-400 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                          {loading ? <><Loader2 className="w-5 h-5 animate-spin" /> Processando...</> : <>Pagar R$ {totalPrice.toFixed(2).replace('.', ',')} <Check className="w-5 h-5" /></>}
+                        </button>
+                      ) : (
+                        <button onClick={handlePixSubmit} disabled={loading}
+                          className="flex-1 py-4 bg-teal-500 text-white font-semibold rounded-xl hover:bg-teal-400 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                          {loading ? <><Loader2 className="w-5 h-5 animate-spin" /> Gerando PIX...</> : <>Gerar PIX <QrCode className="w-5 h-5" /></>}
+                        </button>
+                      )}
                     </div>
-                  </div>
+
+                    <p className="text-center text-xs text-zinc-500">
+                      Ao confirmar, você concorda com os{' '}
+                      <a href="#" className="text-lime-600 hover:underline">Termos de Uso</a> e{' '}
+                      <a href="#" className="text-lime-600 hover:underline">Política de Privacidade</a>
+                    </p>
+                  </>
                 )}
-
-                <div className="flex gap-4">
-                  <button onClick={() => setStep(2)} className="flex-1 py-4 border-2 border-zinc-300 text-zinc-700 font-semibold rounded-xl hover:border-black hover:text-black transition-colors">Voltar</button>
-                  <button onClick={handleSubmit} disabled={loading || !mpLoaded}
-                    className="flex-1 py-4 bg-lime-500 text-black font-semibold rounded-xl hover:bg-lime-400 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                    {loading ? <><Loader2 className="w-5 h-5 animate-spin" /> Processando...</> : <>Pagar R$ {totalPrice.toFixed(2).replace('.', ',')} <Check className="w-5 h-5" /></>}
-                  </button>
-                </div>
-
-                <p className="text-center text-xs text-zinc-500">
-                  Ao confirmar, você concorda com os{' '}
-                  <a href="#" className="text-lime-600 hover:underline">Termos de Uso</a> e{' '}
-                  <a href="#" className="text-lime-600 hover:underline">Política de Privacidade</a>
-                </p>
               </div>
             )}
           </div>
