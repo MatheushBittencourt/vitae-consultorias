@@ -429,6 +429,36 @@ app.post('/api/superadmin/consultancies/:id/users', async (req, res) => {
   }
 })
 
+// Deletar usuário de uma consultoria (usado pelo admin para remover pacientes)
+app.delete('/api/superadmin/consultancies/:consultancyId/users/:userId', async (req, res) => {
+  try {
+    const { consultancyId, userId } = req.params
+    
+    // Verificar se o usuário pertence à consultoria
+    const [user] = await pool.query<RowDataPacket[]>(
+      'SELECT id, role FROM users WHERE id = ? AND consultancy_id = ?',
+      [userId, consultancyId]
+    )
+    
+    if (user.length === 0) {
+      return res.status(404).json({ error: 'Usuário não encontrado nesta consultoria' })
+    }
+    
+    // Se for atleta, deletar também o registro na tabela athletes
+    if (user[0].role === 'athlete') {
+      await pool.query('DELETE FROM athletes WHERE user_id = ?', [userId])
+    }
+    
+    // Deletar o usuário
+    await pool.query('DELETE FROM users WHERE id = ?', [userId])
+    
+    res.json({ message: 'Usuário removido com sucesso' })
+  } catch (error) {
+    console.error('Error deleting user:', error)
+    res.status(500).json({ error: String(error) })
+  }
+})
+
 // Estatísticas gerais do SaaS (expandidas)
 app.get('/api/superadmin/stats', async (_req, res) => {
   try {
