@@ -75,7 +75,11 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
   // Inicializar Mercado Pago
   useEffect(() => {
     if (mpLoaded && window.MercadoPago) {
-      const publicKey = 'TEST-8f2e0407-fba9-4767-8bd1-6a61411d9d1c';
+      const publicKey = import.meta.env.VITE_MP_PUBLIC_KEY;
+      if (!publicKey) {
+        console.error('VITE_MP_PUBLIC_KEY não configurada');
+        return;
+      }
       const mp = new window.MercadoPago(publicKey, { locale: 'pt-BR' });
       setMpInstance(mp);
     }
