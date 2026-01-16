@@ -192,6 +192,88 @@ app.post('/api/superadmin/login', authLimiter, async (req, res) => {
   }
 })
 
+// Super Admin - Atualizar Perfil
+app.put('/api/superadmin/:id/profile', async (req, res) => {
+  try {
+    const { id } = req.params
+    const { name, email } = req.body
+
+    if (!name || !email) {
+      return res.status(400).json({ error: 'Nome e email são obrigatórios' })
+    }
+
+    // Verificar se email já existe para outro superadmin
+    const [existing] = await pool.query<RowDataPacket[]>(
+      'SELECT id FROM super_admins WHERE email = ? AND id != ?',
+      [email.toLowerCase(), id]
+    )
+
+    if (existing.length > 0) {
+      return res.status(400).json({ error: 'Este email já está em uso' })
+    }
+
+    await pool.query(
+      'UPDATE super_admins SET name = ?, email = ? WHERE id = ?',
+      [name, email.toLowerCase(), id]
+    )
+
+    res.json({ success: true, message: 'Perfil atualizado com sucesso' })
+  } catch (error) {
+    console.error('Erro ao atualizar perfil:', error)
+    res.status(500).json({ error: 'Erro interno do servidor' })
+  }
+})
+
+// Super Admin - Alterar Senha
+app.put('/api/superadmin/:id/password', async (req, res) => {
+  try {
+    const { id } = req.params
+    const { currentPassword, newPassword } = req.body
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Senha atual e nova senha são obrigatórias' })
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: 'A nova senha deve ter pelo menos 8 caracteres' })
+    }
+
+    // Buscar usuário
+    const [rows] = await pool.query<RowDataPacket[]>(
+      'SELECT password_hash FROM super_admins WHERE id = ?',
+      [id]
+    )
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Usuário não encontrado' })
+    }
+
+    const user = rows[0]
+
+    // Verificar senha atual
+    const isValidPassword = user.password_hash?.startsWith('$2')
+      ? await bcrypt.compare(currentPassword, user.password_hash)
+      : currentPassword === user.password_hash
+
+    if (!isValidPassword) {
+      return res.status(401).json({ error: 'Senha atual incorreta' })
+    }
+
+    // Hash da nova senha
+    const hashedPassword = await bcrypt.hash(newPassword, 10)
+
+    await pool.query(
+      'UPDATE super_admins SET password_hash = ? WHERE id = ?',
+      [hashedPassword, id]
+    )
+
+    res.json({ success: true, message: 'Senha alterada com sucesso' })
+  } catch (error) {
+    console.error('Erro ao alterar senha:', error)
+    res.status(500).json({ error: 'Erro interno do servidor' })
+  }
+})
+
 // ===============================
 // SUPER ADMIN - Gerenciar Consultorias
 // ===============================

@@ -127,15 +127,6 @@ export function SuperAdminLoginPage({ onLoginSuccess, onBack }: SuperAdminLoginP
             Acesso restrito ao administrador do sistema.
           </p>
         </div>
-
-        <div className="mt-8 p-6 bg-zinc-900 border-l-4 border-lime-500">
-          <p className="text-sm text-zinc-400 mb-2">
-            <strong className="text-white">Credencial de teste:</strong>
-          </p>
-          <p className="text-zinc-300 text-sm font-mono">
-            matheus@admin.com / super123
-          </p>
-        </div>
       </div>
     </div>
   );

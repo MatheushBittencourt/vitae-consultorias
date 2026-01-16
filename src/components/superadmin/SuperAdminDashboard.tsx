@@ -21,17 +21,17 @@ import {
   Settings,
   Eye,
   ArrowLeft,
-  Calendar,
   Mail,
-  Phone,
   Activity,
-  AlertCircle,
   Clock,
   UserCheck,
-  UserX,
   ChevronRight,
   BarChart3,
-  PieChart
+  PieChart,
+  User,
+  Lock,
+  Save,
+  Shield
 } from 'lucide-react';
 import { SuperAdminUser } from './SuperAdminLoginPage';
 
@@ -149,6 +149,22 @@ export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps
   const [selectedConsultancy, setSelectedConsultancy] = useState<ConsultancyDetails | null>(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  
+  // Settings state
+  const [settingsTab, setSettingsTab] = useState<'profile' | 'security'>('profile');
+  const [profileForm, setProfileForm] = useState({
+    name: user.name,
+    email: user.email
+  });
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [profileMessage, setProfileMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [passwordMessage, setPasswordMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const [form, setForm] = useState({
     name: '',
@@ -1072,12 +1088,256 @@ export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps
       );
     }
 
+    const handleSaveProfile = async (e: React.FormEvent) => {
+      e.preventDefault();
+      setSavingProfile(true);
+      setProfileMessage(null);
+
+      try {
+        const response = await fetch(`${API_URL}/superadmin/${user.id}/profile`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(profileForm)
+        });
+
+        if (response.ok) {
+          setProfileMessage({ type: 'success', text: 'Perfil atualizado com sucesso!' });
+        } else {
+          const data = await response.json();
+          setProfileMessage({ type: 'error', text: data.error || 'Erro ao atualizar perfil' });
+        }
+      } catch {
+        setProfileMessage({ type: 'error', text: 'Erro ao conectar com o servidor' });
+      } finally {
+        setSavingProfile(false);
+      }
+    };
+
+    const handleChangePassword = async (e: React.FormEvent) => {
+      e.preventDefault();
+      setPasswordMessage(null);
+
+      if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+        setPasswordMessage({ type: 'error', text: 'As senhas não conferem' });
+        return;
+      }
+
+      if (passwordForm.newPassword.length < 8) {
+        setPasswordMessage({ type: 'error', text: 'A nova senha deve ter pelo menos 8 caracteres' });
+        return;
+      }
+
+      setSavingPassword(true);
+
+      try {
+        const response = await fetch(`${API_URL}/superadmin/${user.id}/password`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            currentPassword: passwordForm.currentPassword,
+            newPassword: passwordForm.newPassword
+          })
+        });
+
+        if (response.ok) {
+          setPasswordMessage({ type: 'success', text: 'Senha alterada com sucesso!' });
+          setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+        } else {
+          const data = await response.json();
+          setPasswordMessage({ type: 'error', text: data.error || 'Erro ao alterar senha' });
+        }
+      } catch {
+        setPasswordMessage({ type: 'error', text: 'Erro ao conectar com o servidor' });
+      } finally {
+        setSavingPassword(false);
+      }
+    };
+
     return (
       <div className="space-y-6">
         <h1 className="text-3xl font-bold tracking-tighter">Configurações</h1>
-        <div className="bg-white p-8">
-          <p className="text-zinc-500">Em breve...</p>
+        
+        {/* Tabs */}
+        <div className="flex gap-4 border-b border-zinc-200">
+          <button
+            onClick={() => setSettingsTab('profile')}
+            className={`pb-4 px-2 font-bold text-sm tracking-wider transition-colors ${
+              settingsTab === 'profile'
+                ? 'border-b-2 border-lime-500 text-black'
+                : 'text-zinc-400 hover:text-black'
+            }`}
+          >
+            <span className="flex items-center gap-2">
+              <User className="w-4 h-4" />
+              PERFIL
+            </span>
+          </button>
+          <button
+            onClick={() => setSettingsTab('security')}
+            className={`pb-4 px-2 font-bold text-sm tracking-wider transition-colors ${
+              settingsTab === 'security'
+                ? 'border-b-2 border-lime-500 text-black'
+                : 'text-zinc-400 hover:text-black'
+            }`}
+          >
+            <span className="flex items-center gap-2">
+              <Lock className="w-4 h-4" />
+              SEGURANÇA
+            </span>
+          </button>
         </div>
+
+        {/* Profile Tab */}
+        {settingsTab === 'profile' && (
+          <div className="bg-white p-8">
+            <div className="flex items-center gap-4 mb-8">
+              <div className="w-20 h-20 bg-lime-500 rounded-full flex items-center justify-center">
+                <Crown className="w-10 h-10 text-black" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold">{profileForm.name}</h2>
+                <p className="text-zinc-500 flex items-center gap-2">
+                  <Shield className="w-4 h-4" />
+                  Super Administrador
+                </p>
+              </div>
+            </div>
+
+            {profileMessage && (
+              <div className={`p-4 mb-6 ${
+                profileMessage.type === 'success' 
+                  ? 'bg-lime-50 border border-lime-500 text-lime-700' 
+                  : 'bg-red-50 border border-red-500 text-red-700'
+              }`}>
+                {profileMessage.text}
+              </div>
+            )}
+
+            <form onSubmit={handleSaveProfile} className="space-y-6 max-w-xl">
+              <div>
+                <label className="block text-sm font-bold mb-2 tracking-wider">NOME COMPLETO</label>
+                <input
+                  type="text"
+                  value={profileForm.name}
+                  onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
+                  className="w-full px-4 py-3 border-2 border-zinc-200 focus:border-lime-500 outline-none text-lg"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold mb-2 tracking-wider">EMAIL</label>
+                <input
+                  type="email"
+                  value={profileForm.email}
+                  onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
+                  className="w-full px-4 py-3 border-2 border-zinc-200 focus:border-lime-500 outline-none text-lg"
+                  required
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={savingProfile}
+                className="flex items-center gap-2 px-6 py-3 bg-lime-500 text-black font-bold hover:bg-lime-400 transition-colors disabled:opacity-50"
+              >
+                {savingProfile ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Save className="w-5 h-5" />
+                )}
+                SALVAR ALTERAÇÕES
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* Security Tab */}
+        {settingsTab === 'security' && (
+          <div className="bg-white p-8">
+            <div className="flex items-center gap-3 mb-8">
+              <Lock className="w-6 h-6 text-lime-500" />
+              <h2 className="text-xl font-bold">Alterar Senha</h2>
+            </div>
+
+            {passwordMessage && (
+              <div className={`p-4 mb-6 ${
+                passwordMessage.type === 'success' 
+                  ? 'bg-lime-50 border border-lime-500 text-lime-700' 
+                  : 'bg-red-50 border border-red-500 text-red-700'
+              }`}>
+                {passwordMessage.text}
+              </div>
+            )}
+
+            <form onSubmit={handleChangePassword} className="space-y-6 max-w-xl">
+              <div>
+                <label className="block text-sm font-bold mb-2 tracking-wider">SENHA ATUAL</label>
+                <input
+                  type="password"
+                  value={passwordForm.currentPassword}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                  className="w-full px-4 py-3 border-2 border-zinc-200 focus:border-lime-500 outline-none text-lg"
+                  required
+                  placeholder="••••••••"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold mb-2 tracking-wider">NOVA SENHA</label>
+                <input
+                  type="password"
+                  value={passwordForm.newPassword}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                  className="w-full px-4 py-3 border-2 border-zinc-200 focus:border-lime-500 outline-none text-lg"
+                  required
+                  placeholder="••••••••"
+                  minLength={8}
+                />
+                <p className="text-sm text-zinc-500 mt-1">Mínimo de 8 caracteres</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold mb-2 tracking-wider">CONFIRMAR NOVA SENHA</label>
+                <input
+                  type="password"
+                  value={passwordForm.confirmPassword}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                  className="w-full px-4 py-3 border-2 border-zinc-200 focus:border-lime-500 outline-none text-lg"
+                  required
+                  placeholder="••••••••"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={savingPassword}
+                className="flex items-center gap-2 px-6 py-3 bg-lime-500 text-black font-bold hover:bg-lime-400 transition-colors disabled:opacity-50"
+              >
+                {savingPassword ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Lock className="w-5 h-5" />
+                )}
+                ALTERAR SENHA
+              </button>
+            </form>
+
+            <div className="mt-12 pt-8 border-t border-zinc-200">
+              <h3 className="text-lg font-bold mb-4 text-red-600">Zona de Perigo</h3>
+              <p className="text-zinc-600 mb-4">
+                Ações irreversíveis que afetam sua conta.
+              </p>
+              <button
+                onClick={onLogout}
+                className="flex items-center gap-2 px-6 py-3 border-2 border-red-500 text-red-500 font-bold hover:bg-red-500 hover:text-white transition-colors"
+              >
+                <LogOut className="w-5 h-5" />
+                SAIR DE TODAS AS SESSÕES
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
