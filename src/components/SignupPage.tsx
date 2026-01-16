@@ -1264,49 +1264,49 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
       </div>
 
       {/* Right Side - Visual */}
-      <div className="hidden lg:flex w-[45%] bg-black text-white p-12 flex-col justify-between">
+      <div className="hidden lg:flex w-[45%] bg-zinc-100 text-black p-12 flex-col justify-between">
         <div>
           <div className="mb-16">
             <Logo size="lg" showText={false} />
           </div>
 
           <h2 className="text-4xl xl:text-5xl font-bold leading-tight mb-8">
-            Transforme sua<br />consultoria em uma<br /><span className="text-lime-500">máquina digital.</span>
+            Transforme sua<br />consultoria em uma<br /><span className="text-lime-600">máquina digital.</span>
           </h2>
 
           <div className="space-y-6">
             <div className="flex items-start gap-4">
-              <div className="w-8 h-8 bg-lime-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                <Check className="w-5 h-5 text-lime-500" />
+              <div className="w-8 h-8 bg-lime-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Check className="w-5 h-5 text-white" />
               </div>
               <div>
                 <div className="font-semibold mb-1">Setup em minutos</div>
-                <div className="text-white/60 text-sm">Configure e comece a usar imediatamente.</div>
+                <div className="text-zinc-600 text-sm">Configure e comece a usar imediatamente.</div>
               </div>
             </div>
             <div className="flex items-start gap-4">
-              <div className="w-8 h-8 bg-lime-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                <Check className="w-5 h-5 text-lime-500" />
+              <div className="w-8 h-8 bg-lime-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Check className="w-5 h-5 text-white" />
               </div>
               <div>
                 <div className="font-semibold mb-1">Pagamento seguro</div>
-                <div className="text-white/60 text-sm">Processado pelo Mercado Pago.</div>
+                <div className="text-zinc-600 text-sm">Processado pelo Mercado Pago.</div>
               </div>
             </div>
             <div className="flex items-start gap-4">
-              <div className="w-8 h-8 bg-lime-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                <Check className="w-5 h-5 text-lime-500" />
+              <div className="w-8 h-8 bg-lime-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Check className="w-5 h-5 text-white" />
               </div>
               <div>
                 <div className="font-semibold mb-1">Suporte dedicado</div>
-                <div className="text-white/60 text-sm">Time pronto para ajudar.</div>
+                <div className="text-zinc-600 text-sm">Time pronto para ajudar.</div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="pt-8 border-t border-white/10">
-          <p className="text-white/40 text-sm">Mais de 500 consultorias já confiam na VITAE</p>
+        <div className="pt-8 border-t border-zinc-300">
+          <p className="text-zinc-500 text-sm">Mais de 500 consultorias já confiam na VITAE</p>
         </div>
       </div>
     </div>
