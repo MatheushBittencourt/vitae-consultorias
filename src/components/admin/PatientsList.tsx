@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Search, Plus, Filter, MoreVertical, Eye, Edit, Trash2, X, Loader2 } from 'lucide-react';
 import { Patient } from './AdminDashboard';
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = '/api';
 
 interface PatientsListProps {
   onSelectPatient: (patient: Patient) => void;

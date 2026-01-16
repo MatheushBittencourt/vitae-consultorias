@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { AdminUser } from './AdminLoginPage';
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = '/api';
 
 interface AdminSettingsSectionProps {
   adminUser: AdminUser;

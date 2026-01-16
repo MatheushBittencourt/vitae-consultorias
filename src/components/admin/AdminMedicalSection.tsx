@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Search, Edit, FileText, Loader2, Stethoscope } from 'lucide-react';
 import { Patient } from './AdminDashboard';
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = '/api';
 
 interface AdminMedicalSectionProps {
   onSelectPatient: (patient: Patient) => void;

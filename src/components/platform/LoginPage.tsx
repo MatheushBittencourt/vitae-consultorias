@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, User, Loader2 } from 'lucide-react';
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = '/api';
 
 export type ActiveModule = 'training' | 'nutrition' | 'medical' | 'rehab';
 

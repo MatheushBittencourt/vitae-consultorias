@@ -3,7 +3,7 @@ import { Download, Loader2, Utensils, ChevronDown, ChevronRight, Apple, Droplets
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = '/api';
 
 interface NutritionSectionProps {
   athleteId?: number;

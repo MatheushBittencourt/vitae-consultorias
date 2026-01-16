@@ -346,7 +346,7 @@ function PatientInfoTab({
   );
 }
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = '/api';
 
 interface TrainingPlan {
   id: number;
@@ -734,7 +734,7 @@ function NutritionTab({ patient, consultancyId }: { patient: Patient; consultanc
   const loadNutritionPlan = async () => {
     try {
       // Primeiro buscar o athlete_id
-      const athleteRes = await fetch(`http://localhost:3001/api/athletes?user_id=${patient.id}&consultancy_id=${consultancyId}`);
+      const athleteRes = await fetch(`/api/athletes?user_id=${patient.id}&consultancy_id=${consultancyId}`);
       const athletes = await athleteRes.json();
       
       if (athletes.length === 0) {
@@ -745,14 +745,14 @@ function NutritionTab({ patient, consultancyId }: { patient: Patient; consultanc
       const athleteId = athletes[0].id;
       
       // Buscar planos do atleta
-      const plansRes = await fetch(`http://localhost:3001/api/nutrition-plans?athlete_id=${athleteId}`);
+      const plansRes = await fetch(`/api/nutrition-plans?athlete_id=${athleteId}`);
       const plans = await plansRes.json();
       
       const activePlan = plans.find((p: NutritionPlan) => p.status === 'active') || plans[0];
       
       if (activePlan) {
         // Buscar plano completo
-        const completeRes = await fetch(`http://localhost:3001/api/nutrition-plans/${activePlan.id}/complete`);
+        const completeRes = await fetch(`/api/nutrition-plans/${activePlan.id}/complete`);
         const completeData = await completeRes.json();
         setPlan(completeData);
       }

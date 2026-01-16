@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Calendar, Clock, User, CheckCircle, XCircle, Loader2, X } from 'lucide-react';
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = '/api';
 
 interface Appointment {
   id: number;

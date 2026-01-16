@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Search, Edit, Eye, Loader2, Apple, Trash2, X, ChevronDown, ChevronRight, ArrowLeftRight, Utensils, Book, ArrowLeft } from 'lucide-react';
 import { Patient } from './AdminDashboard';
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = '/api';
 
 interface AdminNutritionSectionProps {
   onSelectPatient: (patient: Patient) => void;

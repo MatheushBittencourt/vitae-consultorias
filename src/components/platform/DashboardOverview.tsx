@@ -3,7 +3,7 @@ import { Calendar, TrendingUp, AlertCircle, Dumbbell, Apple, Stethoscope, HeartP
 import { DashboardView } from './Dashboard';
 import { ActiveModule } from './LoginPage';
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = '/api';
 
 interface DashboardOverviewProps {
   onNavigate: (view: DashboardView) => void;

@@ -5,7 +5,7 @@ import {
   User, Target, Clock, TrendingUp, ArrowLeft, Calendar
 } from 'lucide-react';
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = '/api';
 
 // ================== INTERFACES ==================
 

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Users, Calendar, TrendingUp, AlertCircle, UserPlus, Loader2 } from 'lucide-react';
 import { AdminView, Patient } from './AdminDashboard';
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = '/api';
 
 interface AdminOverviewProps {
   onNavigate: (view: AdminView) => void;

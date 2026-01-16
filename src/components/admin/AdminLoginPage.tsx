@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Shield, Stethoscope, Apple, Dumbbell, Loader2 } from 'lucide-react';
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = '/api';
 
 export type AdminRole = 'admin' | 'coach' | 'nutritionist' | 'physio';
 
