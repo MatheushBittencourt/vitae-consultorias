@@ -16,12 +16,70 @@ import { SignupPage } from './components/SignupPage';
 
 type AppView = 'site' | 'login' | 'dashboard' | 'admin-login' | 'admin-dashboard' | 'superadmin-login' | 'superadmin-dashboard' | 'signup';
 
+// Chaves do localStorage
+const STORAGE_KEYS = {
+  PATIENT: 'vitae_patient_session',
+  ADMIN: 'vitae_admin_session',
+  SUPERADMIN: 'vitae_superadmin_session',
+  VIEW: 'vitae_current_view'
+};
+
 export default function App() {
   const [currentView, setCurrentView] = useState<AppView>('site');
   const [patientUser, setPatientUser] = useState<PatientUser | null>(null);
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
   const [superAdminUser, setSuperAdminUser] = useState<SuperAdminUser | null>(null);
   const [selectedPlanId, setSelectedPlanId] = useState<string | undefined>(undefined);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Restaurar sessão do localStorage ao iniciar
+  useEffect(() => {
+    const restoreSession = () => {
+      try {
+        // Verificar se há sessão de superadmin
+        const savedSuperAdmin = localStorage.getItem(STORAGE_KEYS.SUPERADMIN);
+        if (savedSuperAdmin) {
+          const user = JSON.parse(savedSuperAdmin);
+          setSuperAdminUser(user);
+          setCurrentView('superadmin-dashboard');
+          setIsLoading(false);
+          return;
+        }
+
+        // Verificar se há sessão de admin
+        const savedAdmin = localStorage.getItem(STORAGE_KEYS.ADMIN);
+        if (savedAdmin) {
+          const user = JSON.parse(savedAdmin);
+          setAdminUser(user);
+          setCurrentView('admin-dashboard');
+          setIsLoading(false);
+          return;
+        }
+
+        // Verificar se há sessão de paciente
+        const savedPatient = localStorage.getItem(STORAGE_KEYS.PATIENT);
+        if (savedPatient) {
+          const user = JSON.parse(savedPatient);
+          setPatientUser(user);
+          setCurrentView('dashboard');
+          setIsLoading(false);
+          return;
+        }
+
+        // Nenhuma sessão encontrada
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Erro ao restaurar sessão:', error);
+        // Limpar dados corrompidos
+        localStorage.removeItem(STORAGE_KEYS.PATIENT);
+        localStorage.removeItem(STORAGE_KEYS.ADMIN);
+        localStorage.removeItem(STORAGE_KEYS.SUPERADMIN);
+        setIsLoading(false);
+      }
+    };
+
+    restoreSession();
+  }, []);
 
   // Verificar hash da URL para rota secreta do super admin
   useEffect(() => {
@@ -44,11 +102,15 @@ export default function App() {
   const handleLoginSuccess = (patient: PatientUser) => {
     setPatientUser(patient);
     setCurrentView('dashboard');
+    // Salvar sessão no localStorage
+    localStorage.setItem(STORAGE_KEYS.PATIENT, JSON.stringify(patient));
   };
 
   const handleLogout = () => {
     setPatientUser(null);
     setCurrentView('site');
+    // Limpar sessão do localStorage
+    localStorage.removeItem(STORAGE_KEYS.PATIENT);
   };
 
   // Admin login handlers
@@ -59,17 +121,23 @@ export default function App() {
   const handleAdminLoginSuccess = (user: AdminUser) => {
     setAdminUser(user);
     setCurrentView('admin-dashboard');
+    // Salvar sessão no localStorage
+    localStorage.setItem(STORAGE_KEYS.ADMIN, JSON.stringify(user));
   };
 
   const handleAdminLogout = () => {
     setAdminUser(null);
     setCurrentView('site');
+    // Limpar sessão do localStorage
+    localStorage.removeItem(STORAGE_KEYS.ADMIN);
   };
 
   // Super Admin handlers
   const handleSuperAdminLoginSuccess = (user: SuperAdminUser) => {
     setSuperAdminUser(user);
     setCurrentView('superadmin-dashboard');
+    // Salvar sessão no localStorage
+    localStorage.setItem(STORAGE_KEYS.SUPERADMIN, JSON.stringify(user));
     // Limpar o hash da URL
     window.history.replaceState(null, '', window.location.pathname);
   };
@@ -77,6 +145,8 @@ export default function App() {
   const handleSuperAdminLogout = () => {
     setSuperAdminUser(null);
     setCurrentView('site');
+    // Limpar sessão do localStorage
+    localStorage.removeItem(STORAGE_KEYS.SUPERADMIN);
   };
 
   // Signup handlers
@@ -89,6 +159,18 @@ export default function App() {
     // Após cadastro bem-sucedido, redireciona para login do admin
     setCurrentView('admin-login');
   };
+
+  // Mostrar loading enquanto restaura sessão
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-zinc-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-lime-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-zinc-600">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Render Signup page
   if (currentView === 'signup') {
