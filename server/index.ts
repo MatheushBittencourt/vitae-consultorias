@@ -4,6 +4,7 @@ import cors from 'cors'
 import helmet from 'helmet'
 import rateLimit from 'express-rate-limit'
 import bcrypt from 'bcryptjs'
+import crypto from 'crypto'
 import { createPool, RowDataPacket } from 'mysql2/promise'
 import { MercadoPagoConfig, PreApproval, Payment } from 'mercadopago'
 
@@ -46,6 +47,7 @@ const pool = createPool(dbConfig)
 // CONFIGURAÇÃO DO MERCADO PAGO
 // ===========================================
 const mercadoPagoAccessToken = process.env.MP_ACCESS_TOKEN || ''
+const mercadoPagoWebhookSecret = process.env.MP_WEBHOOK_SECRET || ''
 const SKIP_PAYMENT = process.env.SKIP_PAYMENT === 'true' || (!IS_PRODUCTION && !mercadoPagoAccessToken)
 
 if (SKIP_PAYMENT) {
@@ -1862,10 +1864,71 @@ app.get('/api/signup/pix/status/:paymentId', async (req, res) => {
   }
 })
 
+// Função para validar assinatura do webhook do Mercado Pago
+const validateWebhookSignature = (req: express.Request): boolean => {
+  if (!mercadoPagoWebhookSecret) {
+    console.log('⚠️ MP_WEBHOOK_SECRET não configurado, pulando validação')
+    return true // Em dev, pular validação se não tiver secret
+  }
+
+  const xSignature = req.headers['x-signature'] as string
+  const xRequestId = req.headers['x-request-id'] as string
+
+  if (!xSignature || !xRequestId) {
+    console.log('❌ Headers de assinatura ausentes')
+    return false
+  }
+
+  // Extrair ts e v1 do header x-signature
+  const signatureParts: Record<string, string> = {}
+  xSignature.split(',').forEach(part => {
+    const [key, value] = part.split('=')
+    if (key && value) {
+      signatureParts[key.trim()] = value.trim()
+    }
+  })
+
+  const ts = signatureParts['ts']
+  const v1 = signatureParts['v1']
+
+  if (!ts || !v1) {
+    console.log('❌ Formato de assinatura inválido')
+    return false
+  }
+
+  // Construir o manifest para validação
+  // Formato: id:[data.id];request-id:[x-request-id];ts:[ts];
+  const dataId = req.body?.data?.id || req.query?.['data.id'] || ''
+  const manifest = `id:${dataId};request-id:${xRequestId};ts:${ts};`
+
+  // Gerar HMAC-SHA256
+  const hmac = crypto.createHmac('sha256', mercadoPagoWebhookSecret)
+  hmac.update(manifest)
+  const generatedSignature = hmac.digest('hex')
+
+  const isValid = generatedSignature === v1
+  if (!isValid) {
+    console.log('❌ Assinatura inválida')
+    console.log('Manifest:', manifest)
+    console.log('Expected:', v1)
+    console.log('Generated:', generatedSignature)
+  }
+
+  return isValid
+}
+
 // Webhook do Mercado Pago para receber notificações de pagamento
 app.post('/api/webhooks/mercadopago', async (req, res) => {
   try {
     console.log('Webhook received:', JSON.stringify(req.body, null, 2))
+    
+    // Validar assinatura do webhook
+    if (!validateWebhookSignature(req)) {
+      console.log('❌ Webhook com assinatura inválida rejeitado')
+      return res.status(401).send('Invalid signature')
+    }
+    
+    console.log('✅ Assinatura do webhook validada')
     
     const { type, data } = req.body
 
