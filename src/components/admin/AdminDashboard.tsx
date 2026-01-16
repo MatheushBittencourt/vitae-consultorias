@@ -109,7 +109,7 @@ export function AdminDashboard({ onLogout, adminUser }: AdminDashboardProps) {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-100">
+    <div className="min-h-screen bg-zinc-100 lg:flex">
       <AdminSidebar 
         currentView={currentView === 'patient-detail' ? 'patients' : currentView}
         onViewChange={setCurrentView}
@@ -119,7 +119,7 @@ export function AdminDashboard({ onLogout, adminUser }: AdminDashboardProps) {
         onClose={() => setSidebarOpen(false)}
       />
       
-      {/* Header mobile */}
+      {/* Header mobile - apenas em telas pequenas */}
       <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-zinc-900 text-white flex items-center justify-between px-4 z-30">
         <button 
           onClick={() => setSidebarOpen(true)}
@@ -128,10 +128,11 @@ export function AdminDashboard({ onLogout, adminUser }: AdminDashboardProps) {
           <Menu className="w-6 h-6" />
         </button>
         <h1 className="font-bold text-lg">{getViewTitle()}</h1>
-        <div className="w-10" /> {/* Spacer para centralizar o título */}
+        <div className="w-10" />
       </header>
       
-      <main className="lg:ml-80 pt-16 lg:pt-0">
+      {/* Main content - desktop usa flex-1 ml-80, mobile usa pt-16 */}
+      <main className="flex-1 pt-16 lg:pt-0 lg:ml-80">
         <div className="p-4 lg:p-8">
           {renderContent()}
         </div>
