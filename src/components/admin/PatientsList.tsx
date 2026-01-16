@@ -52,6 +52,15 @@ export function PatientsList({ onSelectPatient, consultancyId }: PatientsListPro
     loadPatients();
   }, [consultancyId]);
 
+  // Fechar menu ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = () => setOpenMenuId(null);
+    if (openMenuId !== null) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [openMenuId]);
+
   const loadPatients = async () => {
     try {
       if (!consultancyId) {
@@ -218,7 +227,7 @@ export function PatientsList({ onSelectPatient, consultancyId }: PatientsListPro
       </div>
 
       {/* List/Table */}
-      <div className="bg-white overflow-hidden">
+      <div className="bg-white">
         {filteredPatients.length === 0 ? (
           <div className="p-8 lg:p-12 text-center text-zinc-500 text-sm lg:text-base">
             {patients.length === 0 ? 'Nenhum paciente cadastrado' : 'Nenhum paciente encontrado'}
@@ -338,35 +347,40 @@ export function PatientsList({ onSelectPatient, consultancyId }: PatientsListPro
                       </div>
                     </td>
                     <td className="px-6 py-4 font-bold">{patient.daysInProgram}</td>
-                    <td className="px-6 py-4 text-right relative">
-                      <button 
-                        onClick={() => setOpenMenuId(openMenuId === patient.id ? null : patient.id)}
-                        className="p-2 hover:bg-zinc-100 rounded transition-colors"
-                      >
-                        <MoreVertical className="w-5 h-5" />
-                      </button>
-                      {openMenuId === patient.id && (
-                        <div className="absolute right-6 top-full mt-1 bg-white border border-zinc-200 shadow-lg z-10 min-w-[160px]">
-                          <button 
-                            onClick={() => { onSelectPatient(patient); setOpenMenuId(null); }}
-                            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-zinc-50 text-left"
-                          >
-                            <Eye className="w-4 h-4" />
-                            <span>Ver Detalhes</span>
-                          </button>
-                          <button 
-                            onClick={() => { onSelectPatient(patient); setOpenMenuId(null); }}
-                            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-zinc-50 text-left"
-                          >
-                            <Edit className="w-4 h-4" />
-                            <span>Editar</span>
-                          </button>
-                          <button className="w-full flex items-center gap-3 px-4 py-3 hover:bg-zinc-50 text-left text-red-600">
-                            <Trash2 className="w-4 h-4" />
-                            <span>Remover</span>
-                          </button>
-                        </div>
-                      )}
+                    <td className="px-6 py-4 text-right">
+                      <div className="relative inline-block">
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenMenuId(openMenuId === patient.id ? null : patient.id);
+                          }}
+                          className="p-2 hover:bg-zinc-100 rounded transition-colors"
+                        >
+                          <MoreVertical className="w-5 h-5" />
+                        </button>
+                        {openMenuId === patient.id && (
+                          <div className="absolute right-0 bottom-full mb-1 bg-white border border-zinc-200 shadow-xl z-50 min-w-[160px] rounded-lg overflow-hidden">
+                            <button 
+                              onClick={() => { onSelectPatient(patient); setOpenMenuId(null); }}
+                              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-zinc-50 text-left"
+                            >
+                              <Eye className="w-4 h-4" />
+                              <span>Ver Detalhes</span>
+                            </button>
+                            <button 
+                              onClick={() => { onSelectPatient(patient); setOpenMenuId(null); }}
+                              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-zinc-50 text-left"
+                            >
+                              <Edit className="w-4 h-4" />
+                              <span>Editar</span>
+                            </button>
+                            <button className="w-full flex items-center gap-3 px-4 py-3 hover:bg-zinc-50 text-left text-red-600">
+                              <Trash2 className="w-4 h-4" />
+                              <span>Remover</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
