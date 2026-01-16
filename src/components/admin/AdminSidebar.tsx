@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { AdminView } from './AdminDashboard';
 import { AdminUser } from './AdminLoginPage';
+import { Logo } from '../ui/Logo';
 
 interface AdminSidebarProps {
   currentView: AdminView;
@@ -89,13 +90,13 @@ export function AdminSidebar({ currentView, onViewChange, onLogout, adminUser, i
         `}
       >
         {/* Logo */}
-        <div className="p-8 border-b border-white/10">
+        <div className="p-6 border-b border-white/10">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Shield className="w-8 h-8 text-lime-500" />
+            <div className="flex items-center gap-2">
+              <Logo size="lg" showText={false} />
               <div>
-                <h1 className="text-3xl font-bold tracking-tighter">VITAE</h1>
-                <p className="text-sm text-white/60">Painel Profissional</p>
+                <h1 className="text-2xl font-bold tracking-tighter text-white">VITAE</h1>
+                <p className="text-xs text-white/60">Painel Profissional</p>
               </div>
             </div>
             {/* Botão fechar - apenas mobile */}

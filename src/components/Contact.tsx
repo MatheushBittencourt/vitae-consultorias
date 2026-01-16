@@ -1,4 +1,5 @@
 import { ImageWithFallback } from './figma/ImageWithFallback';
+import { Logo } from './ui/Logo';
 
 export function Contact() {
   return (
@@ -118,7 +119,7 @@ export function Contact() {
         {/* Final Footer */}
         <div className="pt-8 sm:pt-12 border-t border-zinc-200">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 sm:gap-6">
-            <div className="text-xl sm:text-2xl font-bold tracking-tighter">VITAE</div>
+            <Logo size="sm" showText={false} />
             <div className="flex flex-wrap justify-center gap-4 sm:gap-8 text-xs sm:text-sm text-zinc-500">
               <a href="#" className="hover:text-black transition-colors">Política de Privacidade</a>
               <a href="#" className="hover:text-black transition-colors">Termos de Uso</a>

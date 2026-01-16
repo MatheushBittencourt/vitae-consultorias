@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Shield, Stethoscope, Apple, Dumbbell, Loader2 } from 'lucide-react';
+import { Logo } from '../ui/Logo';
 
 const API_URL = '/api';
 
@@ -129,8 +130,8 @@ export function AdminLoginPage({ onLoginSuccess, onBack }: AdminLoginPageProps) 
 
       <div className="w-full max-w-md">
         <div className="mb-8 lg:mb-12">
-          <div className="flex items-center gap-3 mb-4 lg:mb-6">
-            <Shield className="w-10 lg:w-12 h-10 lg:h-12 text-lime-500" />
+          <div className="mb-4 lg:mb-6">
+            <Logo size="xl" showText={false} />
           </div>
           <h1 className="text-4xl lg:text-6xl font-bold tracking-tighter mb-3 lg:mb-4 text-white">
             PAINEL<br/>

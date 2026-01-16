@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ArrowLeft, Crown, Loader2 } from 'lucide-react';
+import { Logo } from '../ui/Logo';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
@@ -59,8 +60,8 @@ export function SuperAdminLoginPage({ onLoginSuccess, onBack }: SuperAdminLoginP
 
       <div className="w-full max-w-md">
         <div className="mb-8 md:mb-12">
-          <div className="flex items-center gap-3 mb-4 md:mb-6">
-            <Crown className="w-10 md:w-12 h-10 md:h-12 text-lime-500" />
+          <div className="mb-4 md:mb-6">
+            <Logo size="xl" showText={false} />
           </div>
           <h1 className="text-4xl md:text-6xl font-bold tracking-tighter mb-2 md:mb-4 text-white">
             VITAE<br/>

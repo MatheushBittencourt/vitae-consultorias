@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { Menu, X, ChevronDown, User, Briefcase, Shield, Sparkles } from 'lucide-react';
+import { Menu, X, ChevronDown, User, Briefcase, Shield } from 'lucide-react';
+import { Logo } from './ui/Logo';
 
 interface HeaderProps {
   onLoginClick?: () => void;
@@ -37,11 +38,8 @@ export function Header({ onLoginClick, onAdminClick, onSuperAdminClick, onSignup
       <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-20">
           {/* Logo */}
-          <a href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-lime-500 rounded-lg flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-black" />
-            </div>
-            <span className="text-xl sm:text-2xl font-bold tracking-tighter">VITAE</span>
+          <a href="/" className="flex items-center">
+            <Logo size="md" showText={false} />
           </a>
 
           {/* Desktop Navigation - Center */}

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, ArrowRight, Check, Building2, User, Mail, Phone, Lock, Sparkles, Loader2, Dumbbell, Apple, Stethoscope, HeartPulse, Users, AlertCircle, CheckCircle, CreditCard, Shield, QrCode, Copy, Clock } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Building2, User, Mail, Phone, Lock, Loader2, Dumbbell, Apple, Stethoscope, HeartPulse, Users, AlertCircle, CheckCircle, CreditCard, Shield, QrCode, Copy, Clock } from 'lucide-react';
 import api from '../services/api';
+import { Logo } from './ui/Logo';
 
 type PaymentMethod = 'card' | 'pix';
 
@@ -1265,11 +1266,8 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
       {/* Right Side - Visual */}
       <div className="hidden lg:flex w-[45%] bg-black text-white p-12 flex-col justify-between">
         <div>
-          <div className="flex items-center gap-3 mb-16">
-            <div className="w-10 h-10 bg-lime-500 rounded-lg flex items-center justify-center">
-              <Sparkles className="w-6 h-6 text-black" />
-            </div>
-            <span className="text-2xl font-bold tracking-tighter">VITAE</span>
+          <div className="mb-16">
+            <Logo size="lg" showText={false} />
           </div>
 
           <h2 className="text-4xl xl:text-5xl font-bold leading-tight mb-8">
