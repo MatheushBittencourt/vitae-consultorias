@@ -127,7 +127,7 @@ pm2 logs vitae-api
 
 server {
     listen 80;
-    server_name seu-dominio.com;
+    server_name vitaeconsultorias.com.br;
 
     # Frontend (arquivos estáticos)
     location / {
@@ -160,7 +160,7 @@ sudo systemctl reload nginx
 
 ```bash
 sudo apt install certbot python3-certbot-nginx
-sudo certbot --nginx -d seu-dominio.com
+sudo certbot --nginx -d vitaeconsultorias.com.br
 ```
 
 ---
