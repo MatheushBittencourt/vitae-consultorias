@@ -49,10 +49,10 @@ export function SuperAdminLoginPage({ onLoginSuccess, onBack }: SuperAdminLoginP
   };
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center px-4 md:px-8 py-8">
+    <div className="min-h-screen bg-white flex items-center justify-center px-4 md:px-8 py-8">
       <button
         onClick={onBack}
-        className="fixed top-4 left-4 md:top-8 md:left-8 flex items-center gap-2 text-sm tracking-wider text-white/80 hover:text-lime-500 transition-colors p-2"
+        className="fixed top-4 left-4 md:top-8 md:left-8 flex items-center gap-2 text-sm tracking-wider hover:text-lime-500 transition-colors p-2"
       >
         <ArrowLeft className="w-4 h-4" />
         <span className="hidden sm:inline">VOLTAR</span>
@@ -63,45 +63,45 @@ export function SuperAdminLoginPage({ onLoginSuccess, onBack }: SuperAdminLoginP
           <div className="mb-4 md:mb-6">
             <Logo size="xl" showText={false} />
           </div>
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tighter mb-2 md:mb-4 text-white">
+          <h1 className="text-4xl md:text-6xl font-bold tracking-tighter mb-2 md:mb-4">
             VITAE<br/>
             <span className="text-lime-500">MASTER</span>
           </h1>
-          <p className="text-lg md:text-xl text-zinc-400">
+          <p className="text-lg md:text-xl text-zinc-600">
             Painel de gestão do SaaS.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
           {error && (
-            <div className="p-3 md:p-4 bg-red-500/10 border border-red-500/50 text-red-400 text-sm">
+            <div className="p-3 md:p-4 bg-red-50 border border-red-200 text-red-600 text-sm">
               {error}
             </div>
           )}
 
           <div>
-            <label className="block text-xs md:text-sm tracking-wider font-bold mb-2 md:mb-3 text-white">
+            <label className="block text-xs md:text-sm tracking-wider font-bold mb-2 md:mb-3">
               EMAIL
             </label>
             <input
               type="email"
               value={email}
               onChange={(e) => { setEmail(e.target.value); setError(''); }}
-              className="w-full px-4 md:px-6 py-3 md:py-4 bg-zinc-900 border-2 border-zinc-700 focus:border-lime-500 outline-none transition-colors text-base md:text-lg text-white placeholder-zinc-500"
+              className="w-full px-4 md:px-6 py-3 md:py-4 border-2 border-black focus:border-lime-500 outline-none transition-colors text-base md:text-lg"
               placeholder="admin@vitae.com"
               required
             />
           </div>
 
           <div>
-            <label className="block text-xs md:text-sm tracking-wider font-bold mb-2 md:mb-3 text-white">
+            <label className="block text-xs md:text-sm tracking-wider font-bold mb-2 md:mb-3">
               SENHA
             </label>
             <input
               type="password"
               value={password}
               onChange={(e) => { setPassword(e.target.value); setError(''); }}
-              className="w-full px-4 md:px-6 py-3 md:py-4 bg-zinc-900 border-2 border-zinc-700 focus:border-lime-500 outline-none transition-colors text-base md:text-lg text-white placeholder-zinc-500"
+              className="w-full px-4 md:px-6 py-3 md:py-4 border-2 border-black focus:border-lime-500 outline-none transition-colors text-base md:text-lg"
               placeholder="••••••••"
               required
             />
@@ -110,7 +110,7 @@ export function SuperAdminLoginPage({ onLoginSuccess, onBack }: SuperAdminLoginP
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-lime-500 text-black py-4 md:py-5 text-base md:text-lg tracking-wider font-bold hover:bg-lime-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full bg-black text-white py-4 md:py-5 text-base md:text-lg tracking-wider hover:bg-lime-500 hover:text-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {loading ? (
               <>
@@ -123,7 +123,7 @@ export function SuperAdminLoginPage({ onLoginSuccess, onBack }: SuperAdminLoginP
           </button>
         </form>
 
-        <div className="mt-6 md:mt-8 pt-6 md:pt-8 border-t border-zinc-800 text-center">
+        <div className="mt-6 md:mt-8 pt-6 md:pt-8 border-t border-zinc-200 text-center">
           <p className="text-xs md:text-sm text-zinc-500">
             Acesso restrito ao administrador do sistema.
           </p>

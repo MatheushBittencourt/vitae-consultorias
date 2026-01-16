@@ -119,10 +119,10 @@ export function AdminLoginPage({ onLoginSuccess, onBack }: AdminLoginPageProps) 
   };
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center px-4 lg:px-8 py-16 lg:py-8">
+    <div className="min-h-screen bg-white flex items-center justify-center px-4 lg:px-8 py-16 lg:py-8">
       <button
         onClick={onBack}
-        className="fixed top-4 lg:top-8 left-4 lg:left-8 flex items-center gap-2 text-sm tracking-wider text-white/80 hover:text-lime-500 transition-colors z-10"
+        className="fixed top-4 lg:top-8 left-4 lg:left-8 flex items-center gap-2 text-sm tracking-wider hover:text-lime-500 transition-colors z-10"
       >
         <ArrowLeft className="w-4 h-4" />
         <span className="hidden sm:inline">VOLTAR</span>
@@ -133,45 +133,45 @@ export function AdminLoginPage({ onLoginSuccess, onBack }: AdminLoginPageProps) 
           <div className="mb-4 lg:mb-6">
             <Logo size="xl" showText={false} />
           </div>
-          <h1 className="text-4xl lg:text-6xl font-bold tracking-tighter mb-3 lg:mb-4 text-white">
+          <h1 className="text-4xl lg:text-6xl font-bold tracking-tighter mb-3 lg:mb-4">
             PAINEL<br/>
             <span className="text-lime-500">PROFISSIONAL</span>
           </h1>
-          <p className="text-base lg:text-xl text-zinc-400">
+          <p className="text-base lg:text-xl text-zinc-600">
             Área restrita para profissionais da equipe VITAE.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 lg:space-y-6">
           {error && (
-            <div className="p-3 lg:p-4 bg-red-500/10 border border-red-500/50 text-red-400 text-sm">
+            <div className="p-3 lg:p-4 bg-red-50 border border-red-200 text-red-600 text-sm">
               {error}
             </div>
           )}
 
           <div>
-            <label className="block text-xs lg:text-sm tracking-wider font-bold mb-2 lg:mb-3 text-white">
+            <label className="block text-xs lg:text-sm tracking-wider font-bold mb-2 lg:mb-3">
               EMAIL CORPORATIVO
             </label>
             <input
               type="email"
               value={email}
               onChange={(e) => { setEmail(e.target.value); setError(''); }}
-              className="w-full px-4 lg:px-6 py-3 lg:py-4 bg-zinc-900 border-2 border-zinc-700 focus:border-lime-500 outline-none transition-colors text-base lg:text-lg text-white placeholder-zinc-500"
+              className="w-full px-4 lg:px-6 py-3 lg:py-4 border-2 border-black focus:border-lime-500 outline-none transition-colors text-base lg:text-lg"
               placeholder="profissional@vitae.com"
               required
             />
           </div>
 
           <div>
-            <label className="block text-xs lg:text-sm tracking-wider font-bold mb-2 lg:mb-3 text-white">
+            <label className="block text-xs lg:text-sm tracking-wider font-bold mb-2 lg:mb-3">
               SENHA
             </label>
             <input
               type="password"
               value={password}
               onChange={(e) => { setPassword(e.target.value); setError(''); }}
-              className="w-full px-4 lg:px-6 py-3 lg:py-4 bg-zinc-900 border-2 border-zinc-700 focus:border-lime-500 outline-none transition-colors text-base lg:text-lg text-white placeholder-zinc-500"
+              className="w-full px-4 lg:px-6 py-3 lg:py-4 border-2 border-black focus:border-lime-500 outline-none transition-colors text-base lg:text-lg"
               placeholder="••••••••"
               required
             />
@@ -180,7 +180,7 @@ export function AdminLoginPage({ onLoginSuccess, onBack }: AdminLoginPageProps) 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-lime-500 text-black py-4 lg:py-5 text-base lg:text-lg tracking-wider font-bold hover:bg-lime-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full bg-black text-white py-4 lg:py-5 text-base lg:text-lg tracking-wider hover:bg-lime-500 hover:text-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {loading ? (
               <>
@@ -193,25 +193,25 @@ export function AdminLoginPage({ onLoginSuccess, onBack }: AdminLoginPageProps) 
           </button>
         </form>
 
-        <div className="mt-6 lg:mt-8 pt-6 lg:pt-8 border-t border-zinc-800 text-center">
+        <div className="mt-6 lg:mt-8 pt-6 lg:pt-8 border-t border-zinc-200 text-center">
           <p className="text-xs lg:text-sm text-zinc-500">
             Acesso exclusivo para profissionais credenciados.
           </p>
         </div>
 
         {availableAdmins.length > 0 && (
-          <div className="mt-6 lg:mt-8 p-4 lg:p-6 bg-zinc-900/50 border border-zinc-800">
-            <p className="text-xs lg:text-sm text-zinc-400 mb-3 lg:mb-4">
-              <strong className="text-white">Credenciais de acesso (do banco):</strong>
+          <div className="mt-6 lg:mt-8 p-4 lg:p-6 bg-zinc-50 border border-zinc-200 rounded-lg">
+            <p className="text-xs lg:text-sm text-zinc-600 mb-3 lg:mb-4">
+              <strong className="text-black">Credenciais de acesso (do banco):</strong>
             </p>
             <div className="space-y-2 lg:space-y-3">
               {availableAdmins.map((acc) => (
                 <div key={acc.email} className="flex items-center gap-2 lg:gap-3 text-xs lg:text-sm">
-                  <span className="w-7 lg:w-8 h-7 lg:h-8 bg-lime-500/20 rounded flex items-center justify-center text-lime-500 flex-shrink-0">
+                  <span className="w-7 lg:w-8 h-7 lg:h-8 bg-lime-500/20 rounded flex items-center justify-center text-lime-600 flex-shrink-0">
                     {getRoleIcon(acc.role)}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <span className="text-zinc-300 font-medium truncate block">{acc.name}</span>
+                    <span className="text-zinc-800 font-medium truncate block">{acc.name}</span>
                     <div className="text-zinc-500 text-xs truncate">
                       {acc.email} / {getPasswordHint(acc.email)}
                     </div>
