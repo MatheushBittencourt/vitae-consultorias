@@ -1259,8 +1259,8 @@ app.post('/api/signup/consultancy', async (req, res) => {
       return res.status(400).json({ error: 'Campos obrigatórios não preenchidos' })
     }
 
-    // Validar token do cartão
-    if (!cardToken) {
+    // Validar token do cartão (apenas se pagamento não for pulado)
+    if (!SKIP_PAYMENT && !cardToken) {
       return res.status(400).json({ error: 'Dados do cartão são obrigatórios' })
     }
 
