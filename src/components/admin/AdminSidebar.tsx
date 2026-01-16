@@ -76,20 +76,22 @@ export function AdminSidebar({ currentView, onViewChange, onLogout, adminUser, i
 
   return (
     <>
-      {/* Overlay para mobile */}
-      {isOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-          onClick={onClose}
-        />
-      )}
+      {/* Overlay para mobile - só aparece quando sidebar está aberta */}
+      <div 
+        className={`fixed inset-0 bg-black/60 z-40 lg:hidden transition-opacity duration-300 ${
+          isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+        onClick={onClose}
+      />
       
-      <aside className={`
-        w-72 lg:w-80 bg-zinc-900 text-white fixed h-screen flex flex-col z-50
-        transition-transform duration-300 ease-in-out
-        ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-        lg:translate-x-0
-      `}>
+      {/* Sidebar - escondida em mobile por padrão, visível em desktop */}
+      <aside 
+        className={`
+          fixed top-0 left-0 h-full w-[280px] lg:w-80 bg-zinc-900 text-white flex flex-col z-50
+          transform transition-transform duration-300 ease-in-out
+          ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        `}
+      >
         {/* Logo */}
         <div className="p-6 lg:p-8 border-b border-white/10">
           <div className="flex items-center justify-between">
