@@ -1264,7 +1264,7 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
       </div>
 
       {/* Right Side - Visual */}
-      <div className="hidden lg:flex w-[45%] bg-zinc-100 text-black p-12 flex-col justify-between">
+      <div className="hidden lg:flex w-[45%] bg-white text-black p-12 flex-col justify-between">
         <div>
           <div className="mb-16">
             <Logo size="lg" showText={false} />
@@ -1305,7 +1305,7 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
           </div>
         </div>
 
-        <div className="pt-8 border-t border-zinc-300">
+        <div className="pt-8 border-t border-zinc-200">
           <p className="text-zinc-500 text-sm">Mais de 500 consultorias já confiam na VITAE</p>
         </div>
       </div>
