@@ -33,6 +33,8 @@ export function PatientsList({ onSelectPatient, consultancyId }: PatientsListPro
   const [showAddModal, setShowAddModal] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<Patient | null>(null);
   
   const [newPatient, setNewPatient] = useState({
     name: '',
@@ -139,6 +141,31 @@ export function PatientsList({ onSelectPatient, consultancyId }: PatientsListPro
       alert('Erro ao criar paciente');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDeletePatient = async (patient: Patient) => {
+    if (!consultancyId) return;
+    
+    setDeletingId(patient.id);
+    try {
+      const response = await fetch(`${API_URL}/superadmin/consultancies/${consultancyId}/users/${patient.id}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        alert(error.error || 'Erro ao remover paciente');
+        return;
+      }
+      
+      setShowDeleteConfirm(null);
+      loadPatients();
+    } catch (error) {
+      console.error('Error deleting patient:', error);
+      alert('Erro ao remover paciente');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -374,7 +401,10 @@ export function PatientsList({ onSelectPatient, consultancyId }: PatientsListPro
                               <Edit className="w-4 h-4" />
                               <span>Editar</span>
                             </button>
-                            <button className="w-full flex items-center gap-3 px-4 py-3 hover:bg-zinc-50 text-left text-red-600">
+                            <button 
+                              onClick={() => { setShowDeleteConfirm(patient); setOpenMenuId(null); }}
+                              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-50 text-left text-red-600"
+                            >
                               <Trash2 className="w-4 h-4" />
                               <span>Remover</span>
                             </button>
@@ -514,6 +544,42 @@ export function PatientsList({ onSelectPatient, consultancyId }: PatientsListPro
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white w-full max-w-md rounded-lg overflow-hidden">
+            <div className="p-6 border-b border-zinc-200">
+              <h2 className="text-xl font-bold text-red-600">Confirmar Exclusão</h2>
+            </div>
+            <div className="p-6">
+              <p className="text-zinc-600 mb-4">
+                Tem certeza que deseja remover o paciente <strong>{showDeleteConfirm.name}</strong>?
+              </p>
+              <p className="text-sm text-zinc-500">
+                Esta ação não pode ser desfeita. Todos os dados do paciente serão removidos permanentemente.
+              </p>
+            </div>
+            <div className="p-6 bg-zinc-50 flex gap-3">
+              <button 
+                onClick={() => setShowDeleteConfirm(null)}
+                disabled={deletingId !== null}
+                className="flex-1 py-3 border-2 border-zinc-300 font-bold hover:bg-zinc-100 transition-colors rounded"
+              >
+                CANCELAR
+              </button>
+              <button 
+                onClick={() => handleDeletePatient(showDeleteConfirm)}
+                disabled={deletingId !== null}
+                className="flex-1 py-3 bg-red-600 text-white font-bold hover:bg-red-700 transition-colors flex items-center justify-center gap-2 rounded"
+              >
+                {deletingId === showDeleteConfirm.id && <Loader2 className="w-5 h-5 animate-spin" />}
+                {deletingId === showDeleteConfirm.id ? 'REMOVENDO...' : 'REMOVER'}
+              </button>
+            </div>
           </div>
         </div>
       )}
