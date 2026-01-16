@@ -1581,7 +1581,7 @@ interface PendingPixSignup {
 // Armazenamento temporário de signups pendentes (em produção, usar Redis ou banco)
 const pendingPixSignups = new Map<number, PendingPixSignup>();
 
-// Gerar pagamento PIX para signup
+// Gerar pagamento PIX para signup (plano anual)
 app.post('/api/signup/consultancy/pix', async (req, res) => {
   try {
     const {
@@ -1595,9 +1595,14 @@ app.post('/api/signup/consultancy/pix', async (req, res) => {
       maxProfessionals,
       maxPatients,
       priceMonthly,
+      priceAnnual,
+      isAnnual,
       payerDocType,
       payerDocNumber
     } = req.body
+    
+    // Calcular valor a cobrar (anual = 10x mensal)
+    const amountToCharge = isAnnual ? (priceAnnual || priceMonthly * 10) : priceMonthly
 
     // Validações básicas
     if (!consultancyName || !consultancySlug || !adminName || !adminEmail || !adminPassword) {
@@ -1634,8 +1639,8 @@ app.post('/api/signup/consultancy/pix', async (req, res) => {
     expirationDate.setMinutes(expirationDate.getMinutes() + 30)
 
     const paymentData = {
-      transaction_amount: priceMonthly || 97,
-      description: `Assinatura VITAE - ${consultancyName}`,
+      transaction_amount: amountToCharge,
+      description: `VITAE - ${consultancyName} (Plano Anual)`,
       payment_method_id: 'pix',
       payer: {
         email: adminEmail.toLowerCase(),

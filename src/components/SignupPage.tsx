@@ -56,6 +56,7 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
     consultancyName: string;
     adminEmail: string;
     paymentId: string;
+    isAnnual?: boolean;
   } | null>(null);
   const [emailAvailable, setEmailAvailable] = useState<boolean | null>(null);
   const [checkingEmail, setCheckingEmail] = useState(false);
@@ -377,6 +378,9 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
         };
       }
 
+      // PIX é plano anual (10 meses pelo preço de 12 = 2 meses grátis)
+      const annualPrice = totalPrice * 10;
+      
       const response = await api.post<PixResponse>('/signup/consultancy/pix', {
         consultancyName: formData.consultancyName,
         consultancySlug: slug,
@@ -387,7 +391,9 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
         modules: formData.modules,
         maxProfessionals: formData.maxProfessionals,
         maxPatients: formData.maxPatients,
-        priceMonthly: totalPrice,
+        priceMonthly: totalPrice, // Valor mensal para referência
+        priceAnnual: annualPrice, // Valor que será cobrado
+        isAnnual: true,
         payerDocType: docNumber.length === 11 ? 'CPF' : 'CNPJ',
         payerDocNumber: docNumber,
       });
@@ -444,6 +450,7 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
             consultancyName: response.data.consultancyData?.consultancyName || formData.consultancyName,
             adminEmail: response.data.consultancyData?.adminEmail || formData.adminEmail,
             paymentId: response.data.consultancyData?.paymentId || String(paymentId),
+            isAnnual: true, // PIX é sempre anual
           });
         } else if (response.data.status === 'cancelled' || response.data.status === 'rejected') {
           // Pagamento cancelado ou rejeitado
@@ -552,8 +559,13 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
           <p className="text-zinc-600 text-lg mb-2">
             Bem-vindo à VITAE, <strong>{signupSuccess.consultancyName}</strong>!
           </p>
-          <p className="text-lime-600 font-semibold mb-8">
+          <p className={`font-semibold mb-2 ${signupSuccess.isAnnual ? 'text-teal-600' : 'text-lime-600'}`}>
             Pagamento aprovado ✓
+          </p>
+          <p className="text-sm text-zinc-500 mb-8">
+            {signupSuccess.isAnnual 
+              ? '📅 Plano Anual - Acesso por 12 meses' 
+              : '🔄 Assinatura Mensal - Renovação automática'}
           </p>
 
           <div className="bg-white border-2 border-zinc-200 rounded-xl p-6 mb-8 text-left">
@@ -904,19 +916,35 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
                 </div>
 
                 {/* Resumo */}
-                <div className="bg-lime-50 border-2 border-lime-200 p-4 rounded-xl flex items-center justify-between">
+                <div className={`p-4 rounded-xl flex items-center justify-between border-2 ${
+                  paymentMethod === 'pix' ? 'bg-teal-50 border-teal-200' : 'bg-lime-50 border-lime-200'
+                }`}>
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-lime-500 rounded-lg flex items-center justify-center">
-                      <CreditCard className="w-5 h-5 text-black" />
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                      paymentMethod === 'pix' ? 'bg-teal-500' : 'bg-lime-500'
+                    }`}>
+                      {paymentMethod === 'pix' ? (
+                        <QrCode className="w-5 h-5 text-white" />
+                      ) : (
+                        <CreditCard className="w-5 h-5 text-black" />
+                      )}
                     </div>
                     <div>
                       <div className="font-bold">{formData.consultancyName}</div>
-                      <div className="text-sm text-zinc-600">Plano {selectedPlan.name} - Assinatura mensal</div>
+                      <div className="text-sm text-zinc-600">
+                        Plano {selectedPlan.name} - {paymentMethod === 'pix' ? 'Anual' : 'Mensal recorrente'}
+                      </div>
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-2xl font-bold">R$ {totalPrice.toFixed(2).replace('.', ',')}</div>
-                    <div className="text-sm text-zinc-500">/mês</div>
+                    <div className="text-2xl font-bold">
+                      R$ {paymentMethod === 'pix' 
+                        ? (totalPrice * 10).toFixed(2).replace('.', ',') 
+                        : totalPrice.toFixed(2).replace('.', ',')}
+                    </div>
+                    <div className="text-sm text-zinc-500">
+                      {paymentMethod === 'pix' ? '/ano' : '/mês'}
+                    </div>
                   </div>
                 </div>
 
@@ -1013,7 +1041,7 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
                 ) : (
                   <>
                     {/* Seleção de método de pagamento */}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <button
                         type="button"
                         onClick={() => setPaymentMethod('card')}
@@ -1023,15 +1051,21 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
                             : 'border-zinc-200 hover:border-zinc-300'
                         }`}
                       >
-                        <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                        <div className="flex items-start gap-3">
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
                             paymentMethod === 'card' ? 'bg-lime-500' : 'bg-zinc-100'
                           }`}>
                             <CreditCard className={`w-5 h-5 ${paymentMethod === 'card' ? 'text-black' : 'text-zinc-500'}`} />
                           </div>
-                          <div>
+                          <div className="flex-1">
                             <div className="font-semibold">Cartão de Crédito</div>
-                            <div className="text-sm text-zinc-500">Aprovação imediata</div>
+                            <div className="text-sm text-zinc-500">Assinatura mensal</div>
+                            <div className="mt-2 text-lg font-bold text-lime-600">
+                              R$ {totalPrice.toFixed(2).replace('.', ',')}<span className="text-sm font-normal text-zinc-500">/mês</span>
+                            </div>
+                            <div className="mt-1 text-xs text-zinc-400">
+                              🔄 Renovação automática
+                            </div>
                           </div>
                         </div>
                       </button>
@@ -1039,25 +1073,53 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
                       <button
                         type="button"
                         onClick={() => setPaymentMethod('pix')}
-                        className={`p-4 rounded-xl border-2 text-left transition-all ${
+                        className={`p-4 rounded-xl border-2 text-left transition-all relative ${
                           paymentMethod === 'pix' 
                             ? 'border-teal-500 bg-teal-50' 
                             : 'border-zinc-200 hover:border-zinc-300'
                         }`}
                       >
-                        <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                        {/* Badge de economia */}
+                        <div className="absolute -top-2 -right-2 bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                          2 MESES GRÁTIS
+                        </div>
+                        <div className="flex items-start gap-3">
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
                             paymentMethod === 'pix' ? 'bg-teal-500' : 'bg-zinc-100'
                           }`}>
                             <QrCode className={`w-5 h-5 ${paymentMethod === 'pix' ? 'text-white' : 'text-zinc-500'}`} />
                           </div>
-                          <div>
+                          <div className="flex-1">
                             <div className="font-semibold">PIX</div>
-                            <div className="text-sm text-zinc-500">Pague com QR Code</div>
+                            <div className="text-sm text-zinc-500">Plano anual</div>
+                            <div className="mt-2 text-lg font-bold text-teal-600">
+                              R$ {(totalPrice * 10).toFixed(2).replace('.', ',')}<span className="text-sm font-normal text-zinc-500">/ano</span>
+                            </div>
+                            <div className="mt-1 text-xs text-zinc-400">
+                              💰 Economia de R$ {(totalPrice * 2).toFixed(2).replace('.', ',')}
+                            </div>
                           </div>
                         </div>
                       </button>
                     </div>
+                    
+                    {/* Informação sobre assinatura recorrente */}
+                    {paymentMethod === 'card' && (
+                      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            🔄
+                          </div>
+                          <div>
+                            <p className="font-medium text-amber-800">Assinatura Recorrente</p>
+                            <p className="text-sm text-amber-700 mt-1">
+                              Seu cartão será cobrado automaticamente todo mês no valor de <strong>R$ {totalPrice.toFixed(2).replace('.', ',')}</strong>. 
+                              Você pode cancelar a qualquer momento pelo painel.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Formulário de Cartão */}
                     {paymentMethod === 'card' && (
@@ -1128,8 +1190,11 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
                         <div className="flex items-start gap-3">
                           <QrCode className="w-5 h-5 text-teal-600 flex-shrink-0 mt-0.5" />
                           <div>
-                            <p className="font-medium text-teal-800">Pagamento via PIX</p>
-                            <p className="text-sm text-teal-600">Após clicar em "Gerar PIX", você receberá um QR Code para pagar</p>
+                            <p className="font-medium text-teal-800">Plano Anual via PIX</p>
+                            <p className="text-sm text-teal-600">
+                              Pague <strong>R$ {(totalPrice * 10).toFixed(2).replace('.', ',')}</strong> e tenha acesso por <strong>12 meses</strong>. 
+                              Você economiza o equivalente a 2 meses!
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -1174,12 +1239,12 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
                       {paymentMethod === 'card' ? (
                         <button onClick={handleSubmit} disabled={loading || !mpLoaded}
                           className="flex-1 py-4 bg-lime-500 text-black font-semibold rounded-xl hover:bg-lime-400 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                          {loading ? <><Loader2 className="w-5 h-5 animate-spin" /> Processando...</> : <>Pagar R$ {totalPrice.toFixed(2).replace('.', ',')} <Check className="w-5 h-5" /></>}
+                          {loading ? <><Loader2 className="w-5 h-5 animate-spin" /> Processando...</> : <>Assinar R$ {totalPrice.toFixed(2).replace('.', ',')}/mês <Check className="w-5 h-5" /></>}
                         </button>
                       ) : (
                         <button onClick={handlePixSubmit} disabled={loading}
                           className="flex-1 py-4 bg-teal-500 text-white font-semibold rounded-xl hover:bg-teal-400 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                          {loading ? <><Loader2 className="w-5 h-5 animate-spin" /> Gerando PIX...</> : <>Gerar PIX <QrCode className="w-5 h-5" /></>}
+                          {loading ? <><Loader2 className="w-5 h-5 animate-spin" /> Gerando PIX...</> : <>Pagar R$ {(totalPrice * 10).toFixed(2).replace('.', ',')} (anual) <QrCode className="w-5 h-5" /></>}
                         </button>
                       )}
                     </div>
