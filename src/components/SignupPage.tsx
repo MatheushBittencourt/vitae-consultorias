@@ -138,7 +138,7 @@ export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
   };
 
   const validateStep2 = () => {
-    return selectedModulesCount > 0;
+    return selectedModulesCount === selectedPlan.modules;
   };
 
   const validateStep3 = () => {
@@ -328,36 +328,48 @@ export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
 
   // Configuração de módulos
   const availableModules = [
-    { id: 'training' as const, name: 'Treinamento', description: 'Personal trainers e preparadores físicos', icon: Dumbbell, price: 97, color: 'bg-orange-100 text-orange-600' },
-    { id: 'nutrition' as const, name: 'Nutrição', description: 'Nutricionistas e dietistas', icon: Apple, price: 97, color: 'bg-green-100 text-green-600' },
-    { id: 'medical' as const, name: 'Médico', description: 'Médicos e especialistas', icon: Stethoscope, price: 127, color: 'bg-blue-100 text-blue-600' },
-    { id: 'rehab' as const, name: 'Reabilitação', description: 'Fisioterapeutas e reabilitadores', icon: HeartPulse, price: 97, color: 'bg-pink-100 text-pink-600' },
+    { id: 'training' as const, name: 'Treinamento', description: 'Personal trainers e preparadores físicos', icon: Dumbbell, color: 'bg-orange-100 text-orange-600' },
+    { id: 'nutrition' as const, name: 'Nutrição', description: 'Nutricionistas e dietistas', icon: Apple, color: 'bg-green-100 text-green-600' },
+    { id: 'medical' as const, name: 'Médico', description: 'Médicos e especialistas', icon: Stethoscope, color: 'bg-blue-100 text-blue-600' },
+    { id: 'rehab' as const, name: 'Reabilitação', description: 'Fisioterapeutas e reabilitadores', icon: HeartPulse, color: 'bg-pink-100 text-pink-600' },
   ];
 
-  const capacityOptions = [
-    { professionals: 3, patients: 30, basePrice: 0, label: 'Starter' },
-    { professionals: 5, patients: 50, basePrice: 50, label: 'Growth' },
-    { professionals: 10, patients: 100, basePrice: 150, label: 'Scale' },
-    { professionals: 20, patients: 250, basePrice: 350, label: 'Enterprise' },
+  // Planos fixos
+  const plans = [
+    { id: 'starter', name: 'Starter', modules: 1, professionals: 3, patients: 50, price: 159.90, popular: false },
+    { id: 'growth', name: 'Growth', modules: 2, professionals: 5, patients: 80, price: 297.90, popular: true },
+    { id: 'scale', name: 'Scale', modules: 3, professionals: 10, patients: 200, price: 497.90, popular: false },
+    { id: 'enterprise', name: 'Enterprise', modules: 4, professionals: 20, patients: 250, price: 797.90, popular: false },
   ];
 
-  const calculatePrice = () => {
-    const selectedModules = Object.entries(formData.modules)
-      .filter(([, selected]) => selected)
-      .map(([id]) => availableModules.find(m => m.id === id)!);
-    const modulesPrice = selectedModules.reduce((sum, m) => sum + m.price, 0);
-    const capacityOption = capacityOptions.find(c => c.professionals === formData.maxProfessionals);
-    const capacityPrice = capacityOption?.basePrice || 0;
-    return modulesPrice + capacityPrice;
-  };
+  const [selectedPlan, setSelectedPlan] = useState(plans[1]); // Growth como padrão
 
   const selectedModulesCount = Object.values(formData.modules).filter(Boolean).length;
-  const totalPrice = calculatePrice();
+  const totalPrice = selectedPlan.price;
 
   const toggleModule = (moduleId: keyof typeof formData.modules) => {
+    const currentCount = Object.values(formData.modules).filter(Boolean).length;
+    const isSelecting = !formData.modules[moduleId];
+    
+    // Limitar seleção de módulos ao plano escolhido
+    if (isSelecting && currentCount >= selectedPlan.modules) {
+      return; // Não permite selecionar mais módulos do que o plano permite
+    }
+    
     setFormData({
       ...formData,
       modules: { ...formData.modules, [moduleId]: !formData.modules[moduleId] },
+    });
+  };
+
+  const handlePlanSelect = (plan: typeof plans[0]) => {
+    setSelectedPlan(plan);
+    // Resetar módulos quando mudar de plano
+    setFormData({
+      ...formData,
+      modules: { training: false, nutrition: false, medical: false, rehab: false },
+      maxProfessionals: plan.professionals,
+      maxPatients: plan.patients,
     });
   };
 
@@ -572,36 +584,91 @@ export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
               </div>
             )}
 
-            {/* Step 2 - Módulos e Capacidade */}
+            {/* Step 2 - Escolher Plano e Módulos */}
             {step === 2 && (
               <div className="space-y-6">
                 <div className="text-center">
-                  <h1 className="text-3xl sm:text-4xl font-bold mb-3">Monte seu plano</h1>
-                  <p className="text-zinc-600 text-lg">Escolha os módulos e a capacidade</p>
+                  <h1 className="text-3xl sm:text-4xl font-bold mb-3">Escolha seu plano</h1>
+                  <p className="text-zinc-600 text-lg">Selecione o plano ideal para sua consultoria</p>
+                </div>
+
+                {/* Planos */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {plans.map((plan) => {
+                    const isSelected = selectedPlan.id === plan.id;
+                    return (
+                      <button
+                        key={plan.id}
+                        type="button"
+                        onClick={() => handlePlanSelect(plan)}
+                        className={`relative p-4 rounded-xl border-2 text-center transition-all ${
+                          isSelected ? 'border-lime-500 bg-lime-50' : 'border-zinc-200 hover:border-zinc-300'
+                        }`}
+                      >
+                        {plan.popular && (
+                          <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-lime-500 text-black text-xs font-bold px-2 py-0.5 rounded">
+                            POPULAR
+                          </div>
+                        )}
+                        <div className="font-bold text-lg mb-1">{plan.name}</div>
+                        <div className="text-2xl font-bold text-lime-600">
+                          R$ {plan.price.toFixed(2).replace('.', ',')}
+                        </div>
+                        <div className="text-xs text-zinc-500 mb-3">/mês</div>
+                        <div className="space-y-1 text-xs text-zinc-600">
+                          <div className="flex items-center justify-center gap-1">
+                            <Check className="w-3 h-3 text-lime-500" />
+                            {plan.modules} módulo{plan.modules > 1 ? 's' : ''}
+                          </div>
+                          <div className="flex items-center justify-center gap-1">
+                            <Check className="w-3 h-3 text-lime-500" />
+                            {plan.professionals} profissionais
+                          </div>
+                          <div className="flex items-center justify-center gap-1">
+                            <Check className="w-3 h-3 text-lime-500" />
+                            {plan.patients} pacientes
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {/* Módulos */}
                 <div>
-                  <label className="block text-sm font-semibold text-zinc-700 mb-3">Quais profissionais vão usar?</label>
+                  <label className="block text-sm font-semibold text-zinc-700 mb-3">
+                    Escolha {selectedPlan.modules} módulo{selectedPlan.modules > 1 ? 's' : ''} para seu plano:
+                  </label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {availableModules.map((module) => {
                       const Icon = module.icon;
                       const isSelected = formData.modules[module.id];
+                      const canSelect = isSelected || selectedModulesCount < selectedPlan.modules;
                       return (
-                        <button key={module.id} type="button" onClick={() => toggleModule(module.id)}
-                          className={`p-4 rounded-xl border-2 text-left transition-all ${isSelected ? 'border-lime-500 bg-lime-50' : 'border-zinc-200 hover:border-zinc-300'}`}>
+                        <button
+                          key={module.id}
+                          type="button"
+                          onClick={() => toggleModule(module.id)}
+                          disabled={!canSelect && !isSelected}
+                          className={`p-4 rounded-xl border-2 text-left transition-all ${
+                            isSelected
+                              ? 'border-lime-500 bg-lime-50'
+                              : canSelect
+                              ? 'border-zinc-200 hover:border-zinc-300'
+                              : 'border-zinc-100 bg-zinc-50 opacity-50 cursor-not-allowed'
+                          }`}
+                        >
                           <div className="flex items-start gap-3">
                             <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${module.color}`}>
                               <Icon className="w-5 h-5" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between">
-                                <span className="font-semibold">{module.name}</span>
-                                <span className="text-sm font-bold text-lime-600">+R$ {module.price}</span>
-                              </div>
+                              <span className="font-semibold">{module.name}</span>
                               <div className="text-sm text-zinc-500">{module.description}</div>
                             </div>
-                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${isSelected ? 'bg-lime-500 border-lime-500' : 'border-zinc-300'}`}>
+                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                              isSelected ? 'bg-lime-500 border-lime-500' : 'border-zinc-300'
+                            }`}>
                               {isSelected && <Check className="w-3 h-3 text-white" />}
                             </div>
                           </div>
@@ -609,63 +676,53 @@ export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
                       );
                     })}
                   </div>
-                  {selectedModulesCount === 0 && <p className="mt-2 text-sm text-amber-600">Selecione pelo menos 1 módulo</p>}
-                </div>
-
-                {/* Capacidade */}
-                <div>
-                  <label className="block text-sm font-semibold text-zinc-700 mb-3">
-                    <Users className="w-4 h-4 inline mr-2" />Tamanho da equipe
-                  </label>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {capacityOptions.map((option) => {
-                      const isSelected = formData.maxProfessionals === option.professionals;
-                      return (
-                        <button key={option.professionals} type="button"
-                          onClick={() => setFormData({ ...formData, maxProfessionals: option.professionals, maxPatients: option.patients })}
-                          className={`p-3 rounded-xl border-2 text-center transition-all ${isSelected ? 'border-lime-500 bg-lime-50' : 'border-zinc-200 hover:border-zinc-300'}`}>
-                          <div className="font-bold text-lg">{option.professionals}</div>
-                          <div className="text-xs text-zinc-500">profissionais</div>
-                          <div className="text-xs text-zinc-400 mt-1">{option.patients} pacientes</div>
-                          {option.basePrice > 0 && <div className="text-xs font-semibold text-lime-600 mt-1">+R$ {option.basePrice}</div>}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Resumo do Preço */}
-                <div className="bg-zinc-900 text-white p-5 rounded-xl">
-                  <div className="space-y-2 mb-4 pb-4 border-b border-zinc-700">
-                    {Object.entries(formData.modules).filter(([, selected]) => selected).map(([id]) => {
-                      const module = availableModules.find(m => m.id === id)!;
-                      return (
-                        <div key={id} className="flex justify-between text-sm">
-                          <span>{module.name}</span><span>R$ {module.price}</span>
-                        </div>
-                      );
-                    })}
-                    {capacityOptions.find(c => c.professionals === formData.maxProfessionals)?.basePrice! > 0 && (
-                      <div className="flex justify-between text-sm">
-                        <span>Capacidade extra</span>
-                        <span>R$ {capacityOptions.find(c => c.professionals === formData.maxProfessionals)?.basePrice}</span>
-                      </div>
+                  <p className="mt-2 text-sm text-zinc-500">
+                    {selectedModulesCount}/{selectedPlan.modules} módulos selecionados
+                    {selectedModulesCount < selectedPlan.modules && (
+                      <span className="text-amber-600"> - Selecione mais {selectedPlan.modules - selectedModulesCount}</span>
                     )}
-                  </div>
-                  <div className="flex items-end justify-between">
+                  </p>
+                </div>
+
+                {/* Resumo do Plano */}
+                <div className="bg-zinc-900 text-white p-5 rounded-xl">
+                  <div className="flex items-center justify-between mb-4 pb-4 border-b border-zinc-700">
                     <div>
+                      <div className="text-sm text-zinc-400">Plano selecionado</div>
+                      <div className="text-xl font-bold">{selectedPlan.name}</div>
+                    </div>
+                    <div className="text-right">
                       <div className="text-sm text-zinc-400">Total mensal</div>
                       <div className="text-2xl font-bold">
-                        {selectedModulesCount > 0 ? <>R$ {totalPrice}<span className="text-base text-zinc-400">/mês</span></> : <span className="text-zinc-500">R$ --</span>}
+                        R$ {totalPrice.toFixed(2).replace('.', ',')}
                       </div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4 text-center text-sm">
+                    <div>
+                      <div className="text-zinc-400">Módulos</div>
+                      <div className="font-bold">{selectedPlan.modules}</div>
+                    </div>
+                    <div>
+                      <div className="text-zinc-400">Profissionais</div>
+                      <div className="font-bold">{selectedPlan.professionals}</div>
+                    </div>
+                    <div>
+                      <div className="text-zinc-400">Pacientes</div>
+                      <div className="font-bold">{selectedPlan.patients}</div>
                     </div>
                   </div>
                 </div>
 
                 <div className="flex gap-4">
-                  <button onClick={() => setStep(1)} className="flex-1 py-4 border-2 border-zinc-300 text-zinc-700 font-semibold rounded-xl hover:border-black hover:text-black transition-colors">Voltar</button>
-                  <button onClick={handleNext} disabled={selectedModulesCount === 0}
-                    className="flex-1 py-4 bg-black text-white font-semibold rounded-xl hover:bg-lime-500 hover:text-black transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                  <button onClick={() => setStep(1)} className="flex-1 py-4 border-2 border-zinc-300 text-zinc-700 font-semibold rounded-xl hover:border-black hover:text-black transition-colors">
+                    Voltar
+                  </button>
+                  <button
+                    onClick={handleNext}
+                    disabled={selectedModulesCount !== selectedPlan.modules}
+                    className="flex-1 py-4 bg-black text-white font-semibold rounded-xl hover:bg-lime-500 hover:text-black transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
                     Continuar <ArrowRight className="w-5 h-5" />
                   </button>
                 </div>
@@ -688,11 +745,11 @@ export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
                     </div>
                     <div>
                       <div className="font-bold">{formData.consultancyName}</div>
-                      <div className="text-sm text-zinc-600">Assinatura mensal</div>
+                      <div className="text-sm text-zinc-600">Plano {selectedPlan.name} - Assinatura mensal</div>
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-2xl font-bold">R$ {totalPrice}</div>
+                    <div className="text-2xl font-bold">R$ {totalPrice.toFixed(2).replace('.', ',')}</div>
                     <div className="text-sm text-zinc-500">/mês</div>
                   </div>
                 </div>
@@ -792,7 +849,7 @@ export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
                   <button onClick={() => setStep(2)} className="flex-1 py-4 border-2 border-zinc-300 text-zinc-700 font-semibold rounded-xl hover:border-black hover:text-black transition-colors">Voltar</button>
                   <button onClick={handleSubmit} disabled={loading || !mpLoaded}
                     className="flex-1 py-4 bg-lime-500 text-black font-semibold rounded-xl hover:bg-lime-400 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                    {loading ? <><Loader2 className="w-5 h-5 animate-spin" /> Processando...</> : <>Pagar R$ {totalPrice} <Check className="w-5 h-5" /></>}
+                    {loading ? <><Loader2 className="w-5 h-5 animate-spin" /> Processando...</> : <>Pagar R$ {totalPrice.toFixed(2).replace('.', ',')} <Check className="w-5 h-5" /></>}
                   </button>
                 </div>
 
