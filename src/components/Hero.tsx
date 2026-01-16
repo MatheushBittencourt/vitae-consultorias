@@ -1,6 +1,10 @@
 import { ImageWithFallback } from './figma/ImageWithFallback';
 
-export function Hero() {
+interface HeroProps {
+  onSignupClick: () => void;
+}
+
+export function Hero({ onSignupClick }: HeroProps) {
   return (
     <section className="pt-20 md:pt-24 min-h-screen flex items-center">
       <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20">
@@ -23,7 +27,10 @@ export function Hero() {
                 Uma única plataforma para gerenciar seus pacientes, protocolos e resultados.
                 Profissionalize sua consultoria com tecnologia de ponta.
               </p>
-              <button className="w-full sm:w-auto bg-black text-white px-8 sm:px-10 py-4 sm:py-5 text-base sm:text-lg tracking-wider hover:bg-lime-500 hover:text-black transition-all duration-300 mt-4 sm:mt-8">
+              <button 
+                onClick={onSignupClick}
+                className="w-full sm:w-auto bg-black text-white px-8 sm:px-10 py-4 sm:py-5 text-base sm:text-lg tracking-wider hover:bg-lime-500 hover:text-black transition-all duration-300 mt-4 sm:mt-8"
+              >
                 COMEÇAR AGORA
               </button>
             </div>

@@ -11,11 +11,12 @@ declare global {
 interface SignupPageProps {
   onBack: () => void;
   onSuccess: () => void;
+  initialPlanId?: string;
 }
 
 type Step = 1 | 2 | 3;
 
-export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
+export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps) {
   const [step, setStep] = useState<Step>(1);
   const [loading, setLoading] = useState(false);
   const [mpLoaded, setMpLoaded] = useState(false);
@@ -342,7 +343,16 @@ export function SignupPage({ onBack, onSuccess }: SignupPageProps) {
     { id: 'enterprise', name: 'Enterprise', modules: 4, professionals: 20, patients: 250, price: 797.90, popular: false },
   ];
 
-  const [selectedPlan, setSelectedPlan] = useState(plans[1]); // Growth como padrão
+  // Selecionar plano inicial baseado no initialPlanId ou Growth como padrão
+  const getInitialPlan = () => {
+    if (initialPlanId) {
+      const plan = plans.find(p => p.id === initialPlanId);
+      if (plan) return plan;
+    }
+    return plans[1]; // Growth como padrão
+  };
+
+  const [selectedPlan, setSelectedPlan] = useState(getInitialPlan());
 
   const selectedModulesCount = Object.values(formData.modules).filter(Boolean).length;
   const totalPrice = selectedPlan.price;

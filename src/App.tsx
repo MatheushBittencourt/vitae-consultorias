@@ -21,6 +21,7 @@ export default function App() {
   const [patientUser, setPatientUser] = useState<PatientUser | null>(null);
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
   const [superAdminUser, setSuperAdminUser] = useState<SuperAdminUser | null>(null);
+  const [selectedPlanId, setSelectedPlanId] = useState<string | undefined>(undefined);
 
   // Verificar hash da URL para rota secreta do super admin
   useEffect(() => {
@@ -79,7 +80,8 @@ export default function App() {
   };
 
   // Signup handlers
-  const handleSignupClick = () => {
+  const handleSignupClick = (planId?: string) => {
+    setSelectedPlanId(planId);
     setCurrentView('signup');
   };
 
@@ -94,6 +96,7 @@ export default function App() {
       <SignupPage 
         onBack={() => setCurrentView('site')} 
         onSuccess={handleSignupSuccess}
+        initialPlanId={selectedPlanId}
       />
     );
   }
@@ -140,13 +143,13 @@ export default function App() {
         onLoginClick={handleLoginClick} 
         onAdminClick={handleAdminLoginClick} 
         onSuperAdminClick={() => setCurrentView('superadmin-login')}
-        onSignupClick={handleSignupClick}
+        onSignupClick={() => handleSignupClick()}
       />
-      <Hero />
+      <Hero onSignupClick={() => handleSignupClick()} />
       <Impact />
       <Team />
       <Method />
-      <Stats />
+      <Stats onSignupClick={handleSignupClick} />
       <Contact />
     </div>
   );

@@ -1,4 +1,8 @@
-export function Stats() {
+interface StatsProps {
+  onSignupClick: (planId?: string) => void;
+}
+
+export function Stats({ onSignupClick }: StatsProps) {
   return (
     <section id="planos" className="py-16 sm:py-24 lg:py-32 px-4 sm:px-6 lg:px-8 bg-black text-white">
       <div className="max-w-screen-2xl mx-auto">
@@ -40,7 +44,10 @@ export function Stats() {
                 <span>Suporte por email</span>
               </li>
             </ul>
-            <button className="w-full py-3 sm:py-4 border-2 border-white text-white font-bold text-sm hover:bg-white hover:text-black transition-colors">
+            <button 
+              onClick={() => onSignupClick('starter')}
+              className="w-full py-3 sm:py-4 border-2 border-white text-white font-bold text-sm hover:bg-white hover:text-black transition-colors"
+            >
               COMEÇAR AGORA
             </button>
           </div>
@@ -75,7 +82,10 @@ export function Stats() {
                 <span>Relatórios avançados</span>
               </li>
             </ul>
-            <button className="w-full py-3 sm:py-4 bg-black text-lime-500 font-bold text-sm hover:bg-white hover:text-black transition-colors">
+            <button 
+              onClick={() => onSignupClick('growth')}
+              className="w-full py-3 sm:py-4 bg-black text-lime-500 font-bold text-sm hover:bg-white hover:text-black transition-colors"
+            >
               COMEÇAR AGORA
             </button>
           </div>
@@ -107,7 +117,10 @@ export function Stats() {
                 <span>Relatórios avançados</span>
               </li>
             </ul>
-            <button className="w-full py-3 sm:py-4 border-2 border-white text-white font-bold text-sm hover:bg-white hover:text-black transition-colors">
+            <button 
+              onClick={() => onSignupClick('scale')}
+              className="w-full py-3 sm:py-4 border-2 border-white text-white font-bold text-sm hover:bg-white hover:text-black transition-colors"
+            >
               COMEÇAR AGORA
             </button>
           </div>
@@ -143,8 +156,11 @@ export function Stats() {
                 <span>White-label disponível</span>
               </li>
             </ul>
-            <button className="w-full py-3 sm:py-4 bg-lime-500 text-black font-bold text-sm hover:bg-lime-400 transition-colors">
-              FALAR COM VENDAS
+            <button 
+              onClick={() => onSignupClick('enterprise')}
+              className="w-full py-3 sm:py-4 bg-lime-500 text-black font-bold text-sm hover:bg-lime-400 transition-colors"
+            >
+              COMEÇAR AGORA
             </button>
           </div>
         </div>
