@@ -608,12 +608,12 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 flex">
+    <div className="min-h-screen bg-black flex">
       {/* Left Side - Form */}
       <div className="flex-1 flex flex-col">
         {/* Header */}
         <div className="p-6 sm:p-8">
-          <button onClick={onBack} className="flex items-center gap-2 text-zinc-600 hover:text-black transition-colors">
+          <button onClick={onBack} className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors">
             <ArrowLeft className="w-5 h-5" />
             <span className="font-medium">Voltar ao site</span>
           </button>
@@ -627,11 +627,11 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
               {[1, 2, 3].map((s) => (
                 <div key={s} className="flex items-center gap-3">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-colors ${
-                    step >= s ? 'bg-lime-500 text-black' : 'bg-zinc-200 text-zinc-500'
+                    step >= s ? 'bg-lime-500 text-black' : 'bg-zinc-700 text-zinc-400'
                   }`}>
                     {step > s ? <Check className="w-5 h-5" /> : s}
                   </div>
-                  {s < 3 && <div className={`w-12 sm:w-16 h-1 rounded ${step > s ? 'bg-lime-500' : 'bg-zinc-200'}`} />}
+                  {s < 3 && <div className={`w-12 sm:w-16 h-1 rounded ${step > s ? 'bg-lime-500' : 'bg-zinc-700'}`} />}
                 </div>
               ))}
             </div>
@@ -640,60 +640,60 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
             {step === 1 && (
               <div className="space-y-6">
                 <div className="text-center">
-                  <h1 className="text-3xl sm:text-4xl font-bold mb-3">Crie sua consultoria</h1>
-                  <p className="text-zinc-600 text-lg">Preencha os dados para começar</p>
+                  <h1 className="text-3xl sm:text-4xl font-bold mb-3 text-white">Crie sua consultoria</h1>
+                  <p className="text-zinc-400 text-lg">Preencha os dados para começar</p>
                 </div>
 
                 <div className="space-y-4">
                   {/* Nome da Consultoria */}
                   <div>
-                    <label className="block text-sm font-semibold text-zinc-700 mb-2">Nome da Consultoria *</label>
+                    <label className="block text-sm font-semibold text-zinc-300 mb-2">Nome da Consultoria *</label>
                     <div className="relative">
-                      <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+                      <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
                       <input
                         type="text"
                         value={formData.consultancyName}
                         onChange={(e) => setFormData({ ...formData, consultancyName: e.target.value })}
-                        className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none transition-colors ${
-                          errors.consultancyName ? 'border-red-300 bg-red-50' : 'border-zinc-200 focus:border-lime-500'
+                        className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none transition-colors bg-zinc-900 text-white placeholder-zinc-500 ${
+                          errors.consultancyName ? 'border-red-500 bg-red-900/20' : 'border-zinc-700 focus:border-lime-500'
                         }`}
                         placeholder="Ex: Performance Elite"
                       />
                     </div>
-                    {errors.consultancyName && <p className="mt-1 text-sm text-red-500">{errors.consultancyName}</p>}
+                    {errors.consultancyName && <p className="mt-1 text-sm text-red-400">{errors.consultancyName}</p>}
                   </div>
 
                   {/* Seu nome */}
                   <div>
-                    <label className="block text-sm font-semibold text-zinc-700 mb-2">Seu nome completo *</label>
+                    <label className="block text-sm font-semibold text-zinc-300 mb-2">Seu nome completo *</label>
                     <div className="relative">
-                      <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+                      <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
                       <input
                         type="text"
                         value={formData.adminName}
                         onChange={(e) => setFormData({ ...formData, adminName: e.target.value })}
-                        className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none transition-colors ${
-                          errors.adminName ? 'border-red-300 bg-red-50' : 'border-zinc-200 focus:border-lime-500'
+                        className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none transition-colors bg-zinc-900 text-white placeholder-zinc-500 ${
+                          errors.adminName ? 'border-red-500 bg-red-900/20' : 'border-zinc-700 focus:border-lime-500'
                         }`}
                         placeholder="João Silva"
                       />
                     </div>
-                    {errors.adminName && <p className="mt-1 text-sm text-red-500">{errors.adminName}</p>}
+                    {errors.adminName && <p className="mt-1 text-sm text-red-400">{errors.adminName}</p>}
                   </div>
 
                   {/* Email e Telefone */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-semibold text-zinc-700 mb-2">Email *</label>
+                      <label className="block text-sm font-semibold text-zinc-300 mb-2">Email *</label>
                       <div className="relative">
-                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
                         <input
                           type="email"
                           value={formData.adminEmail}
                           onChange={(e) => { setFormData({ ...formData, adminEmail: e.target.value }); setEmailAvailable(null); }}
                           onBlur={() => checkEmailAvailability(formData.adminEmail)}
-                          className={`w-full pl-12 pr-10 py-3 border-2 rounded-xl outline-none transition-colors ${
-                            errors.adminEmail || emailAvailable === false ? 'border-red-300 bg-red-50' : emailAvailable === true ? 'border-lime-500 bg-lime-50' : 'border-zinc-200 focus:border-lime-500'
+                          className={`w-full pl-12 pr-10 py-3 border-2 rounded-xl outline-none transition-colors bg-zinc-900 text-white placeholder-zinc-500 ${
+                            errors.adminEmail || emailAvailable === false ? 'border-red-500 bg-red-900/20' : emailAvailable === true ? 'border-lime-500 bg-lime-900/20' : 'border-zinc-700 focus:border-lime-500'
                           }`}
                           placeholder="email@exemplo.com"
                         />
@@ -703,17 +703,17 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
                           {!checkingEmail && emailAvailable === false && <AlertCircle className="w-4 h-4 text-red-500" />}
                         </div>
                       </div>
-                      {errors.adminEmail && <p className="mt-1 text-sm text-red-500">{errors.adminEmail}</p>}
+                      {errors.adminEmail && <p className="mt-1 text-sm text-red-400">{errors.adminEmail}</p>}
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-zinc-700 mb-2">Telefone</label>
+                      <label className="block text-sm font-semibold text-zinc-300 mb-2">Telefone</label>
                       <div className="relative">
-                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
                         <input
                           type="tel"
                           value={formData.adminPhone}
                           onChange={(e) => setFormData({ ...formData, adminPhone: e.target.value })}
-                          className="w-full pl-12 pr-4 py-3 border-2 border-zinc-200 rounded-xl outline-none focus:border-lime-500 transition-colors"
+                          className="w-full pl-12 pr-4 py-3 border-2 border-zinc-700 rounded-xl outline-none focus:border-lime-500 transition-colors bg-zinc-900 text-white placeholder-zinc-500"
                           placeholder="(11) 99999-9999"
                         />
                       </div>
@@ -723,41 +723,41 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
                   {/* Senhas */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-semibold text-zinc-700 mb-2">Senha *</label>
+                      <label className="block text-sm font-semibold text-zinc-300 mb-2">Senha *</label>
                       <div className="relative">
-                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
                         <input
                           type="password"
                           value={formData.adminPassword}
                           onChange={(e) => setFormData({ ...formData, adminPassword: e.target.value })}
-                          className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none transition-colors ${
-                            errors.adminPassword ? 'border-red-300 bg-red-50' : 'border-zinc-200 focus:border-lime-500'
+                          className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none transition-colors bg-zinc-900 text-white placeholder-zinc-500 ${
+                            errors.adminPassword ? 'border-red-500 bg-red-900/20' : 'border-zinc-700 focus:border-lime-500'
                           }`}
                           placeholder="••••••••"
                         />
                       </div>
-                      {errors.adminPassword && <p className="mt-1 text-sm text-red-500">{errors.adminPassword}</p>}
+                      {errors.adminPassword && <p className="mt-1 text-sm text-red-400">{errors.adminPassword}</p>}
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-zinc-700 mb-2">Confirmar *</label>
+                      <label className="block text-sm font-semibold text-zinc-300 mb-2">Confirmar *</label>
                       <div className="relative">
-                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
                         <input
                           type="password"
                           value={formData.adminPasswordConfirm}
                           onChange={(e) => setFormData({ ...formData, adminPasswordConfirm: e.target.value })}
-                          className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none transition-colors ${
-                            errors.adminPasswordConfirm ? 'border-red-300 bg-red-50' : 'border-zinc-200 focus:border-lime-500'
+                          className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none transition-colors bg-zinc-900 text-white placeholder-zinc-500 ${
+                            errors.adminPasswordConfirm ? 'border-red-500 bg-red-900/20' : 'border-zinc-700 focus:border-lime-500'
                           }`}
                           placeholder="••••••••"
                         />
                       </div>
-                      {errors.adminPasswordConfirm && <p className="mt-1 text-sm text-red-500">{errors.adminPasswordConfirm}</p>}
+                      {errors.adminPasswordConfirm && <p className="mt-1 text-sm text-red-400">{errors.adminPasswordConfirm}</p>}
                     </div>
                   </div>
                 </div>
 
-                <button onClick={handleNext} className="w-full py-4 bg-black text-white font-semibold rounded-xl hover:bg-lime-500 hover:text-black transition-colors flex items-center justify-center gap-2">
+                <button onClick={handleNext} className="w-full py-4 bg-lime-500 text-black font-semibold rounded-xl hover:bg-lime-400 transition-colors flex items-center justify-center gap-2">
                   Continuar <ArrowRight className="w-5 h-5" />
                 </button>
               </div>
@@ -767,8 +767,8 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
             {step === 2 && (
               <div className="space-y-6">
                 <div className="text-center">
-                  <h1 className="text-3xl sm:text-4xl font-bold mb-3">Escolha seu plano</h1>
-                  <p className="text-zinc-600 text-lg">Selecione o plano ideal para sua consultoria</p>
+                  <h1 className="text-3xl sm:text-4xl font-bold mb-3 text-white">Escolha seu plano</h1>
+                  <p className="text-zinc-400 text-lg">Selecione o plano ideal para sua consultoria</p>
                 </div>
 
                 {/* Planos */}
@@ -781,7 +781,7 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
                         type="button"
                         onClick={() => handlePlanSelect(plan)}
                         className={`relative p-4 rounded-xl border-2 text-center transition-all ${
-                          isSelected ? 'border-lime-500 bg-lime-50' : 'border-zinc-200 hover:border-zinc-300'
+                          isSelected ? 'border-lime-500 bg-lime-900/30' : 'border-zinc-700 hover:border-zinc-600 bg-zinc-900'
                         }`}
                       >
                         {plan.popular && (
@@ -789,12 +789,12 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
                             POPULAR
                           </div>
                         )}
-                        <div className="font-bold text-lg mb-1">{plan.name}</div>
-                        <div className="text-2xl font-bold text-lime-600">
+                        <div className="font-bold text-lg mb-1 text-white">{plan.name}</div>
+                        <div className="text-2xl font-bold text-lime-500">
                           R$ {plan.price.toFixed(2).replace('.', ',')}
                         </div>
                         <div className="text-xs text-zinc-500 mb-3">/mês</div>
-                        <div className="space-y-1 text-xs text-zinc-600">
+                        <div className="space-y-1 text-xs text-zinc-400">
                           <div className="flex items-center justify-center gap-1">
                             <Check className="w-3 h-3 text-lime-500" />
                             {plan.modules} módulo{plan.modules > 1 ? 's' : ''}
@@ -815,7 +815,7 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
 
                 {/* Módulos */}
                 <div>
-                  <label className="block text-sm font-semibold text-zinc-700 mb-3">
+                  <label className="block text-sm font-semibold text-zinc-300 mb-3">
                     Escolha {selectedPlan.modules} módulo{selectedPlan.modules > 1 ? 's' : ''} para seu plano:
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -831,10 +831,10 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
                           disabled={!canSelect && !isSelected}
                           className={`p-4 rounded-xl border-2 text-left transition-all ${
                             isSelected
-                              ? 'border-lime-500 bg-lime-50'
+                              ? 'border-lime-500 bg-lime-900/30'
                               : canSelect
-                              ? 'border-zinc-200 hover:border-zinc-300'
-                              : 'border-zinc-100 bg-zinc-50 opacity-50 cursor-not-allowed'
+                              ? 'border-zinc-700 hover:border-zinc-600 bg-zinc-900'
+                              : 'border-zinc-800 bg-zinc-900 opacity-50 cursor-not-allowed'
                           }`}
                         >
                           <div className="flex items-start gap-3">
@@ -842,11 +842,11 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
                               <Icon className="w-5 h-5" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <span className="font-semibold">{module.name}</span>
-                              <div className="text-sm text-zinc-500">{module.description}</div>
+                              <span className="font-semibold text-white">{module.name}</span>
+                              <div className="text-sm text-zinc-400">{module.description}</div>
                             </div>
                             <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                              isSelected ? 'bg-lime-500 border-lime-500' : 'border-zinc-300'
+                              isSelected ? 'bg-lime-500 border-lime-500' : 'border-zinc-600'
                             }`}>
                               {isSelected && <Check className="w-3 h-3 text-white" />}
                             </div>
@@ -855,10 +855,10 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
                       );
                     })}
                   </div>
-                  <p className="mt-2 text-sm text-zinc-500">
+                  <p className="mt-2 text-sm text-zinc-400">
                     {selectedModulesCount}/{selectedPlan.modules} módulos selecionados
                     {selectedModulesCount < selectedPlan.modules && (
-                      <span className="text-amber-600"> - Selecione mais {selectedPlan.modules - selectedModulesCount}</span>
+                      <span className="text-amber-500"> - Selecione mais {selectedPlan.modules - selectedModulesCount}</span>
                     )}
                   </p>
                 </div>
@@ -894,13 +894,13 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
                 </div>
 
                 <div className="flex gap-4">
-                  <button onClick={() => setStep(1)} className="flex-1 py-4 border-2 border-zinc-300 text-zinc-700 font-semibold rounded-xl hover:border-black hover:text-black transition-colors">
+                  <button onClick={() => setStep(1)} className="flex-1 py-4 border-2 border-zinc-600 text-zinc-300 font-semibold rounded-xl hover:border-lime-500 hover:text-white transition-colors">
                     Voltar
                   </button>
                   <button
                     onClick={handleNext}
                     disabled={selectedModulesCount !== selectedPlan.modules}
-                    className="flex-1 py-4 bg-black text-white font-semibold rounded-xl hover:bg-lime-500 hover:text-black transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 py-4 bg-lime-500 text-black font-semibold rounded-xl hover:bg-lime-400 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Continuar <ArrowRight className="w-5 h-5" />
                   </button>
@@ -912,13 +912,13 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
             {step === 3 && (
               <div className="space-y-6">
                 <div className="text-center">
-                  <h1 className="text-3xl sm:text-4xl font-bold mb-3">Pagamento</h1>
-                  <p className="text-zinc-600 text-lg">Escolha como deseja pagar</p>
+                  <h1 className="text-3xl sm:text-4xl font-bold mb-3 text-white">Pagamento</h1>
+                  <p className="text-zinc-400 text-lg">Escolha como deseja pagar</p>
                 </div>
 
                 {/* Resumo */}
                 <div className={`p-4 rounded-xl flex items-center justify-between border-2 ${
-                  paymentMethod === 'pix' ? 'bg-teal-50 border-teal-200' : 'bg-lime-50 border-lime-200'
+                  paymentMethod === 'pix' ? 'bg-teal-900/30 border-teal-700' : 'bg-lime-900/30 border-lime-700'
                 }`}>
                   <div className="flex items-center gap-3">
                     <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
@@ -931,14 +931,14 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
                       )}
                     </div>
                     <div>
-                      <div className="font-bold">{formData.consultancyName}</div>
-                      <div className="text-sm text-zinc-600">
+                      <div className="font-bold text-white">{formData.consultancyName}</div>
+                      <div className="text-sm text-zinc-400">
                         Plano {selectedPlan.name} - {paymentMethod === 'pix' ? 'Anual' : 'Mensal recorrente'}
                       </div>
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-2xl font-bold">
+                    <div className="text-2xl font-bold text-white">
                       R$ {paymentMethod === 'pix' 
                         ? (totalPrice * 10).toFixed(2).replace('.', ',') 
                         : totalPrice.toFixed(2).replace('.', ',')}
@@ -1048,23 +1048,23 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
                         onClick={() => setPaymentMethod('card')}
                         className={`p-4 rounded-xl border-2 text-left transition-all ${
                           paymentMethod === 'card' 
-                            ? 'border-lime-500 bg-lime-50' 
-                            : 'border-zinc-200 hover:border-zinc-300'
+                            ? 'border-lime-500 bg-lime-900/30' 
+                            : 'border-zinc-700 hover:border-zinc-600 bg-zinc-900'
                         }`}
                       >
                         <div className="flex items-start gap-3">
                           <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                            paymentMethod === 'card' ? 'bg-lime-500' : 'bg-zinc-100'
+                            paymentMethod === 'card' ? 'bg-lime-500' : 'bg-zinc-800'
                           }`}>
-                            <CreditCard className={`w-5 h-5 ${paymentMethod === 'card' ? 'text-black' : 'text-zinc-500'}`} />
+                            <CreditCard className={`w-5 h-5 ${paymentMethod === 'card' ? 'text-black' : 'text-zinc-400'}`} />
                           </div>
                           <div className="flex-1">
-                            <div className="font-semibold">Cartão de Crédito</div>
-                            <div className="text-sm text-zinc-500">Assinatura mensal</div>
-                            <div className="mt-2 text-lg font-bold text-lime-600">
+                            <div className="font-semibold text-white">Cartão de Crédito</div>
+                            <div className="text-sm text-zinc-400">Assinatura mensal</div>
+                            <div className="mt-2 text-lg font-bold text-lime-500">
                               R$ {totalPrice.toFixed(2).replace('.', ',')}<span className="text-sm font-normal text-zinc-500">/mês</span>
                             </div>
-                            <div className="mt-1 text-xs text-zinc-400">
+                            <div className="mt-1 text-xs text-zinc-500">
                               🔄 Renovação automática
                             </div>
                           </div>
@@ -1076,8 +1076,8 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
                         onClick={() => setPaymentMethod('pix')}
                         className={`p-4 rounded-xl border-2 text-left transition-all relative ${
                           paymentMethod === 'pix' 
-                            ? 'border-teal-500 bg-teal-50' 
-                            : 'border-zinc-200 hover:border-zinc-300'
+                            ? 'border-teal-500 bg-teal-900/30' 
+                            : 'border-zinc-700 hover:border-zinc-600 bg-zinc-900'
                         }`}
                       >
                         {/* Badge de economia */}
@@ -1086,17 +1086,17 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
                         </div>
                         <div className="flex items-start gap-3">
                           <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                            paymentMethod === 'pix' ? 'bg-teal-500' : 'bg-zinc-100'
+                            paymentMethod === 'pix' ? 'bg-teal-500' : 'bg-zinc-800'
                           }`}>
                             <QrCode className={`w-5 h-5 ${paymentMethod === 'pix' ? 'text-white' : 'text-zinc-500'}`} />
                           </div>
                           <div className="flex-1">
-                            <div className="font-semibold">PIX</div>
-                            <div className="text-sm text-zinc-500">Plano anual</div>
-                            <div className="mt-2 text-lg font-bold text-teal-600">
+                            <div className="font-semibold text-white">PIX</div>
+                            <div className="text-sm text-zinc-400">Plano anual</div>
+                            <div className="mt-2 text-lg font-bold text-teal-500">
                               R$ {(totalPrice * 10).toFixed(2).replace('.', ',')}<span className="text-sm font-normal text-zinc-500">/ano</span>
                             </div>
-                            <div className="mt-1 text-xs text-zinc-400">
+                            <div className="mt-1 text-xs text-zinc-500">
                               💰 Economia de R$ {(totalPrice * 2).toFixed(2).replace('.', ',')}
                             </div>
                           </div>
@@ -1106,15 +1106,15 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
                     
                     {/* Informação sobre assinatura recorrente */}
                     {paymentMethod === 'card' && (
-                      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                      <div className="bg-amber-900/30 border border-amber-700 rounded-xl p-4">
                         <div className="flex items-start gap-3">
-                          <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+                          <div className="w-8 h-8 bg-amber-800 rounded-full flex items-center justify-center flex-shrink-0">
                             🔄
                           </div>
                           <div>
-                            <p className="font-medium text-amber-800">Assinatura Recorrente</p>
-                            <p className="text-sm text-amber-700 mt-1">
-                              Seu cartão será cobrado automaticamente todo mês no valor de <strong>R$ {totalPrice.toFixed(2).replace('.', ',')}</strong>. 
+                            <p className="font-medium text-amber-400">Assinatura Recorrente</p>
+                            <p className="text-sm text-amber-500 mt-1">
+                              Seu cartão será cobrado automaticamente todo mês no valor de <strong className="text-amber-400">R$ {totalPrice.toFixed(2).replace('.', ',')}</strong>. 
                               Você pode cancelar a qualquer momento pelo painel.
                             </p>
                           </div>
@@ -1126,60 +1126,60 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
                     {paymentMethod === 'card' && (
                       <div className="space-y-4">
                         <div>
-                          <label className="block text-sm font-semibold text-zinc-700 mb-2">Número do Cartão *</label>
+                          <label className="block text-sm font-semibold text-zinc-300 mb-2">Número do Cartão *</label>
                           <div className="relative">
-                            <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+                            <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
                             <input
                               type="text"
                               value={formData.cardNumber}
                               onChange={(e) => setFormData({ ...formData, cardNumber: formatCardNumber(e.target.value) })}
                               maxLength={19}
-                              className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none transition-colors ${errors.cardNumber ? 'border-red-300 bg-red-50' : 'border-zinc-200 focus:border-lime-500'}`}
+                              className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none transition-colors bg-zinc-900 text-white placeholder-zinc-500 ${errors.cardNumber ? 'border-red-500 bg-red-900/20' : 'border-zinc-700 focus:border-lime-500'}`}
                               placeholder="1234 5678 9012 3456"
                             />
                           </div>
-                          {errors.cardNumber && <p className="mt-1 text-sm text-red-500">{errors.cardNumber}</p>}
+                          {errors.cardNumber && <p className="mt-1 text-sm text-red-400">{errors.cardNumber}</p>}
                         </div>
 
                         <div>
-                          <label className="block text-sm font-semibold text-zinc-700 mb-2">Nome no Cartão *</label>
+                          <label className="block text-sm font-semibold text-zinc-300 mb-2">Nome no Cartão *</label>
                           <div className="relative">
-                            <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+                            <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
                             <input
                               type="text"
                               value={formData.cardholderName}
                               onChange={(e) => setFormData({ ...formData, cardholderName: e.target.value.toUpperCase() })}
-                              className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none transition-colors ${errors.cardholderName ? 'border-red-300 bg-red-50' : 'border-zinc-200 focus:border-lime-500'}`}
+                              className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none transition-colors bg-zinc-900 text-white placeholder-zinc-500 ${errors.cardholderName ? 'border-red-500 bg-red-900/20' : 'border-zinc-700 focus:border-lime-500'}`}
                               placeholder="JOÃO SILVA"
                             />
                           </div>
-                          {errors.cardholderName && <p className="mt-1 text-sm text-red-500">{errors.cardholderName}</p>}
+                          {errors.cardholderName && <p className="mt-1 text-sm text-red-400">{errors.cardholderName}</p>}
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-sm font-semibold text-zinc-700 mb-2">Validade *</label>
+                            <label className="block text-sm font-semibold text-zinc-300 mb-2">Validade *</label>
                             <input
                               type="text"
                               value={formData.cardExpiry}
                               onChange={(e) => setFormData({ ...formData, cardExpiry: formatExpiry(e.target.value) })}
                               maxLength={5}
-                              className={`w-full px-4 py-3 border-2 rounded-xl outline-none transition-colors ${errors.cardExpiry ? 'border-red-300 bg-red-50' : 'border-zinc-200 focus:border-lime-500'}`}
+                              className={`w-full px-4 py-3 border-2 rounded-xl outline-none transition-colors bg-zinc-900 text-white placeholder-zinc-500 ${errors.cardExpiry ? 'border-red-500 bg-red-900/20' : 'border-zinc-700 focus:border-lime-500'}`}
                               placeholder="MM/AA"
                             />
-                            {errors.cardExpiry && <p className="mt-1 text-sm text-red-500">{errors.cardExpiry}</p>}
+                            {errors.cardExpiry && <p className="mt-1 text-sm text-red-400">{errors.cardExpiry}</p>}
                           </div>
                           <div>
-                            <label className="block text-sm font-semibold text-zinc-700 mb-2">CVV *</label>
+                            <label className="block text-sm font-semibold text-zinc-300 mb-2">CVV *</label>
                             <input
                               type="text"
                               value={formData.cardCvv}
                               onChange={(e) => setFormData({ ...formData, cardCvv: e.target.value.replace(/\D/g, '') })}
                               maxLength={4}
-                              className={`w-full px-4 py-3 border-2 rounded-xl outline-none transition-colors ${errors.cardCvv ? 'border-red-300 bg-red-50' : 'border-zinc-200 focus:border-lime-500'}`}
+                              className={`w-full px-4 py-3 border-2 rounded-xl outline-none transition-colors bg-zinc-900 text-white placeholder-zinc-500 ${errors.cardCvv ? 'border-red-500 bg-red-900/20' : 'border-zinc-700 focus:border-lime-500'}`}
                               placeholder="123"
                             />
-                            {errors.cardCvv && <p className="mt-1 text-sm text-red-500">{errors.cardCvv}</p>}
+                            {errors.cardCvv && <p className="mt-1 text-sm text-red-400">{errors.cardCvv}</p>}
                           </div>
                         </div>
                       </div>
@@ -1187,13 +1187,13 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
 
                     {/* Formulário de PIX (apenas CPF) */}
                     {paymentMethod === 'pix' && (
-                      <div className="bg-teal-50 border border-teal-200 rounded-xl p-4">
+                      <div className="bg-teal-900/30 border border-teal-700 rounded-xl p-4">
                         <div className="flex items-start gap-3">
-                          <QrCode className="w-5 h-5 text-teal-600 flex-shrink-0 mt-0.5" />
+                          <QrCode className="w-5 h-5 text-teal-400 flex-shrink-0 mt-0.5" />
                           <div>
-                            <p className="font-medium text-teal-800">Plano Anual via PIX</p>
-                            <p className="text-sm text-teal-600">
-                              Pague <strong>R$ {(totalPrice * 10).toFixed(2).replace('.', ',')}</strong> e tenha acesso por <strong>12 meses</strong>. 
+                            <p className="font-medium text-teal-400">Plano Anual via PIX</p>
+                            <p className="text-sm text-teal-500">
+                              Pague <strong className="text-teal-400">R$ {(totalPrice * 10).toFixed(2).replace('.', ',')}</strong> e tenha acesso por <strong className="text-teal-400">12 meses</strong>. 
                               Você economiza o equivalente a 2 meses!
                             </p>
                           </div>
@@ -1203,7 +1203,7 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
 
                     {/* CPF - comum para ambos */}
                     <div>
-                      <label className="block text-sm font-semibold text-zinc-700 mb-2">
+                      <label className="block text-sm font-semibold text-zinc-300 mb-2">
                         CPF {paymentMethod === 'card' ? 'do Titular' : 'do Pagador'} *
                       </label>
                       <input
@@ -1211,31 +1211,31 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
                         value={formData.docNumber}
                         onChange={(e) => setFormData({ ...formData, docNumber: formatCPF(e.target.value) })}
                         maxLength={18}
-                        className={`w-full px-4 py-3 border-2 rounded-xl outline-none transition-colors ${errors.docNumber ? 'border-red-300 bg-red-50' : 'border-zinc-200 focus:border-lime-500'}`}
+                        className={`w-full px-4 py-3 border-2 rounded-xl outline-none transition-colors bg-zinc-900 text-white placeholder-zinc-500 ${errors.docNumber ? 'border-red-500 bg-red-900/20' : 'border-zinc-700 focus:border-lime-500'}`}
                         placeholder="000.000.000-00"
                       />
-                      {errors.docNumber && <p className="mt-1 text-sm text-red-500">{errors.docNumber}</p>}
+                      {errors.docNumber && <p className="mt-1 text-sm text-red-400">{errors.docNumber}</p>}
                     </div>
 
                     {/* Segurança */}
-                    <div className="flex items-center gap-3 text-sm text-zinc-500">
+                    <div className="flex items-center gap-3 text-sm text-zinc-400">
                       <Shield className="w-5 h-5 text-lime-500" />
                       <span>Seus dados estão protegidos com criptografia SSL</span>
                     </div>
 
                     {/* Erro */}
                     {apiError && (
-                      <div className="bg-red-50 border-2 border-red-200 text-red-700 p-4 rounded-xl flex items-start gap-3">
+                      <div className="bg-red-900/30 border-2 border-red-700 text-red-400 p-4 rounded-xl flex items-start gap-3">
                         <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
                         <div>
                           <p className="font-medium">Erro no pagamento</p>
-                          <p className="text-sm">{apiError}</p>
+                          <p className="text-sm text-red-500">{apiError}</p>
                         </div>
                       </div>
                     )}
 
                     <div className="flex gap-4">
-                      <button onClick={() => setStep(2)} className="flex-1 py-4 border-2 border-zinc-300 text-zinc-700 font-semibold rounded-xl hover:border-black hover:text-black transition-colors">Voltar</button>
+                      <button onClick={() => setStep(2)} className="flex-1 py-4 border-2 border-zinc-600 text-zinc-300 font-semibold rounded-xl hover:border-lime-500 hover:text-white transition-colors">Voltar</button>
                       
                       {paymentMethod === 'card' ? (
                         <button onClick={handleSubmit} disabled={loading || !mpLoaded}
@@ -1250,10 +1250,10 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
                       )}
                     </div>
 
-                    <p className="text-center text-xs text-zinc-500">
+                    <p className="text-center text-xs text-zinc-400">
                       Ao confirmar, você concorda com os{' '}
-                      <a href="#" className="text-lime-600 hover:underline">Termos de Uso</a> e{' '}
-                      <a href="#" className="text-lime-600 hover:underline">Política de Privacidade</a>
+                      <a href="#" className="text-lime-500 hover:underline">Termos de Uso</a> e{' '}
+                      <a href="#" className="text-lime-500 hover:underline">Política de Privacidade</a>
                     </p>
                   </>
                 )}
