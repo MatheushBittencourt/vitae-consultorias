@@ -66,6 +66,9 @@ const mercadoPagoClient = new MercadoPagoConfig({
 // ===========================================
 const app = express()
 
+// Trust proxy - necessário quando atrás de Nginx/reverse proxy
+app.set('trust proxy', 1)
+
 // Helmet - Headers de segurança
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
