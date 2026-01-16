@@ -131,8 +131,8 @@ export function AdminDashboard({ onLogout, adminUser }: AdminDashboardProps) {
         <div className="w-10" /> {/* Spacer para centralizar o título */}
       </header>
       
-      <main className="lg:ml-80 pt-16 lg:pt-0 min-h-screen">
-        <div className="p-4 lg:p-8 max-w-full overflow-x-hidden">
+      <main className="lg:ml-80 pt-16 lg:pt-0">
+        <div className="p-4 lg:p-8">
           {renderContent()}
         </div>
       </main>
