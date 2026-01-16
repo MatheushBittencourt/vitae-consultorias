@@ -24,11 +24,11 @@ export function Method() {
               <div className="text-5xl sm:text-6xl lg:text-8xl font-bold text-lime-500/20 mb-2 sm:mb-4">01</div>
               <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 sm:mb-6">ESCOLHA SEU PLANO</h3>
               <p className="text-base sm:text-lg lg:text-xl text-zinc-600 leading-relaxed mb-4 sm:mb-6">
-                Basic, Professional ou Enterprise. Cada um com módulos e limites diferentes.
+                Starter, Growth, Scale ou Enterprise. Cada um com módulos e limites diferentes.
               </p>
               <p className="text-sm sm:text-base lg:text-lg text-zinc-500 leading-relaxed">
-                Comece com trial de 14 dias grátis. Sem compromisso, sem cartão de crédito.
-                Teste tudo antes de decidir.
+                Escolha os módulos que sua consultoria precisa. Comece pequeno e escale quando quiser.
+                Sem fidelidade, cancele quando precisar.
               </p>
             </div>
             <div className="lg:col-span-3 grid grid-cols-2 gap-2 sm:gap-4">

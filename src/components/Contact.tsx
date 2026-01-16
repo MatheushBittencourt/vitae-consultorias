@@ -46,7 +46,7 @@ export function Contact() {
             </div>
 
             <button className="w-full sm:w-auto bg-black text-white px-8 sm:px-12 py-4 sm:py-6 text-base sm:text-lg tracking-wider hover:bg-lime-500 hover:text-black transition-all duration-300">
-              INICIAR TRIAL GRÁTIS
+              COMEÇAR AGORA
             </button>
           </div>
 
