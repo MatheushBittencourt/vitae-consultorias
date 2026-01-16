@@ -7,7 +7,8 @@ import {
   Calendar, 
   TrendingUp,
   LogOut,
-  User
+  User,
+  X
 } from 'lucide-react';
 import { DashboardView } from './Dashboard';
 import { PatientUser, ActiveModule } from './LoginPage';
@@ -17,6 +18,8 @@ interface DashboardSidebarProps {
   onViewChange: (view: DashboardView) => void;
   onLogout: () => void;
   patient: PatientUser;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 interface MenuItem {
@@ -36,7 +39,7 @@ const allMenuItems: MenuItem[] = [
   { id: 'progress', label: 'Progresso', icon: TrendingUp },
 ];
 
-export function DashboardSidebar({ currentView, onViewChange, onLogout, patient }: DashboardSidebarProps) {
+export function DashboardSidebar({ currentView, onViewChange, onLogout, patient, isOpen, onClose }: DashboardSidebarProps) {
   const activeModules = patient.activeModules || [];
   
   // Filtrar menu items baseado nos módulos ativos
@@ -69,78 +72,109 @@ export function DashboardSidebar({ currentView, onViewChange, onLogout, patient 
     return names.join(' + ');
   };
 
+  const handleViewChange = (view: DashboardView) => {
+    onViewChange(view);
+    onClose(); // Fechar sidebar em mobile ao selecionar
+  };
+
   return (
-    <aside className="w-80 bg-black text-white fixed h-screen flex flex-col">
-      {/* Logo */}
-      <div className="p-8 border-b border-white/10">
-        <h1 className="text-3xl font-bold tracking-tighter">VITAE</h1>
-        <p className="text-sm text-white/60 mt-2">Plataforma do Paciente</p>
-      </div>
-
-      {/* User Info */}
-      <div className="p-8 border-b border-white/10">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 bg-lime-500 rounded-full flex items-center justify-center overflow-hidden">
-            {patient.avatarUrl ? (
-              <img src={patient.avatarUrl} alt={patient.name} className="w-full h-full object-cover" />
-            ) : (
-              <User className="w-7 h-7 text-black" />
-            )}
+    <>
+      {/* Overlay para mobile */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={onClose}
+        />
+      )}
+      
+      <aside className={`
+        w-72 lg:w-80 bg-black text-white fixed h-screen flex flex-col z-50
+        transition-transform duration-300 ease-in-out
+        ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+        lg:translate-x-0
+      `}>
+        {/* Logo */}
+        <div className="p-6 lg:p-8 border-b border-white/10">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl lg:text-3xl font-bold tracking-tighter">VITAE</h1>
+              <p className="text-xs lg:text-sm text-white/60 mt-1 lg:mt-2">Plataforma do Paciente</p>
+            </div>
+            {/* Botão fechar em mobile */}
+            <button 
+              onClick={onClose}
+              className="lg:hidden p-2 hover:bg-white/10 rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
-          <div className="flex-1 min-w-0">
-            <div className="font-bold text-lg truncate">{patient.name}</div>
-            <div className="text-sm text-white/60">{patient.sport} • {patient.club}</div>
+        </div>
+
+        {/* User Info */}
+        <div className="p-6 lg:p-8 border-b border-white/10">
+          <div className="flex items-center gap-3 lg:gap-4">
+            <div className="w-12 lg:w-14 h-12 lg:h-14 bg-lime-500 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
+              {patient.avatarUrl ? (
+                <img src={patient.avatarUrl} alt={patient.name} className="w-full h-full object-cover" />
+              ) : (
+                <User className="w-6 lg:w-7 h-6 lg:h-7 text-black" />
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="font-bold text-base lg:text-lg truncate">{patient.name}</div>
+              <div className="text-xs lg:text-sm text-white/60 truncate">{patient.sport} • {patient.club}</div>
+            </div>
+          </div>
+          {/* Plano ativo */}
+          <div className="mt-3 lg:mt-4 px-3 py-2 bg-lime-500/20 border border-lime-500/30 rounded">
+            <div className="text-xs text-lime-400 font-bold tracking-wider">SEU PLANO</div>
+            <div className="text-xs lg:text-sm text-white font-medium">{getPlanDescription()}</div>
           </div>
         </div>
-        {/* Plano ativo */}
-        <div className="mt-4 px-3 py-2 bg-lime-500/20 border border-lime-500/30 rounded">
-          <div className="text-xs text-lime-400 font-bold tracking-wider">SEU PLANO</div>
-          <div className="text-sm text-white font-medium">{getPlanDescription()}</div>
-        </div>
-      </div>
 
-      {/* Menu */}
-      <nav className="flex-1 p-4 overflow-y-auto">
-        <div className="space-y-2">
-          {displayItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = currentView === item.id;
-            const isDisabled = item.module && activeModules.length > 0 && !activeModules.includes(item.module);
-            
-            return (
-              <button
-                key={item.id}
-                onClick={() => !isDisabled && onViewChange(item.id)}
-                disabled={isDisabled}
-                className={`w-full flex items-center gap-4 px-6 py-4 rounded transition-colors ${
-                  isDisabled
-                    ? 'text-white/30 cursor-not-allowed'
-                    : isActive
-                    ? 'bg-lime-500 text-black font-bold'
-                    : 'text-white/80 hover:bg-white/10 hover:text-white'
-                }`}
-              >
-                <Icon className="w-5 h-5" />
-                <span className="tracking-wide">{item.label}</span>
-                {isDisabled && (
-                  <span className="ml-auto text-xs bg-white/10 px-2 py-0.5 rounded">Bloqueado</span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </nav>
+        {/* Menu */}
+        <nav className="flex-1 p-3 lg:p-4 overflow-y-auto">
+          <div className="space-y-1 lg:space-y-2">
+            {displayItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = currentView === item.id;
+              const isDisabled = item.module && activeModules.length > 0 && !activeModules.includes(item.module);
+              
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => !isDisabled && handleViewChange(item.id)}
+                  disabled={isDisabled}
+                  className={`w-full flex items-center gap-3 lg:gap-4 px-4 lg:px-6 py-3 lg:py-4 rounded transition-colors ${
+                    isDisabled
+                      ? 'text-white/30 cursor-not-allowed'
+                      : isActive
+                      ? 'bg-lime-500 text-black font-bold'
+                      : 'text-white/80 hover:bg-white/10 hover:text-white'
+                  }`}
+                >
+                  <Icon className="w-5 h-5" />
+                  <span className="tracking-wide text-sm lg:text-base">{item.label}</span>
+                  {isDisabled && (
+                    <span className="ml-auto text-xs bg-white/10 px-2 py-0.5 rounded">Bloqueado</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </nav>
 
-      {/* Logout */}
-      <div className="p-4 border-t border-white/10">
-        <button
-          onClick={onLogout}
-          className="w-full flex items-center gap-4 px-6 py-4 rounded text-white/80 hover:bg-white/10 hover:text-white transition-colors"
-        >
-          <LogOut className="w-5 h-5" />
-          <span className="tracking-wide">Sair</span>
-        </button>
-      </div>
-    </aside>
+        {/* Logout */}
+        <div className="p-3 lg:p-4 border-t border-white/10">
+          <button
+            onClick={onLogout}
+            className="w-full flex items-center gap-3 lg:gap-4 px-4 lg:px-6 py-3 lg:py-4 rounded text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+          >
+            <LogOut className="w-5 h-5" />
+            <span className="tracking-wide text-sm lg:text-base">Sair</span>
+          </button>
+        </div>
+      </aside>
+    </>
   );
 }

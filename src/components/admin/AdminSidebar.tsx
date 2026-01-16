@@ -9,7 +9,8 @@ import {
   Apple,
   Stethoscope,
   HeartPulse,
-  Crown
+  Crown,
+  X
 } from 'lucide-react';
 import { AdminView } from './AdminDashboard';
 import { AdminUser } from './AdminLoginPage';
@@ -19,6 +20,8 @@ interface AdminSidebarProps {
   onViewChange: (view: AdminView) => void;
   onLogout: () => void;
   adminUser: AdminUser;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 // Menu items com indicação de qual módulo pertence
@@ -50,7 +53,7 @@ const getRoleDisplay = (adminUser: AdminUser) => {
   }
 };
 
-export function AdminSidebar({ currentView, onViewChange, onLogout, adminUser }: AdminSidebarProps) {
+export function AdminSidebar({ currentView, onViewChange, onLogout, adminUser, isOpen, onClose }: AdminSidebarProps) {
   const roleDisplay = getRoleDisplay(adminUser);
   const RoleIcon = roleDisplay.icon;
   
@@ -66,69 +69,98 @@ export function AdminSidebar({ currentView, onViewChange, onLogout, adminUser }:
     return modules[item.module as keyof typeof modules];
   });
 
+  const handleViewChange = (view: AdminView) => {
+    onViewChange(view);
+    onClose(); // Fechar sidebar em mobile ao selecionar
+  };
+
   return (
-    <aside className="w-80 bg-zinc-900 text-white fixed h-screen flex flex-col">
-      {/* Logo */}
-      <div className="p-8 border-b border-white/10">
-        <div className="flex items-center gap-3">
-          <Shield className="w-8 h-8 text-lime-500" />
-          <div>
-            <h1 className="text-3xl font-bold tracking-tighter">VITAE</h1>
-            <p className="text-sm text-white/60">Painel Profissional</p>
+    <>
+      {/* Overlay para mobile */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={onClose}
+        />
+      )}
+      
+      <aside className={`
+        w-72 lg:w-80 bg-zinc-900 text-white fixed h-screen flex flex-col z-50
+        transition-transform duration-300 ease-in-out
+        ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+        lg:translate-x-0
+      `}>
+        {/* Logo */}
+        <div className="p-6 lg:p-8 border-b border-white/10">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Shield className="w-7 lg:w-8 h-7 lg:h-8 text-lime-500" />
+              <div>
+                <h1 className="text-2xl lg:text-3xl font-bold tracking-tighter">VITAE</h1>
+                <p className="text-xs lg:text-sm text-white/60">Painel Profissional</p>
+              </div>
+            </div>
+            {/* Botão fechar em mobile */}
+            <button 
+              onClick={onClose}
+              className="lg:hidden p-2 hover:bg-white/10 rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
         </div>
-      </div>
 
-      {/* User Info */}
-      <div className="p-8 border-b border-white/10">
-        <div className="flex items-center gap-4">
-          <div className={`w-14 h-14 ${roleDisplay.color} rounded-full flex items-center justify-center`}>
-            <RoleIcon className="w-7 h-7 text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="font-bold text-lg truncate">{adminUser.name}</div>
-            <div className="text-sm text-lime-500">{roleDisplay.label}</div>
-            {adminUser.consultancyName && (
-              <div className="text-xs text-white/50 truncate">{adminUser.consultancyName}</div>
-            )}
+        {/* User Info */}
+        <div className="p-6 lg:p-8 border-b border-white/10">
+          <div className="flex items-center gap-3 lg:gap-4">
+            <div className={`w-12 lg:w-14 h-12 lg:h-14 ${roleDisplay.color} rounded-full flex items-center justify-center flex-shrink-0`}>
+              <RoleIcon className="w-6 lg:w-7 h-6 lg:h-7 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="font-bold text-base lg:text-lg truncate">{adminUser.name}</div>
+              <div className="text-xs lg:text-sm text-lime-500">{roleDisplay.label}</div>
+              {adminUser.consultancyName && (
+                <div className="text-xs text-white/50 truncate">{adminUser.consultancyName}</div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Menu */}
-      <nav className="flex-1 p-4 overflow-y-auto">
-        <div className="space-y-2">
-          {filteredMenuItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = currentView === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => onViewChange(item.id)}
-                className={`w-full flex items-center gap-4 px-6 py-4 rounded transition-colors ${
-                  isActive
-                    ? 'bg-lime-500 text-black font-bold'
-                    : 'text-white/80 hover:bg-white/10 hover:text-white'
-                }`}
-              >
-                <Icon className="w-5 h-5" />
-                <span className="tracking-wide">{item.label}</span>
-              </button>
-            );
-          })}
+        {/* Menu */}
+        <nav className="flex-1 p-3 lg:p-4 overflow-y-auto">
+          <div className="space-y-1 lg:space-y-2">
+            {filteredMenuItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = currentView === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleViewChange(item.id)}
+                  className={`w-full flex items-center gap-3 lg:gap-4 px-4 lg:px-6 py-3 lg:py-4 rounded transition-colors ${
+                    isActive
+                      ? 'bg-lime-500 text-black font-bold'
+                      : 'text-white/80 hover:bg-white/10 hover:text-white'
+                  }`}
+                >
+                  <Icon className="w-5 h-5" />
+                  <span className="tracking-wide text-sm lg:text-base">{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </nav>
+
+        {/* Logout */}
+        <div className="p-3 lg:p-4 border-t border-white/10">
+          <button
+            onClick={onLogout}
+            className="w-full flex items-center gap-3 lg:gap-4 px-4 lg:px-6 py-3 lg:py-4 rounded text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+          >
+            <LogOut className="w-5 h-5" />
+            <span className="tracking-wide text-sm lg:text-base">Sair</span>
+          </button>
         </div>
-      </nav>
-
-      {/* Logout */}
-      <div className="p-4 border-t border-white/10">
-        <button
-          onClick={onLogout}
-          className="w-full flex items-center gap-4 px-6 py-4 rounded text-white/80 hover:bg-white/10 hover:text-white transition-colors"
-        >
-          <LogOut className="w-5 h-5" />
-          <span className="tracking-wide">Sair</span>
-        </button>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 }

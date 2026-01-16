@@ -120,13 +120,13 @@ export function DashboardOverview({ onNavigate, patientName = 'Paciente', athlet
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4 lg:space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-5xl font-bold tracking-tighter mb-2">
+        <h1 className="text-2xl sm:text-3xl lg:text-5xl font-bold tracking-tighter mb-1 lg:mb-2">
           Bem-vindo, <span className="text-lime-500">{firstName}</span>
         </h1>
-        <p className="text-xl text-zinc-600">
+        <p className="text-base lg:text-xl text-zinc-600">
           {activeModules.length === 0 
             ? 'Aguardando ativação do seu plano.'
             : 'Aqui está um resumo do seu acompanhamento hoje.'}
@@ -134,39 +134,39 @@ export function DashboardOverview({ onNavigate, patientName = 'Paciente', athlet
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 border-l-4 border-lime-500">
-          <div className="text-4xl font-bold mb-2">{stats.daysInProgram}</div>
-          <div className="text-sm tracking-wider text-zinc-600">DIAS NO PROGRAMA</div>
+      <div className="grid grid-cols-3 gap-3 lg:gap-6">
+        <div className="bg-white p-3 lg:p-6 border-l-4 border-lime-500">
+          <div className="text-2xl lg:text-4xl font-bold mb-1 lg:mb-2">{stats.daysInProgram}</div>
+          <div className="text-xs lg:text-sm tracking-wider text-zinc-600">DIAS</div>
         </div>
-        <div className="bg-white p-6 border-l-4 border-black">
-          <div className="text-4xl font-bold mb-2">{stats.adherence}%</div>
-          <div className="text-sm tracking-wider text-zinc-600">ADERÊNCIA</div>
+        <div className="bg-white p-3 lg:p-6 border-l-4 border-black">
+          <div className="text-2xl lg:text-4xl font-bold mb-1 lg:mb-2">{stats.adherence}%</div>
+          <div className="text-xs lg:text-sm tracking-wider text-zinc-600">ADERÊNCIA</div>
         </div>
-        <div className="bg-white p-6 border-l-4 border-black">
-          <div className="text-4xl font-bold mb-2">{stats.appointments}</div>
-          <div className="text-sm tracking-wider text-zinc-600">CONSULTAS</div>
+        <div className="bg-white p-3 lg:p-6 border-l-4 border-black">
+          <div className="text-2xl lg:text-4xl font-bold mb-1 lg:mb-2">{stats.appointments}</div>
+          <div className="text-xs lg:text-sm tracking-wider text-zinc-600">CONSULTAS</div>
         </div>
       </div>
 
       {/* Alert for no modules */}
       {activeModules.length === 0 ? (
-        <div className="bg-yellow-100 text-yellow-800 p-6 flex items-start gap-4">
-          <AlertCircle className="w-6 h-6 flex-shrink-0 mt-1" />
+        <div className="bg-yellow-100 text-yellow-800 p-4 lg:p-6 flex items-start gap-3 lg:gap-4">
+          <AlertCircle className="w-5 lg:w-6 h-5 lg:h-6 flex-shrink-0 mt-0.5" />
           <div>
-            <div className="font-bold text-lg mb-1">Plano Pendente</div>
-            <p className="mb-3">
-              Seu plano ainda não foi ativado. Entre em contato com sua consultoria para mais informações.
+            <div className="font-bold text-base lg:text-lg mb-1">Plano Pendente</div>
+            <p className="text-sm lg:text-base">
+              Seu plano ainda não foi ativado. Entre em contato com sua consultoria.
             </p>
           </div>
         </div>
       ) : todaySchedule.length > 0 && (
-        <div className="bg-lime-500 text-black p-6 flex items-start gap-4">
-          <AlertCircle className="w-6 h-6 flex-shrink-0 mt-1" />
+        <div className="bg-lime-500 text-black p-4 lg:p-6 flex items-start gap-3 lg:gap-4">
+          <AlertCircle className="w-5 lg:w-6 h-5 lg:h-6 flex-shrink-0 mt-0.5" />
           <div>
-            <div className="font-bold text-lg mb-1">Agenda de Hoje</div>
-            <p className="mb-3">
-              Você tem {todaySchedule.length} {todaySchedule.length === 1 ? 'compromisso' : 'compromissos'} agendado{todaySchedule.length === 1 ? '' : 's'} para hoje.
+            <div className="font-bold text-base lg:text-lg mb-1">Agenda de Hoje</div>
+            <p className="mb-2 lg:mb-3 text-sm lg:text-base">
+              Você tem {todaySchedule.length} {todaySchedule.length === 1 ? 'compromisso' : 'compromissos'} para hoje.
             </p>
             <button 
               onClick={() => onNavigate('appointments')}
@@ -180,30 +180,30 @@ export function DashboardOverview({ onNavigate, patientName = 'Paciente', athlet
 
       {/* Today's Schedule */}
       {activeModules.length > 0 && (
-        <div className="grid grid-cols-1 gap-6">
+        <div className="grid grid-cols-1 gap-4 lg:gap-6">
           {/* Today's Schedule */}
-          <div className="bg-white p-8">
-            <div className="flex items-center gap-3 mb-6">
-              <Calendar className="w-6 h-6" />
-              <h2 className="text-2xl font-bold">Agenda de Hoje</h2>
+          <div className="bg-white p-4 lg:p-8">
+            <div className="flex items-center gap-2 lg:gap-3 mb-4 lg:mb-6">
+              <Calendar className="w-5 lg:w-6 h-5 lg:h-6" />
+              <h2 className="text-lg lg:text-2xl font-bold">Agenda de Hoje</h2>
             </div>
             {todaySchedule.length === 0 ? (
-              <div className="text-center py-8 text-zinc-500">
-                <Calendar className="w-12 h-12 text-zinc-300 mx-auto mb-4" />
-                <p>Nenhum compromisso agendado para hoje.</p>
+              <div className="text-center py-6 lg:py-8 text-zinc-500">
+                <Calendar className="w-10 lg:w-12 h-10 lg:h-12 text-zinc-300 mx-auto mb-3 lg:mb-4" />
+                <p className="text-sm lg:text-base">Nenhum compromisso agendado para hoje.</p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3 lg:space-y-4">
                 {todaySchedule.map((item, idx) => (
-                  <div key={idx} className={`flex items-start gap-4 pb-4 ${idx < todaySchedule.length - 1 ? 'border-b border-zinc-200' : ''}`}>
-                    <div className="text-center min-w-[60px]">
-                      <div className="text-2xl font-bold">{item.time}</div>
+                  <div key={idx} className={`flex items-start gap-3 lg:gap-4 pb-3 lg:pb-4 ${idx < todaySchedule.length - 1 ? 'border-b border-zinc-200' : ''}`}>
+                    <div className="text-center min-w-[50px] lg:min-w-[60px]">
+                      <div className="text-lg lg:text-2xl font-bold">{item.time}</div>
                     </div>
-                    <div className="flex-1">
-                      <div className="font-bold mb-1">{item.title}</div>
-                      <div className="text-sm text-zinc-600">{item.professional}</div>
-                      <div className="mt-2">
-                        <span className={`inline-block px-3 py-1 text-xs font-bold ${
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold mb-0.5 lg:mb-1 text-sm lg:text-base truncate">{item.title}</div>
+                      <div className="text-xs lg:text-sm text-zinc-600 truncate">{item.professional}</div>
+                      <div className="mt-1.5 lg:mt-2">
+                        <span className={`inline-block px-2 lg:px-3 py-0.5 lg:py-1 text-xs font-bold ${
                           item.status === 'confirmed' ? 'bg-lime-500 text-black' : 'bg-zinc-200 text-black'
                         }`}>
                           {item.status === 'confirmed' ? 'CONFIRMADO' : 'PENDENTE'}
@@ -216,7 +216,7 @@ export function DashboardOverview({ onNavigate, patientName = 'Paciente', athlet
             )}
             <button 
               onClick={() => onNavigate('appointments')}
-              className="mt-6 w-full py-3 border-2 border-black hover:bg-black hover:text-white transition-colors font-bold tracking-wider"
+              className="mt-4 lg:mt-6 w-full py-2.5 lg:py-3 border-2 border-black hover:bg-black hover:text-white transition-colors font-bold tracking-wider text-sm lg:text-base"
             >
               VER AGENDA COMPLETA
             </button>
@@ -226,21 +226,21 @@ export function DashboardOverview({ onNavigate, patientName = 'Paciente', athlet
       )}
 
       {/* Quick Access Cards - Baseado nos módulos ativos */}
-      <div className={`grid grid-cols-1 gap-6 ${
-        visibleModuleCards.length === 4 ? 'md:grid-cols-4' :
-        visibleModuleCards.length === 3 ? 'md:grid-cols-3' :
-        visibleModuleCards.length === 2 ? 'md:grid-cols-2' :
-        'md:grid-cols-1'
+      <div className={`grid grid-cols-2 gap-3 lg:gap-6 ${
+        visibleModuleCards.length === 4 ? 'lg:grid-cols-4' :
+        visibleModuleCards.length === 3 ? 'lg:grid-cols-3' :
+        visibleModuleCards.length === 2 ? 'lg:grid-cols-2' :
+        'lg:grid-cols-1'
       }`}>
         {visibleModuleCards.map((card) => (
           <button 
             key={card.id}
             onClick={() => onNavigate(card.id)}
-            className="bg-white p-6 text-left hover:border-l-4 hover:border-lime-500 transition-all group"
+            className="bg-white p-4 lg:p-6 text-left hover:border-l-4 hover:border-lime-500 transition-all group"
           >
-            <div className="text-3xl mb-3">{card.icon}</div>
-            <div className="font-bold text-lg mb-2">{card.label}</div>
-            <div className="text-sm text-zinc-600">{card.description}</div>
+            <div className="text-2xl lg:text-3xl mb-2 lg:mb-3">{card.icon}</div>
+            <div className="font-bold text-base lg:text-lg mb-1 lg:mb-2">{card.label}</div>
+            <div className="text-xs lg:text-sm text-zinc-600 line-clamp-2">{card.description}</div>
           </button>
         ))}
         
@@ -248,11 +248,11 @@ export function DashboardOverview({ onNavigate, patientName = 'Paciente', athlet
         {activeModules.length > 0 && (
           <button 
             onClick={() => onNavigate('progress')}
-            className="bg-white p-6 text-left hover:border-l-4 hover:border-lime-500 transition-all group"
+            className="bg-white p-4 lg:p-6 text-left hover:border-l-4 hover:border-lime-500 transition-all group"
           >
-            <div className="text-3xl mb-3">📊</div>
-            <div className="font-bold text-lg mb-2">Progresso</div>
-            <div className="text-sm text-zinc-600">Evolução e resultados alcançados</div>
+            <div className="text-2xl lg:text-3xl mb-2 lg:mb-3">📊</div>
+            <div className="font-bold text-base lg:text-lg mb-1 lg:mb-2">Progresso</div>
+            <div className="text-xs lg:text-sm text-zinc-600">Evolução e resultados</div>
           </button>
         )}
       </div>
