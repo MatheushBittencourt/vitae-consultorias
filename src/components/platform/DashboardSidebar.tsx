@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { DashboardView } from './Dashboard';
 import { PatientUser, ActiveModule } from './LoginPage';
-import { Logo } from '../ui/Logo';
+import { LogoIcon } from '../ui/Logo';
 
 interface DashboardSidebarProps {
   currentView: DashboardView;
@@ -99,12 +99,9 @@ export function DashboardSidebar({ currentView, onViewChange, onLogout, patient,
         {/* Logo */}
         <div className="p-6 lg:p-8 border-b border-white/10">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Logo size="lg" showText={false} />
-              <div>
-                <h1 className="text-xl lg:text-2xl font-bold tracking-tighter text-white">VITAE</h1>
-                <p className="text-xs text-white/60">Plataforma do Paciente</p>
-              </div>
+            <div className="flex items-center gap-3">
+              <LogoIcon size="lg" />
+              <p className="text-sm text-white/80 font-medium">Plataforma do Paciente</p>
             </div>
             {/* Botão fechar em mobile */}
             <button 

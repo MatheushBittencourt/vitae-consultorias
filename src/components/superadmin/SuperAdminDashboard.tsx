@@ -35,7 +35,7 @@ import {
   Menu
 } from 'lucide-react';
 import { SuperAdminUser } from './SuperAdminLoginPage';
-import { Logo } from '../ui/Logo';
+import { LogoIcon } from '../ui/Logo';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
@@ -1474,12 +1474,9 @@ export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps
         {/* Logo */}
         <div className="p-6 lg:p-8 border-b border-white/10">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Logo size="lg" showText={false} />
-              <div>
-                <h1 className="text-xl lg:text-2xl font-bold tracking-tighter text-white">VITAE</h1>
-                <p className="text-xs text-white/60">Master Admin</p>
-              </div>
+            <div className="flex items-center gap-3">
+              <LogoIcon size="lg" />
+              <p className="text-sm text-white/80 font-medium">Master Admin</p>
             </div>
             {/* Botão fechar em mobile */}
             <button 
