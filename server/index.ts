@@ -44,6 +44,185 @@ console.log(`📦 Database: ${dbConfig.host}:${dbConfig.port}/${dbConfig.databas
 const pool = createPool(dbConfig)
 
 // ===========================================
+// SEED AUTOMÁTICO - BIBLIOTECA GLOBAL
+// ===========================================
+async function seedGlobalLibraries() {
+  try {
+    // Verificar se existem exercícios globais
+    const [existingExercises] = await pool.query<RowDataPacket[]>(
+      'SELECT COUNT(*) as count FROM exercise_library WHERE is_global = TRUE OR consultancy_id IS NULL'
+    )
+    
+    if (existingExercises[0].count === 0) {
+      console.log('📚 Inserindo biblioteca de exercícios global...')
+      
+      const globalExercises = [
+        // PEITO
+        [null, 'Supino Reto com Barra', 'Exercício fundamental para desenvolvimento do peitoral', 'peito', 'triceps, ombros', 'barra', 'intermediario', 'https://www.youtube.com/watch?v=rT7DgCr-3pg', null, 'Deite no banco, pés no chão. Segure a barra com pegada um pouco mais larga que os ombros. Desça controladamente até o peito e empurre.', 'Mantenha as escápulas retraídas e o peito estufado. Não deixe os cotovelos abrirem demais.', true],
+        [null, 'Supino Inclinado com Halteres', 'Foco na parte superior do peitoral', 'peito', 'ombros, triceps', 'halteres', 'intermediario', 'https://www.youtube.com/watch?v=8iPEnn-ltC8', null, 'Banco inclinado a 30-45°. Halteres na altura do peito, cotovelos em 45°. Empurre para cima e junte no topo.', 'Inclinação maior = mais ombro. Mantenha entre 30-45° para focar no peitoral superior.', true],
+        [null, 'Crucifixo na Polia', 'Isolamento para peitoral com tensão constante', 'peito', null, 'cabo', 'iniciante', null, null, 'Polias na posição alta. Pegue os cabos, dê um passo à frente. Braços abertos, leve flexão no cotovelo. Junte as mãos à frente do peito.', 'Squeeze no final do movimento. Mantenha o core ativado para não balançar.', true],
+        [null, 'Flexão de Braço', 'Exercício fundamental com peso corporal', 'peito', 'triceps, ombros, core', 'peso_corporal', 'iniciante', null, null, 'Mãos no chão, um pouco mais largas que os ombros. Corpo reto da cabeça aos pés. Desça até o peito quase tocar o chão.', 'Não deixe o quadril subir ou descer. Ative o core durante todo o movimento.', true],
+        // COSTAS
+        [null, 'Barra Fixa (Pull-up)', 'Exercício composto para costas e bíceps', 'costas', 'biceps, antebraco', 'peso_corporal', 'avancado', 'https://www.youtube.com/watch?v=eGo4IYlbE5g', null, 'Pegada pronada, mãos um pouco mais largas que os ombros. Puxe o corpo até o queixo passar a barra. Desça controladamente.', 'Inicie o movimento retraindo as escápulas. Evite balanço do corpo.', true],
+        [null, 'Remada Curvada com Barra', 'Desenvolvimento da espessura das costas', 'costas', 'biceps, posterior', 'barra', 'intermediario', 'https://www.youtube.com/watch?v=kBWAon7ItDw', null, 'Pés na largura dos ombros, joelhos levemente flexionados. Incline o tronco a 45°. Puxe a barra em direção ao umbigo.', 'Mantenha as costas retas. Contraia as escápulas no topo do movimento.', true],
+        [null, 'Puxada Frontal', 'Desenvolvimento da largura das costas', 'costas', 'biceps', 'maquina', 'iniciante', null, null, 'Sente-se no equipamento, joelhos sob as almofadas. Pegada pronada um pouco mais larga que os ombros. Puxe a barra até o peito.', 'Incline levemente o tronco para trás. Foque em puxar com os cotovelos, não com as mãos.', true],
+        [null, 'Remada Unilateral com Halter', 'Trabalho unilateral para costas', 'costas', 'biceps, core', 'halteres', 'iniciante', null, null, 'Apoie joelho e mão no banco. Outra perna no chão para estabilidade. Puxe o halter em direção ao quadril.', 'Mantenha o tronco paralelo ao chão. Não gire o corpo ao puxar.', true],
+        // OMBROS
+        [null, 'Desenvolvimento com Halteres', 'Exercício principal para deltoides', 'ombros', 'triceps', 'halteres', 'intermediario', null, null, 'Sentado ou em pé, halteres na altura dos ombros. Empurre para cima até os braços estendidos. Desça controladamente.', 'Não use impulso das pernas. Mantenha o core ativado para proteger a lombar.', true],
+        [null, 'Elevação Lateral', 'Isolamento para deltoides médio', 'ombros', null, 'halteres', 'iniciante', null, null, 'Em pé, halteres ao lado do corpo. Eleve os braços até a altura dos ombros, cotovelos levemente flexionados.', 'Não eleve acima da linha dos ombros. Controle a descida, sem balançar.', true],
+        [null, 'Elevação Frontal', 'Foco no deltoides anterior', 'ombros', null, 'halteres', 'iniciante', null, null, 'Em pé, halteres à frente das coxas. Eleve um braço de cada vez ou alternadamente até a altura dos ombros.', 'Palmas para baixo. Não balance o corpo para ajudar no movimento.', true],
+        [null, 'Face Pull', 'Deltoides posterior e rotadores externos', 'ombros', 'costas', 'cabo', 'iniciante', null, null, 'Polia na altura do rosto. Corda como pegada. Puxe em direção ao rosto, abrindo os cotovelos para os lados.', 'Excelente para saúde do ombro. Faça como aquecimento ou no final do treino.', true],
+        // BÍCEPS
+        [null, 'Rosca Direta com Barra', 'Exercício clássico para bíceps', 'biceps', 'antebraco', 'barra', 'iniciante', null, null, 'Em pé, barra com pegada supinada na largura dos ombros. Flexione os cotovelos, mantendo-os junto ao corpo.', 'Não balance o tronco. Controle a descida para maximizar o tempo sob tensão.', true],
+        [null, 'Rosca Alternada com Halteres', 'Trabalho unilateral para bíceps', 'biceps', 'antebraco', 'halteres', 'iniciante', null, null, 'Em pé, halteres ao lado do corpo. Flexione um braço de cada vez, girando o pulso durante o movimento (supinação).', 'Mantenha o cotovelo fixo ao lado do corpo. Não use impulso.', true],
+        [null, 'Rosca Martelo', 'Foco no braquial e braquiorradial', 'biceps', 'antebraco', 'halteres', 'iniciante', null, null, 'Em pé, halteres com pegada neutra (palmas uma de frente para outra). Flexione os cotovelos mantendo a pegada neutra.', 'Excelente para desenvolvimento do antebraço e largura do braço.', true],
+        // TRÍCEPS
+        [null, 'Tríceps Pulley', 'Isolamento para tríceps com cabo', 'triceps', null, 'cabo', 'iniciante', null, null, 'Polia alta, corda ou barra reta. Cotovelos junto ao corpo. Estenda os braços para baixo, apertando no final.', 'Mantenha os cotovelos fixos. Foque na contração do tríceps.', true],
+        [null, 'Tríceps Francês', 'Extensão overhead para tríceps', 'triceps', null, 'halteres', 'intermediario', null, null, 'Sentado ou em pé, halter ou barra atrás da cabeça. Cotovelos apontando para cima. Estenda os braços.', 'Cuidado com a carga - proteja os cotovelos. Movimento controlado.', true],
+        [null, 'Mergulho no Banco', 'Tríceps com peso corporal', 'triceps', 'peito, ombros', 'peso_corporal', 'iniciante', null, null, 'Mãos no banco atrás de você, pés no chão ou em outro banco. Flexione os cotovelos até 90° e empurre de volta.', 'Não desça demais para proteger os ombros. Mantenha o corpo próximo ao banco.', true],
+        // QUADRÍCEPS
+        [null, 'Agachamento Livre', 'Rei dos exercícios para pernas', 'quadriceps', 'gluteos, posterior', 'barra', 'avancado', 'https://www.youtube.com/watch?v=ultWZbUMPL8', null, 'Barra nas costas (high bar ou low bar). Pés na largura dos ombros. Desça até as coxas ficarem paralelas ou mais.', 'Joelhos podem passar dos pés, desde que os calcanhares fiquem no chão. Core sempre ativado.', true],
+        [null, 'Leg Press 45°', 'Exercício de força para pernas', 'quadriceps', 'gluteos', 'maquina', 'iniciante', null, null, 'Costas bem apoiadas no encosto. Pés na plataforma na largura dos ombros. Flexione os joelhos até 90° e empurre.', 'Não trave os joelhos no topo. Não tire o glúteo do banco na descida.', true],
+        [null, 'Cadeira Extensora', 'Isolamento para quadríceps', 'quadriceps', null, 'maquina', 'iniciante', null, null, 'Sentado na máquina, tornozelos sob o rolo. Estenda as pernas até a extensão completa.', 'Movimento controlado. Segure a contração por 1 segundo no topo.', true],
+        [null, 'Afundo (Lunge)', 'Exercício unilateral para pernas', 'quadriceps', 'gluteos', 'peso_corporal', 'iniciante', null, null, 'Dê um passo à frente, flexione ambos os joelhos até 90°. Joelho de trás quase toca o chão. Empurre de volta.', 'Tronco ereto. Joelho da frente não ultrapassa demais os dedos do pé.', true],
+        // POSTERIOR
+        [null, 'Stiff (Levantamento Terra Romeno)', 'Principal exercício para posteriores', 'posterior', 'gluteos, lombar', 'barra', 'intermediario', null, null, 'Em pé, barra à frente das coxas. Joelhos levemente flexionados. Incline o tronco mantendo as costas retas.', 'Sinta o alongamento nos posteriores. Não arredonde a lombar.', true],
+        [null, 'Mesa Flexora', 'Isolamento para posteriores', 'posterior', null, 'maquina', 'iniciante', null, null, 'Deitado na máquina, tornozelos sob o rolo. Flexione os joelhos trazendo os calcanhares em direção ao glúteo.', 'Não levante o quadril do apoio. Controle a volta.', true],
+        [null, 'Cadeira Flexora', 'Variação sentado para posteriores', 'posterior', null, 'maquina', 'iniciante', null, null, 'Sentado na máquina, pernas sobre o rolo. Flexione os joelhos empurrando o rolo para baixo.', 'Mantenha as costas apoiadas. Movimento controlado.', true],
+        // GLÚTEOS
+        [null, 'Hip Thrust', 'Melhor exercício para glúteos', 'gluteos', 'posterior', 'barra', 'intermediario', null, null, 'Costas apoiadas no banco, pés no chão. Barra sobre o quadril. Eleve o quadril até extensão completa.', 'Squeeze máximo no topo. Queixo no peito durante o movimento.', true],
+        [null, 'Elevação Pélvica', 'Versão no chão do hip thrust', 'gluteos', 'posterior', 'peso_corporal', 'iniciante', null, null, 'Deitado no chão, joelhos flexionados, pés no chão. Eleve o quadril apertando os glúteos.', 'Excelente para iniciantes ou como aquecimento. Segure a contração no topo.', true],
+        // PANTURRILHA
+        [null, 'Panturrilha em Pé', 'Foco no gastrocnêmio', 'panturrilha', null, 'maquina', 'iniciante', null, null, 'Em pé na máquina, ombros sob as almofadas. Eleve os calcanhares o máximo possível.', 'Amplitude máxima - desça bem e suba completamente. Segure a contração no topo.', true],
+        [null, 'Panturrilha Sentado', 'Foco no sóleo', 'panturrilha', null, 'maquina', 'iniciante', null, null, 'Sentado na máquina, joelhos sob as almofadas. Eleve os calcanhares.', 'Joelhos flexionados trabalham mais o sóleo. Complemente com panturrilha em pé.', true],
+        // ABDOMEN
+        [null, 'Prancha', 'Estabilização do core', 'abdomen', 'lombar, ombros', 'peso_corporal', 'iniciante', null, null, 'Apoie antebraços e pontas dos pés no chão. Corpo reto da cabeça aos pés. Mantenha a posição.', 'Não deixe o quadril subir ou descer. Respire normalmente.', true],
+        [null, 'Abdominal Crunch', 'Exercício básico de abdomen', 'abdomen', null, 'peso_corporal', 'iniciante', null, null, 'Deitado, joelhos flexionados. Mãos atrás da cabeça. Eleve os ombros do chão contraindo o abdomen.', 'Não puxe a cabeça com as mãos. Foque na contração do abdomen.', true],
+        [null, 'Elevação de Pernas', 'Foco no abdomen inferior', 'abdomen', null, 'peso_corporal', 'intermediario', null, null, 'Deitado ou pendurado na barra. Eleve as pernas mantendo-as estendidas ou com joelhos flexionados.', 'Controle a descida. Não use impulso.', true],
+        // CARDIO
+        [null, 'Corrida na Esteira', 'Cardio de baixo impacto', 'cardio', null, 'maquina', 'iniciante', null, null, 'Ajuste velocidade e inclinação conforme condicionamento. Mantenha postura ereta.', 'Varie entre corrida contínua e HIIT para melhores resultados.', true],
+        [null, 'Bike Ergométrica', 'Cardio para pernas', 'cardio', 'quadriceps', 'maquina', 'iniciante', null, null, 'Ajuste altura do banco - perna quase estendida no ponto mais baixo. Mantenha cadência constante.', 'Excelente para recuperação ativa ou aquecimento.', true],
+        [null, 'Burpee', 'Exercício de corpo inteiro de alta intensidade', 'corpo_todo', 'peito, quadriceps, cardio', 'peso_corporal', 'avancado', null, null, 'Da posição em pé, agache, coloque as mãos no chão, jogue os pés para trás em posição de flexão, faça uma flexão, traga os pés de volta e salte.', 'Excelente para HIIT. Modifique tirando a flexão ou o salto se necessário.', true],
+      ]
+      
+      await pool.query(
+        `INSERT INTO exercise_library 
+         (consultancy_id, name, description, muscle_group, secondary_muscle, equipment, difficulty, video_url, image_url, instructions, tips, is_global)
+         VALUES ?`,
+        [globalExercises]
+      )
+      
+      console.log(`✅ ${globalExercises.length} exercícios globais inseridos com sucesso!`)
+    } else {
+      console.log(`📚 Biblioteca de exercícios: ${existingExercises[0].count} exercícios globais encontrados`)
+    }
+    
+    // Verificar se existem alimentos globais
+    const [existingFoods] = await pool.query<RowDataPacket[]>(
+      'SELECT COUNT(*) as count FROM food_library WHERE is_global = TRUE OR consultancy_id IS NULL'
+    )
+    
+    if (existingFoods[0].count === 0) {
+      console.log('🍎 Inserindo biblioteca de alimentos global...')
+      
+      const globalFoods = [
+        // PROTEÍNAS
+        [null, 'Frango grelhado', null, 'proteina', '100g', 165, 31, 0, 3.6, 0, 0, null, true],
+        [null, 'Peito de peru', null, 'proteina', '100g', 104, 17, 4, 2, 0, 0, null, true],
+        [null, 'Carne bovina magra', null, 'proteina', '100g', 250, 26, 0, 15, 0, 0, null, true],
+        [null, 'Patinho moído', null, 'proteina', '100g', 137, 21, 0, 5, 0, 0, null, true],
+        [null, 'Salmão', null, 'proteina', '100g', 208, 20, 0, 13, 0, 0, null, true],
+        [null, 'Tilápia', null, 'proteina', '100g', 96, 20, 0, 1.7, 0, 0, null, true],
+        [null, 'Atum em água', null, 'proteina', '100g', 116, 26, 0, 1, 0, 0, null, true],
+        [null, 'Ovo inteiro', null, 'proteina', '1 unidade (50g)', 72, 6, 0.4, 5, 0, 0, null, true],
+        [null, 'Clara de ovo', null, 'proteina', '1 unidade (33g)', 17, 3.6, 0.2, 0, 0, 0, null, true],
+        [null, 'Tofu firme', null, 'proteina', '100g', 144, 17, 3, 9, 2, 0, null, true],
+        [null, 'Queijo cottage', null, 'proteina', '100g', 98, 11, 3, 4, 0, 0, null, true],
+        [null, 'Iogurte grego natural', null, 'proteina', '100g', 97, 9, 4, 5, 0, 0, null, true],
+        // CARBOIDRATOS
+        [null, 'Arroz integral', null, 'carboidrato', '100g cozido', 111, 2.6, 23, 0.9, 1.8, 0, null, true],
+        [null, 'Arroz branco', null, 'carboidrato', '100g cozido', 130, 2.7, 28, 0.3, 0.4, 0, null, true],
+        [null, 'Batata doce', null, 'carboidrato', '100g cozida', 86, 1.6, 20, 0.1, 3, 0, null, true],
+        [null, 'Batata inglesa', null, 'carboidrato', '100g cozida', 77, 2, 17, 0.1, 1.4, 0, null, true],
+        [null, 'Mandioca cozida', null, 'carboidrato', '100g', 125, 1.2, 30, 0.2, 1.5, 0, null, true],
+        [null, 'Macarrão integral', null, 'carboidrato', '100g cozido', 124, 5, 25, 1, 4, 0, null, true],
+        [null, 'Pão integral', null, 'carboidrato', '1 fatia (30g)', 69, 3.5, 12, 1, 2, 0, null, true],
+        [null, 'Aveia em flocos', null, 'carboidrato', '30g', 117, 4.5, 20, 2.5, 3, 0, null, true],
+        [null, 'Quinoa cozida', null, 'carboidrato', '100g', 120, 4.4, 21, 1.9, 2.8, 0, null, true],
+        [null, 'Feijão preto cozido', null, 'carboidrato', '100g', 77, 4.5, 14, 0.5, 8.7, 0, null, true],
+        [null, 'Grão-de-bico cozido', null, 'carboidrato', '100g', 164, 9, 27, 2.6, 8, 0, null, true],
+        [null, 'Lentilha cozida', null, 'carboidrato', '100g', 116, 9, 20, 0.4, 8, 0, null, true],
+        // GORDURAS
+        [null, 'Azeite de oliva', null, 'gordura', '1 colher (13ml)', 119, 0, 0, 13.5, 0, 0, null, true],
+        [null, 'Óleo de coco', null, 'gordura', '1 colher (13ml)', 117, 0, 0, 13.5, 0, 0, null, true],
+        [null, 'Abacate', null, 'gordura', '100g', 160, 2, 9, 15, 7, 0, null, true],
+        [null, 'Castanha de caju', null, 'gordura', '30g', 157, 5, 9, 12, 1, 0, null, true],
+        [null, 'Castanha-do-pará', null, 'gordura', '3 unidades (15g)', 99, 2, 2, 10, 1, 0, null, true],
+        [null, 'Amêndoas', null, 'gordura', '30g', 173, 6, 6, 15, 4, 0, null, true],
+        [null, 'Nozes', null, 'gordura', '30g', 196, 5, 4, 20, 2, 0, null, true],
+        [null, 'Pasta de amendoim', null, 'gordura', '1 colher (20g)', 118, 5, 4, 10, 2, 0, null, true],
+        [null, 'Semente de chia', null, 'gordura', '15g', 73, 2.5, 6, 5, 5, 0, null, true],
+        [null, 'Linhaça', null, 'gordura', '15g', 80, 3, 4, 6, 4, 0, null, true],
+        // VEGETAIS
+        [null, 'Brócolis cozido', null, 'vegetal', '100g', 35, 2.4, 7, 0.4, 3.3, 0, null, true],
+        [null, 'Espinafre cru', null, 'vegetal', '100g', 23, 2.9, 3.6, 0.4, 2.2, 0, null, true],
+        [null, 'Couve refogada', null, 'vegetal', '100g', 90, 3, 8, 6, 4, 0, null, true],
+        [null, 'Alface', null, 'vegetal', '100g', 15, 1.4, 2.9, 0.2, 1.3, 0, null, true],
+        [null, 'Tomate', null, 'vegetal', '100g', 18, 0.9, 3.9, 0.2, 1.2, 0, null, true],
+        [null, 'Pepino', null, 'vegetal', '100g', 15, 0.7, 3.6, 0.1, 0.5, 0, null, true],
+        [null, 'Cenoura crua', null, 'vegetal', '100g', 41, 0.9, 10, 0.2, 2.8, 0, null, true],
+        [null, 'Abobrinha', null, 'vegetal', '100g', 17, 1.2, 3.1, 0.3, 1, 0, null, true],
+        [null, 'Berinjela', null, 'vegetal', '100g', 25, 1, 6, 0.2, 3, 0, null, true],
+        [null, 'Pimentão', null, 'vegetal', '100g', 26, 1, 6, 0.2, 2.1, 0, null, true],
+        // FRUTAS
+        [null, 'Banana', null, 'fruta', '1 unidade (100g)', 89, 1.1, 23, 0.3, 2.6, 0, null, true],
+        [null, 'Maçã', null, 'fruta', '1 unidade (150g)', 78, 0.4, 21, 0.2, 3.6, 0, null, true],
+        [null, 'Laranja', null, 'fruta', '1 unidade (180g)', 85, 1.7, 21, 0.2, 4.4, 0, null, true],
+        [null, 'Morango', null, 'fruta', '100g', 32, 0.7, 8, 0.3, 2, 0, null, true],
+        [null, 'Mamão papaya', null, 'fruta', '100g', 43, 0.5, 11, 0.3, 1.7, 0, null, true],
+        [null, 'Manga', null, 'fruta', '100g', 60, 0.8, 15, 0.4, 1.6, 0, null, true],
+        [null, 'Melancia', null, 'fruta', '100g', 30, 0.6, 8, 0.2, 0.4, 0, null, true],
+        [null, 'Uva', null, 'fruta', '100g', 69, 0.7, 18, 0.2, 0.9, 0, null, true],
+        [null, 'Abacaxi', null, 'fruta', '100g', 50, 0.5, 13, 0.1, 1.4, 0, null, true],
+        [null, 'Kiwi', null, 'fruta', '1 unidade (80g)', 49, 0.9, 12, 0.4, 2.4, 0, null, true],
+        // LATICÍNIOS
+        [null, 'Leite desnatado', null, 'lacteo', '200ml', 70, 7, 10, 0.2, 0, 0, null, true],
+        [null, 'Leite integral', null, 'lacteo', '200ml', 122, 6.4, 9.4, 6.6, 0, 0, null, true],
+        [null, 'Queijo minas frescal', null, 'lacteo', '30g', 73, 5, 1, 6, 0, 0, null, true],
+        [null, 'Ricota', null, 'lacteo', '50g', 87, 6, 2, 6, 0, 0, null, true],
+        [null, 'Requeijão light', null, 'lacteo', '30g', 42, 3, 2, 3, 0, 0, null, true],
+        // SUPLEMENTOS
+        [null, 'Whey Protein', null, 'suplemento', '1 scoop (30g)', 120, 24, 3, 1, 0, 0, null, true],
+        [null, 'Caseína', null, 'suplemento', '1 scoop (30g)', 110, 24, 2, 0.5, 0, 0, null, true],
+        [null, 'Albumina', null, 'suplemento', '30g', 117, 25, 1.5, 0.5, 0, 0, null, true],
+        [null, 'Maltodextrina', null, 'suplemento', '30g', 114, 0, 28, 0, 0, 0, null, true],
+        [null, 'Creatina', null, 'suplemento', '5g', 0, 0, 0, 0, 0, 0, null, true],
+        [null, 'BCAA', null, 'suplemento', '5g', 20, 5, 0, 0, 0, 0, null, true],
+        // BEBIDAS
+        [null, 'Água de coco', null, 'bebida', '200ml', 46, 0.4, 10, 0.2, 0, 0, null, true],
+        [null, 'Suco de laranja natural', null, 'bebida', '200ml', 88, 1.4, 21, 0.4, 0.4, 0, null, true],
+        [null, 'Café sem açúcar', null, 'bebida', '100ml', 2, 0.1, 0, 0, 0, 0, null, true],
+        [null, 'Chá verde', null, 'bebida', '200ml', 2, 0, 0, 0, 0, 0, null, true],
+      ]
+      
+      await pool.query(
+        `INSERT INTO food_library 
+         (consultancy_id, name, description, category, serving_size, calories, protein, carbs, fat, fiber, sodium, image_url, is_global)
+         VALUES ?`,
+        [globalFoods]
+      )
+      
+      console.log(`✅ ${globalFoods.length} alimentos globais inseridos com sucesso!`)
+    } else {
+      console.log(`🍎 Biblioteca de alimentos: ${existingFoods[0].count} alimentos globais encontrados`)
+    }
+    
+  } catch (error) {
+    console.error('❌ Erro ao inicializar bibliotecas globais:', error)
+  }
+}
+
+// ===========================================
 // CONFIGURAÇÃO DO MERCADO PAGO
 // ===========================================
 const mercadoPagoAccessToken = process.env.MP_ACCESS_TOKEN || ''
@@ -3276,6 +3455,105 @@ app.delete('/api/rehab-sessions/:id', async (req, res) => {
 })
 
 // ===============================
+// POPULAR BIBLIOTECA DE CONSULTORIA
+// ===============================
+// Endpoint para popular biblioteca de consultorias existentes
+app.post('/api/consultancies/:id/populate-library', async (req, res) => {
+  try {
+    const consultancyId = Number(req.params.id)
+    
+    // Verificar se a consultoria existe
+    const [consultancy] = await pool.query<RowDataPacket[]>(
+      'SELECT id, name FROM consultancies WHERE id = ?',
+      [consultancyId]
+    )
+    
+    if (consultancy.length === 0) {
+      return res.status(404).json({ error: 'Consultoria não encontrada' })
+    }
+    
+    // Verificar se já tem exercícios
+    const [existingExercises] = await pool.query<RowDataPacket[]>(
+      'SELECT COUNT(*) as count FROM exercise_library WHERE consultancy_id = ?',
+      [consultancyId]
+    )
+    
+    let exercisesCopied = 0
+    let foodsCopied = 0
+    
+    if (existingExercises[0].count === 0) {
+      // Copiar exercícios globais
+      const [globalExercises] = await pool.query<RowDataPacket[]>(
+        `SELECT name, description, muscle_group, secondary_muscle, equipment, 
+                difficulty, video_url, image_url, instructions, tips
+         FROM exercise_library 
+         WHERE is_global = TRUE OR consultancy_id IS NULL`
+      )
+      
+      if (globalExercises.length > 0) {
+        const insertValues = globalExercises.map((ex: RowDataPacket) => [
+          consultancyId, ex.name, ex.description, ex.muscle_group, ex.secondary_muscle,
+          ex.equipment, ex.difficulty, ex.video_url, ex.image_url, ex.instructions, ex.tips, false
+        ])
+        await pool.query(
+          `INSERT INTO exercise_library 
+           (consultancy_id, name, description, muscle_group, secondary_muscle, 
+            equipment, difficulty, video_url, image_url, instructions, tips, is_global)
+           VALUES ?`,
+          [insertValues]
+        )
+        exercisesCopied = globalExercises.length
+      }
+    }
+    
+    // Verificar se já tem alimentos
+    const [existingFoods] = await pool.query<RowDataPacket[]>(
+      'SELECT COUNT(*) as count FROM food_library WHERE consultancy_id = ?',
+      [consultancyId]
+    )
+    
+    if (existingFoods[0].count === 0) {
+      // Copiar alimentos globais
+      const [globalFoods] = await pool.query<RowDataPacket[]>(
+        `SELECT name, description, category, serving_size, calories, protein, carbs, fat, fiber, sodium, image_url
+         FROM food_library 
+         WHERE is_global = TRUE OR consultancy_id IS NULL`
+      )
+      
+      if (globalFoods.length > 0) {
+        const foodInsertValues = globalFoods.map((food: RowDataPacket) => [
+          consultancyId, food.name, food.description, food.category, food.serving_size,
+          food.calories, food.protein, food.carbs, food.fat, food.fiber, food.sodium, food.image_url, false
+        ])
+        await pool.query(
+          `INSERT INTO food_library 
+           (consultancy_id, name, description, category, serving_size, calories, protein, carbs, fat, fiber, sodium, image_url, is_global)
+           VALUES ?`,
+          [foodInsertValues]
+        )
+        foodsCopied = globalFoods.length
+      }
+    }
+    
+    res.json({
+      success: true,
+      message: `Biblioteca populada para ${consultancy[0].name}`,
+      data: {
+        consultancyId,
+        consultancyName: consultancy[0].name,
+        exercisesCopied,
+        exercisesExisting: existingExercises[0].count,
+        foodsCopied,
+        foodsExisting: existingFoods[0].count
+      }
+    })
+  } catch (error) {
+    console.error('Erro ao popular biblioteca:', error)
+    res.status(500).json({ error: String(error) })
+  }
+})
+
+// ===============================
 // APPOINTMENTS - CRUD Completo
 // ===============================
 
@@ -3351,7 +3629,10 @@ app.post('/api/upload', async (req, res) => {
 })
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`)
   console.log(`📊 API Health: http://localhost:${PORT}/api/health`)
+  
+  // Inicializar bibliotecas globais (exercícios e alimentos)
+  await seedGlobalLibraries()
 })
