@@ -8,21 +8,19 @@ interface LogoProps {
 const sizes = {
   sm: { img: 'h-8', text: 'text-lg' },
   md: { img: 'h-10', text: 'text-xl' },
-  lg: { img: 'h-12', text: 'text-2xl' },
-  xl: { img: 'h-16', text: 'text-3xl' },
+  lg: { img: 'h-14', text: 'text-2xl' },
+  xl: { img: 'h-20', text: 'text-3xl' },
 };
 
 export function Logo({ size = 'md', showText = true, textColor = 'dark', className = '' }: LogoProps) {
   const sizeConfig = sizes[size];
   
   return (
-    <div className={`flex items-center gap-1 ${className}`}>
-      {/* Logo image - usando scale para compensar a margem branca da imagem */}
+    <div className={`flex items-center ${className}`}>
       <img 
-        src="/images/logo-vitae.png" 
+        src="/images/logo-menor-semfundo.png" 
         alt="VITAE" 
-        className={`${sizeConfig.img} w-auto object-contain scale-150`}
-        style={{ marginLeft: '-0.5rem', marginRight: '-0.25rem' }}
+        className={`${sizeConfig.img} w-auto object-contain`}
       />
       {showText && (
         <span className={`${sizeConfig.text} font-bold tracking-tighter ${
@@ -41,10 +39,9 @@ export function LogoIcon({ size = 'md', className = '' }: Omit<LogoProps, 'showT
   
   return (
     <img 
-      src="/images/logo-vitae.png" 
+      src="/images/logo-menor-semfundo.png" 
       alt="VITAE" 
-      className={`${sizeConfig.img} w-auto object-contain scale-150 ${className}`}
-      style={{ marginLeft: '-0.5rem', marginRight: '-0.5rem' }}
+      className={`${sizeConfig.img} w-auto object-contain ${className}`}
     />
   );
 }
