@@ -83,12 +83,12 @@ export function PatientDetail({ patient, onBack, consultancyId }: PatientDetailP
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <Avatar src={null} alt={patient.name} size="xl" />
+          <Avatar src={null} name={patient.name} size="xl" />
           <div className="min-w-0">
             <h1 className="text-2xl lg:text-4xl font-bold tracking-tighter truncate">{patient.name}</h1>
             <div className="flex flex-wrap items-center gap-2 mt-1">
-              <Badge variant="outline">{patient.sport}</Badge>
-              {patient.position && <Badge variant="outline">{patient.position}</Badge>}
+              <Badge variant="default">{patient.sport}</Badge>
+              {patient.position && <Badge variant="default">{patient.position}</Badge>}
               {patient.club && (
                 <span className="text-sm text-zinc-500 flex items-center gap-1">
                   <MapPin className="w-3 h-3" />
@@ -113,32 +113,28 @@ export function PatientDetail({ patient, onBack, consultancyId }: PatientDetailP
       {/* Quick Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <StatCard 
-          title="Altura" 
+          label="Altura" 
           value={`${patient.height}cm`} 
-          icon={Ruler} 
-          iconBgColor="bg-lime-100" 
-          className="border-l-4 border-lime-500"
+          icon={<Ruler className="w-5 h-5" />} 
+          color="lime"
         />
         <StatCard 
-          title="Peso" 
+          label="Peso" 
           value={`${patient.weight}kg`} 
-          icon={Weight} 
-          iconBgColor="bg-zinc-100" 
-          className="border-l-4 border-zinc-400"
+          icon={<Weight className="w-5 h-5" />} 
+          color="zinc"
         />
         <StatCard 
-          title="Idade" 
+          label="Idade" 
           value={`${patientAge} anos`} 
-          icon={Cake} 
-          iconBgColor="bg-zinc-100" 
-          className="border-l-4 border-zinc-400"
+          icon={<Cake className="w-5 h-5" />} 
+          color="zinc"
         />
         <StatCard 
-          title="No Programa" 
+          label="No Programa" 
           value={`${patient.daysInProgram} dias`} 
-          icon={Activity} 
-          iconBgColor="bg-zinc-100" 
-          className="border-l-4 border-zinc-400"
+          icon={<Activity className="w-5 h-5" />} 
+          color="zinc"
         />
       </div>
 
@@ -581,7 +577,7 @@ function TrainingTab({ patient, consultancyId }: { patient: Patient; consultancy
   if (plans.length === 0) {
     return (
       <EmptyState
-        icon={Dumbbell}
+        icon="training"
         title="Nenhum plano de treino"
         description="Este paciente ainda não possui um plano de treino ativo. Para criar um plano, acesse Treinamento no menu lateral."
       />
@@ -653,7 +649,7 @@ function TrainingTab({ patient, consultancyId }: { patient: Patient; consultancy
       {/* Days List */}
       {trainingDays.length === 0 ? (
         <EmptyState
-          icon={Calendar}
+          icon="calendar"
           title="Nenhum dia de treino configurado"
           description="Configure os dias de treino na área de Treinamento."
         />
@@ -831,7 +827,7 @@ function NutritionTab({ patient, consultancyId }: { patient: Patient; consultanc
   if (!plan) {
     return (
       <EmptyState
-        icon={Apple}
+        icon="nutrition"
         title="Nenhum plano nutricional"
         description="Este paciente ainda não possui um plano nutricional. Para criar um plano, acesse Nutrição no menu lateral."
       />
@@ -909,10 +905,9 @@ function NutritionTab({ patient, consultancyId }: { patient: Patient; consultanc
           })
         ) : (
           <EmptyState
-            icon={Apple}
+            icon="nutrition"
             title="Nenhuma refeição"
             description="Este plano ainda não possui refeições cadastradas."
-            className="py-8"
           />
         )}
       </div>
@@ -1206,11 +1201,13 @@ function MedicalTab({ patient }: { patient: Patient }) {
         ))}
         {records.length === 0 && (
           <EmptyState
-            icon={Stethoscope}
+            icon="files"
             title="Nenhum registro médico"
             description="Este paciente ainda não possui registros médicos cadastrados."
-            buttonText="Adicionar Registro"
-            onButtonClick={openAddRecord}
+            action={{
+              label: "Adicionar Registro",
+              onClick: openAddRecord
+            }}
           />
         )}
       </div>
@@ -1639,11 +1636,13 @@ function RehabTab({ patient }: { patient: Patient }) {
         })}
         {sessions.length === 0 && (
           <EmptyState
-            icon={HeartPulse}
+            icon="calendar"
             title="Nenhuma sessão de reabilitação"
             description="Este paciente ainda não possui sessões de reabilitação cadastradas."
-            buttonText="Adicionar Sessão"
-            onButtonClick={openAddSession}
+            action={{
+              label: "Adicionar Sessão",
+              onClick: openAddSession
+            }}
           />
         )}
       </div>
@@ -1868,7 +1867,7 @@ function ProgressTab({ patient }: { patient: Patient }) {
 
       {progressData.length === 0 && (
         <EmptyState
-          icon={TrendingUp}
+          icon="search"
           title="Nenhum dado de progresso"
           description="Registre medições para acompanhar a evolução do paciente."
         />
@@ -1926,7 +1925,7 @@ function AppointmentsTab({ patient }: { patient: Patient }) {
           ))
         ) : (
           <EmptyState
-            icon={Calendar}
+            icon="calendar"
             title="Nenhum agendamento"
             description="Este paciente não possui agendamentos no momento."
           />
