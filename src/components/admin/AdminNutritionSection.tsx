@@ -4,7 +4,7 @@ import { Patient } from './AdminDashboard';
 import { Card, StatCard } from '../ui/Card';
 import { Badge, StatusBadge } from '../ui/Badge';
 import { EmptyState } from '../ui/EmptyState';
-import { NutritionAnamnesis, AnthropometricAssessment, EnergyCalculator } from '../nutrition';
+import { NutritionAnamnesis, AnthropometricAssessment, EnergyCalculator, NutritionEvolutionDashboard, RecipeManager } from '../nutrition';
 
 const API_URL = '/api';
 
@@ -82,7 +82,7 @@ interface AthleteData {
   email: string;
 }
 
-type ViewMode = 'list' | 'plan' | 'library' | 'anamnesis' | 'anthropometric' | 'energy';
+type ViewMode = 'list' | 'plan' | 'library' | 'anamnesis' | 'anthropometric' | 'energy' | 'evolution' | 'recipes';
 
 export function AdminNutritionSection({ onSelectPatient, consultancyId, adminUserId }: AdminNutritionSectionProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('list');
@@ -487,6 +487,44 @@ export function AdminNutritionSection({ onSelectPatient, consultancyId, adminUse
           onSave={() => {
             alert('Cálculo salvo com sucesso!');
           }}
+        />
+      </div>
+    );
+  }
+
+  // VIEW: Dashboard de Evolução
+  if (viewMode === 'evolution' && selectedAthleteForAssessment) {
+    return (
+      <div className="space-y-4">
+        <button 
+          onClick={() => { setViewMode('list'); setSelectedAthleteForAssessment(null); }} 
+          className="text-sm text-zinc-500 hover:text-black flex items-center gap-1"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Voltar à lista
+        </button>
+        <NutritionEvolutionDashboard
+          athleteId={selectedAthleteForAssessment.id}
+          athleteName={selectedAthleteForAssessment.name}
+        />
+      </div>
+    );
+  }
+
+  // VIEW: Gerenciador de Receitas
+  if (viewMode === 'recipes') {
+    return (
+      <div className="space-y-4">
+        <button 
+          onClick={() => setViewMode('list')} 
+          className="text-sm text-zinc-500 hover:text-black flex items-center gap-1"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Voltar à lista
+        </button>
+        <RecipeManager
+          consultancyId={consultancyId || 0}
+          userId={adminUserId || 0}
         />
       </div>
     );
@@ -995,7 +1033,11 @@ export function AdminNutritionSection({ onSelectPatient, consultancyId, adminUse
           </h1>
           <p className="text-xl text-zinc-600">Gerencie os planos nutricionais dos pacientes</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
+          <button onClick={() => setViewMode('recipes')} className="flex items-center gap-2 border-2 border-black px-6 py-3 font-bold hover:bg-black hover:text-white transition-colors">
+            <Utensils className="w-5 h-5" />
+            RECEITAS
+          </button>
           <button onClick={() => setViewMode('library')} className="flex items-center gap-2 border-2 border-black px-6 py-3 font-bold hover:bg-black hover:text-white transition-colors">
             <Book className="w-5 h-5" />
             BIBLIOTECA
@@ -1159,6 +1201,16 @@ export function AdminNutritionSection({ onSelectPatient, consultancyId, adminUse
                     >
                       <Calculator className="w-4 h-4" />
                       Cálculo Energético
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSelectedAthleteForAssessment(athlete);
+                        setViewMode('evolution');
+                      }}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm bg-lime-100 hover:bg-lime-200 rounded-lg transition-colors text-lime-700"
+                    >
+                      <Target className="w-4 h-4" />
+                      Dashboard de Evolução
                     </button>
                   </div>
                 </div>

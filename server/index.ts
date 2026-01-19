@@ -8,6 +8,7 @@ import crypto from 'crypto'
 import { createPool, RowDataPacket } from 'mysql2/promise'
 import { MercadoPagoConfig, PreApproval, Payment } from 'mercadopago'
 import { createNutritionAdvancedRoutes } from './routes/nutrition-advanced'
+import { createRecipeRoutes } from './routes/recipes'
 
 // ===========================================
 // CONFIGURAÇÃO DO AMBIENTE
@@ -3634,6 +3635,12 @@ app.post('/api/upload', async (req, res) => {
 // ===============================
 const nutritionAdvancedRouter = createNutritionAdvancedRoutes(pool)
 app.use('/api/nutrition-advanced', nutritionAdvancedRouter)
+
+// ===============================
+// ROTAS DE RECEITAS
+// ===============================
+const recipeRouter = createRecipeRoutes(pool)
+app.use('/api/recipes', recipeRouter)
 
 // Start server
 app.listen(PORT, async () => {

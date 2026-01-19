@@ -7,3 +7,5 @@
 export { NutritionAnamnesis } from './NutritionAnamnesis';
 export { AnthropometricAssessment } from './AnthropometricAssessment';
 export { EnergyCalculator } from './EnergyCalculator';
+export { NutritionEvolutionDashboard } from './NutritionEvolutionDashboard';
+export { RecipeManager } from './RecipeManager';
