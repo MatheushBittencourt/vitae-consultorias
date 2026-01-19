@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 interface UseScrollAnimationOptions {
   threshold?: number;
@@ -86,15 +86,13 @@ export const scrollAnimationClasses = {
  * Componente wrapper para animações de scroll
  * Uso: <ScrollReveal animation="fadeUp" delay={0.2}>...</ScrollReveal>
  */
-import React from 'react';
-
 interface ScrollRevealProps {
   children: React.ReactNode;
   animation?: keyof typeof scrollAnimationClasses;
   delay?: number;
   duration?: number;
   className?: string;
-  as?: keyof JSX.IntrinsicElements;
+  as?: 'div' | 'section' | 'article' | 'aside' | 'header' | 'footer' | 'main' | 'nav' | 'span';
 }
 
 export function ScrollReveal({
@@ -103,25 +101,37 @@ export function ScrollReveal({
   delay = 0,
   duration = 0.6,
   className = '',
-  as: Component = 'div',
+  as = 'div',
 }: ScrollRevealProps) {
-  const { ref, isVisible } = useScrollAnimation();
+  const { ref, isVisible } = useScrollAnimation<HTMLDivElement>();
   const animClasses = scrollAnimationClasses[animation];
 
-  return (
-    <Component
-      ref={ref as React.RefObject<HTMLDivElement>}
-      className={`
-        transition-all ease-out
-        ${isVisible ? animClasses.visible : animClasses.hidden}
-        ${className}
-      `}
-      style={{
-        transitionDuration: `${duration}s`,
-        transitionDelay: `${delay}s`,
-      }}
-    >
-      {children}
-    </Component>
-  );
+  const style: React.CSSProperties = {
+    transitionDuration: `${duration}s`,
+    transitionDelay: `${delay}s`,
+  };
+
+  const combinedClassName = `transition-all ease-out ${isVisible ? animClasses.visible : animClasses.hidden} ${className}`;
+
+  // Renderizar o elemento baseado no tipo
+  switch (as) {
+    case 'section':
+      return <section ref={ref} className={combinedClassName} style={style}>{children}</section>;
+    case 'article':
+      return <article ref={ref} className={combinedClassName} style={style}>{children}</article>;
+    case 'aside':
+      return <aside ref={ref} className={combinedClassName} style={style}>{children}</aside>;
+    case 'header':
+      return <header ref={ref} className={combinedClassName} style={style}>{children}</header>;
+    case 'footer':
+      return <footer ref={ref} className={combinedClassName} style={style}>{children}</footer>;
+    case 'main':
+      return <main ref={ref} className={combinedClassName} style={style}>{children}</main>;
+    case 'nav':
+      return <nav ref={ref} className={combinedClassName} style={style}>{children}</nav>;
+    case 'span':
+      return <span ref={ref as React.RefObject<HTMLSpanElement>} className={combinedClassName} style={style}>{children}</span>;
+    default:
+      return <div ref={ref} className={combinedClassName} style={style}>{children}</div>;
+  }
 }
