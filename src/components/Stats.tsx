@@ -22,28 +22,29 @@ interface Plan {
 const plans: Plan[] = [
   {
     id: 'starter',
-    name: 'STARTER',
-    monthlyPrice: 159.90,
-    annualPrice: 127.90, // ~20% desconto
-    description: 'Para começar sua consultoria digital',
+    name: 'SOLO',
+    monthlyPrice: 89.90,
+    annualPrice: 71.90, // ~20% desconto
+    description: 'Ideal para profissionais individuais',
     features: [
       '1 módulo à escolha',
-      'Até 3 profissionais',
-      'Até 50 pacientes',
+      '1 profissional',
+      '♾️ Pacientes ilimitados',
       'Suporte por email',
       'Biblioteca de exercícios',
+      'App do paciente',
     ],
   },
   {
     id: 'growth',
-    name: 'GROWTH',
-    monthlyPrice: 297.90,
-    annualPrice: 237.90, // ~20% desconto
-    description: 'O mais escolhido pelas consultorias',
+    name: 'PRO',
+    monthlyPrice: 149.90,
+    annualPrice: 119.90, // ~20% desconto
+    description: 'Para profissionais que querem mais',
     features: [
       '2 módulos à escolha',
-      'Até 5 profissionais',
-      'Até 80 pacientes',
+      'Até 3 profissionais',
+      '♾️ Pacientes ilimitados',
       'Suporte prioritário',
       'Relatórios avançados',
       'Biblioteca completa',
@@ -53,32 +54,32 @@ const plans: Plan[] = [
   },
   {
     id: 'scale',
-    name: 'SCALE',
-    monthlyPrice: 497.90,
-    annualPrice: 397.90, // ~20% desconto
+    name: 'EQUIPE',
+    monthlyPrice: 249.90,
+    annualPrice: 199.90, // ~20% desconto
     description: 'Para consultorias em crescimento',
     features: [
       '3 módulos à escolha',
-      'Até 10 profissionais',
-      'Até 200 pacientes',
+      'Até 5 profissionais',
+      '♾️ Pacientes ilimitados',
       'Suporte prioritário',
       'Relatórios avançados',
-      'Integrações básicas',
+      '+R$29,90/profissional extra',
     ],
   },
   {
     id: 'enterprise',
-    name: 'ENTERPRISE',
-    monthlyPrice: 797.90,
-    annualPrice: 637.90, // ~20% desconto
+    name: 'CLÍNICA',
+    monthlyPrice: 399.90,
+    annualPrice: 319.90, // ~20% desconto
     description: 'Solução completa para grandes operações',
     features: [
       'Todos os 4 módulos',
-      'Até 20 profissionais',
-      'Até 250 pacientes',
+      'Até 10 profissionais',
+      '♾️ Pacientes ilimitados',
       'Suporte dedicado',
       'API de integração',
-      'White-label disponível',
+      '+R$24,90/profissional extra',
     ],
     badge: 'COMPLETO',
   },
