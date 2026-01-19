@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Edit, FileText, Loader2, Stethoscope } from 'lucide-react';
+import { Plus, Search, Edit, FileText, Loader2, Stethoscope, Activity, AlertCircle, Users } from 'lucide-react';
 import { Patient } from './AdminDashboard';
+import { Card, StatCard } from '../ui/Card';
+import { Badge, StatusBadge } from '../ui/Badge';
+import { EmptyState } from '../ui/EmptyState';
 
 const API_URL = '/api';
 
@@ -128,27 +131,35 @@ export function AdminMedicalSection({ onSelectPatient, consultancyId }: AdminMed
         />
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
-        <div className="bg-white p-4 border-l-4 border-lime-500">
-          <div className="text-2xl font-bold">{records.length}</div>
-          <div className="text-sm text-zinc-600">Registros</div>
-        </div>
-        <div className="bg-white p-4 border-l-4 border-black">
-          <div className="text-2xl font-bold">{records.filter(r => r.record_type === 'consultation').length}</div>
-          <div className="text-sm text-zinc-600">Consultas</div>
-        </div>
-        <div className="bg-white p-4 border-l-4 border-blue-500">
-          <div className="text-2xl font-bold">{records.filter(r => r.record_type === 'exam').length}</div>
-          <div className="text-sm text-zinc-600">Exames</div>
-        </div>
-        <div className="bg-white p-4 border-l-4 border-yellow-500">
-          <div className="text-2xl font-bold">{records.filter(r => r.record_type === 'injury').length}</div>
-          <div className="text-sm text-zinc-600">Lesões</div>
-        </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard
+          label="Registros"
+          value={records.length}
+          icon={<FileText className="w-5 h-5" />}
+          color="lime"
+        />
+        <StatCard
+          label="Consultas"
+          value={records.filter(r => r.record_type === 'consultation').length}
+          icon={<Stethoscope className="w-5 h-5" />}
+          color="zinc"
+        />
+        <StatCard
+          label="Exames"
+          value={records.filter(r => r.record_type === 'exam').length}
+          icon={<Activity className="w-5 h-5" />}
+          color="blue"
+        />
+        <StatCard
+          label="Lesões"
+          value={records.filter(r => r.record_type === 'injury').length}
+          icon={<AlertCircle className="w-5 h-5" />}
+          color="orange"
+        />
       </div>
 
-      <div className="bg-white">
-        <div className="grid grid-cols-6 gap-4 px-6 py-4 bg-zinc-900 text-white font-bold text-sm tracking-wider">
+      <Card padding="none" className="overflow-hidden">
+        <div className="grid grid-cols-6 gap-4 px-6 py-4 bg-zinc-900 text-white font-bold text-sm tracking-wider rounded-t-2xl">
           <div className="col-span-2">PACIENTE / REGISTRO</div>
           <div>DATA</div>
           <div>TIPO</div>
@@ -157,14 +168,20 @@ export function AdminMedicalSection({ onSelectPatient, consultancyId }: AdminMed
         </div>
         <div className="divide-y divide-zinc-200">
           {filteredRecords.length === 0 ? (
-            <div className="px-6 py-12 text-center text-zinc-500">
-              Nenhum registro médico encontrado
-            </div>
+            <EmptyState
+              icon="files"
+              title="Nenhum registro médico encontrado"
+              description="Adicione o primeiro registro médico para seus pacientes."
+              action={{
+                label: "Novo Registro",
+                onClick: () => setShowNewRecord(true)
+              }}
+            />
           ) : (
             filteredRecords.map((record) => (
               <div key={record.id} className="grid grid-cols-6 gap-4 px-6 py-4 items-center hover:bg-zinc-50 transition-colors">
                 <div className="col-span-2 flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white">
+                  <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center text-white">
                     <Stethoscope className="w-5 h-5" />
                   </div>
                   <div>
@@ -174,13 +191,13 @@ export function AdminMedicalSection({ onSelectPatient, consultancyId }: AdminMed
                 </div>
                 <div>{record.record_date ? new Date(record.record_date).toLocaleDateString('pt-BR') : '-'}</div>
                 <div>
-                  <span className={`px-3 py-1 text-xs font-bold ${
+                  <Badge className={
                     record.record_type === 'exam' ? 'bg-blue-100 text-blue-700' : 
                     record.record_type === 'injury' ? 'bg-red-100 text-red-700' :
                     'bg-lime-100 text-lime-700'
-                  }`}>
+                  }>
                     {recordTypeLabels[record.record_type] || record.record_type?.toUpperCase()}
-                  </span>
+                  </Badge>
                 </div>
                 <div className="text-sm text-zinc-600">{record.doctor_name || '-'}</div>
                 <div className="flex justify-end gap-2">
@@ -206,13 +223,13 @@ export function AdminMedicalSection({ onSelectPatient, consultancyId }: AdminMed
                         });
                       }
                     }}
-                    className="p-2 hover:bg-zinc-100 transition-colors"
+                    className="p-2 hover:bg-zinc-100 rounded-lg transition-colors"
                     title="Ver prontuário"
                   >
                     <FileText className="w-5 h-5" />
                   </button>
                   <button 
-                    className="p-2 hover:bg-zinc-100 transition-colors"
+                    className="p-2 hover:bg-zinc-100 rounded-lg transition-colors"
                     title="Editar registro"
                   >
                     <Edit className="w-5 h-5" />
@@ -222,7 +239,7 @@ export function AdminMedicalSection({ onSelectPatient, consultancyId }: AdminMed
             ))
           )}
         </div>
-      </div>
+      </Card>
 
       {showNewRecord && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">

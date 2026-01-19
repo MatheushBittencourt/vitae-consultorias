@@ -75,13 +75,15 @@ export function CardHeader({ title, subtitle, icon, action }: CardHeaderProps) {
 }
 
 // Stat Card
-interface StatCardProps {
+export interface StatCardProps {
   label: string;
   value: string | number;
   icon?: ReactNode;
   trend?: { value: number; positive: boolean };
   color?: 'lime' | 'blue' | 'purple' | 'orange' | 'red' | 'zinc';
   size?: 'sm' | 'md' | 'lg';
+  subtitle?: string;
+  className?: string;
 }
 
 const colorClasses = {
@@ -129,19 +131,24 @@ export function StatCard({
   icon, 
   trend, 
   color = 'zinc',
-  size = 'md' 
+  size = 'md',
+  subtitle,
+  className = ''
 }: StatCardProps) {
   const colors = colorClasses[color];
   const sizes = sizeClasses[size];
 
   return (
-    <Card className={`${colors.bg} border-0`}>
+    <Card className={`${colors.bg} border-0 ${className}`}>
       <div className="flex items-start justify-between">
         <div>
           <p className={`${sizes.label} font-medium text-zinc-500 uppercase tracking-wider mb-2`}>
             {label}
           </p>
           <p className={`${sizes.value} font-bold text-zinc-900`}>{value}</p>
+          {subtitle && (
+            <p className="text-xs text-zinc-500 mt-1">{subtitle}</p>
+          )}
           {trend && (
             <p className={`text-sm mt-1 ${trend.positive ? 'text-green-600' : 'text-red-600'}`}>
               {trend.positive ? '↑' : '↓'} {Math.abs(trend.value)}%

@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 
 interface BadgeProps {
   children: ReactNode;
-  variant?: 'default' | 'success' | 'warning' | 'error' | 'info' | 'lime';
+  variant?: 'default' | 'secondary' | 'success' | 'warning' | 'error' | 'info' | 'lime';
   size?: 'sm' | 'md' | 'lg';
   dot?: boolean;
   className?: string;
@@ -10,6 +10,7 @@ interface BadgeProps {
 
 const variantClasses = {
   default: 'bg-zinc-100 text-zinc-700 border-zinc-200',
+  secondary: 'bg-zinc-200 text-zinc-600 border-zinc-300',
   success: 'bg-green-50 text-green-700 border-green-200',
   warning: 'bg-amber-50 text-amber-700 border-amber-200',
   error: 'bg-red-50 text-red-700 border-red-200',
@@ -19,6 +20,7 @@ const variantClasses = {
 
 const dotColors = {
   default: 'bg-zinc-500',
+  secondary: 'bg-zinc-400',
   success: 'bg-green-500',
   warning: 'bg-amber-500',
   error: 'bg-red-500',

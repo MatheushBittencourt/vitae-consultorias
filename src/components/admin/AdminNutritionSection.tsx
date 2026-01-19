@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Edit, Eye, Loader2, Apple, Trash2, X, ChevronDown, ChevronRight, ArrowLeftRight, Utensils, Book, ArrowLeft } from 'lucide-react';
+import { Plus, Search, Edit, Eye, Loader2, Apple, Trash2, X, ChevronDown, ChevronRight, ArrowLeftRight, Utensils, Book, ArrowLeft, Users, Target, Library } from 'lucide-react';
 import { Patient } from './AdminDashboard';
+import { Card, StatCard } from '../ui/Card';
+import { Badge, StatusBadge } from '../ui/Badge';
+import { EmptyState } from '../ui/EmptyState';
 
 const API_URL = '/api';
 
@@ -709,23 +712,31 @@ export function AdminNutritionSection({ onSelectPatient, consultancyId, adminUse
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-4 gap-4">
-          <div className="bg-white p-4 border-l-4 border-lime-500">
-            <div className="text-2xl font-bold">{foodLibrary.length}</div>
-            <div className="text-sm text-zinc-600">Total de Alimentos</div>
-          </div>
-          <div className="bg-white p-4 border-l-4 border-black">
-            <div className="text-2xl font-bold">{Object.keys(groupedFoods).length}</div>
-            <div className="text-sm text-zinc-600">Categorias</div>
-          </div>
-          <div className="bg-white p-4 border-l-4 border-red-500">
-            <div className="text-2xl font-bold">{foodLibrary.filter(f => f.category === 'proteina').length}</div>
-            <div className="text-sm text-zinc-600">Proteínas</div>
-          </div>
-          <div className="bg-white p-4 border-l-4 border-yellow-500">
-            <div className="text-2xl font-bold">{foodLibrary.filter(f => f.category === 'carboidrato').length}</div>
-            <div className="text-sm text-zinc-600">Carboidratos</div>
-          </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <StatCard
+            label="Total de Alimentos"
+            value={foodLibrary.length}
+            icon={<Apple className="w-5 h-5" />}
+            color="lime"
+          />
+          <StatCard
+            label="Categorias"
+            value={Object.keys(groupedFoods).length}
+            icon={<Library className="w-5 h-5" />}
+            color="blue"
+          />
+          <StatCard
+            label="Proteínas"
+            value={foodLibrary.filter(f => f.category === 'proteina').length}
+            icon={<Target className="w-5 h-5" />}
+            color="red"
+          />
+          <StatCard
+            label="Carboidratos"
+            value={foodLibrary.filter(f => f.category === 'carboidrato').length}
+            icon={<Utensils className="w-5 h-5" />}
+            color="orange"
+          />
         </div>
 
         {/* Food List by Category */}
@@ -784,13 +795,15 @@ export function AdminNutritionSection({ onSelectPatient, consultancyId, adminUse
           ))}
           
           {Object.keys(groupedFoods).length === 0 && (
-            <div className="bg-white p-12 text-center">
-              <Apple className="w-12 h-12 mx-auto text-zinc-300 mb-4" />
-              <p className="text-zinc-500 mb-4">Nenhum alimento encontrado</p>
-              <button onClick={() => setShowNewFood(true)} className="px-6 py-3 bg-lime-500 text-black font-bold hover:bg-lime-400">
-                Adicionar Alimento
-              </button>
-            </div>
+            <EmptyState
+              icon="nutrition"
+              title="Nenhum alimento encontrado"
+              description="Adicione alimentos à sua biblioteca para usar nos planos nutricionais."
+              action={{
+                label: "Adicionar Alimento",
+                onClick: () => setShowNewFood(true)
+              }}
+            />
           )}
         </div>
 
@@ -929,27 +942,35 @@ export function AdminNutritionSection({ onSelectPatient, consultancyId, adminUse
           className="w-full pl-12 pr-4 py-3 bg-white border-2 border-zinc-200 focus:border-lime-500 outline-none transition-colors" />
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
-        <div className="bg-white p-4 border-l-4 border-lime-500">
-          <div className="text-2xl font-bold">{plans.filter(p => p.status === 'active').length}</div>
-          <div className="text-sm text-zinc-600">Planos Ativos</div>
-        </div>
-        <div className="bg-white p-4 border-l-4 border-black">
-          <div className="text-2xl font-bold">{avgCalories}</div>
-          <div className="text-sm text-zinc-600">Kcal Média</div>
-        </div>
-        <div className="bg-white p-4 border-l-4 border-black">
-          <div className="text-2xl font-bold">{foodLibrary.length}</div>
-          <div className="text-sm text-zinc-600">Alimentos</div>
-        </div>
-        <div className="bg-white p-4 border-l-4 border-black">
-          <div className="text-2xl font-bold">{plans.length}</div>
-          <div className="text-sm text-zinc-600">Total Planos</div>
-        </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard
+          label="Planos Ativos"
+          value={plans.filter(p => p.status === 'active').length}
+          icon={<Target className="w-5 h-5" />}
+          color="lime"
+        />
+        <StatCard
+          label="Kcal Média"
+          value={avgCalories}
+          icon={<Apple className="w-5 h-5" />}
+          color="orange"
+        />
+        <StatCard
+          label="Alimentos"
+          value={foodLibrary.length}
+          icon={<Library className="w-5 h-5" />}
+          color="purple"
+        />
+        <StatCard
+          label="Total Planos"
+          value={plans.length}
+          icon={<Utensils className="w-5 h-5" />}
+          color="zinc"
+        />
       </div>
 
-      <div className="bg-white">
-        <div className="grid grid-cols-7 gap-4 px-6 py-4 bg-zinc-900 text-white font-bold text-sm tracking-wider">
+      <Card padding="none" className="overflow-hidden">
+        <div className="grid grid-cols-7 gap-4 px-6 py-4 bg-zinc-900 text-white font-bold text-sm tracking-wider rounded-t-2xl">
           <div className="col-span-2">PACIENTE / PLANO</div>
           <div>CALORIAS</div>
           <div>PROTEÍNA</div>
@@ -959,12 +980,20 @@ export function AdminNutritionSection({ onSelectPatient, consultancyId, adminUse
         </div>
         <div className="divide-y divide-zinc-200">
           {filteredPlans.length === 0 ? (
-            <div className="px-6 py-12 text-center text-zinc-500">Nenhum plano nutricional encontrado</div>
+            <EmptyState
+              icon="nutrition"
+              title="Nenhum plano nutricional encontrado"
+              description="Crie o primeiro plano nutricional para seus pacientes."
+              action={{
+                label: "Criar Plano",
+                onClick: () => setShowNewPlan(true)
+              }}
+            />
           ) : (
             filteredPlans.map((plan) => (
               <div key={plan.id} className="grid grid-cols-7 gap-4 px-6 py-4 items-center hover:bg-zinc-50 transition-colors">
                 <div className="col-span-2 flex items-center gap-3">
-                  <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white">
+                  <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center text-white">
                     <Apple className="w-5 h-5" />
                   </div>
                   <div>
@@ -976,12 +1005,10 @@ export function AdminNutritionSection({ onSelectPatient, consultancyId, adminUse
                 <div>{plan.protein_grams}g</div>
                 <div>{plan.carbs_grams}g</div>
                 <div>
-                  <span className={`px-3 py-1 text-xs font-bold ${plan.status === 'active' ? 'bg-lime-100 text-lime-700' : 'bg-zinc-100 text-zinc-600'}`}>
-                    {plan.status === 'active' ? 'ATIVO' : plan.status.toUpperCase()}
-                  </span>
+                  <StatusBadge status={plan.status === 'active' ? 'active' : 'inactive'} />
                 </div>
                 <div className="flex justify-end gap-2">
-                  <button onClick={() => { setSelectedPlan(plan); setViewMode('plan'); }} className="p-2 hover:bg-zinc-100" title="Editar plano">
+                  <button onClick={() => { setSelectedPlan(plan); setViewMode('plan'); }} className="p-2 hover:bg-zinc-100 rounded-lg transition-colors" title="Editar plano">
                     <Edit className="w-5 h-5" />
                   </button>
                   <button onClick={() => {
@@ -991,7 +1018,7 @@ export function AdminNutritionSection({ onSelectPatient, consultancyId, adminUse
                         id: athlete.user_id, name: athlete.name, email: athlete.email, phone: '', sport: '', position: '', club: '', birthDate: '', height: 0, weight: 0, goals: '', status: 'active', daysInProgram: 0, adherence: 0
                       });
                     }
-                  }} className="p-2 hover:bg-zinc-100" title="Ver paciente">
+                  }} className="p-2 hover:bg-zinc-100 rounded-lg transition-colors" title="Ver paciente">
                     <Eye className="w-5 h-5" />
                   </button>
                 </div>
@@ -999,7 +1026,7 @@ export function AdminNutritionSection({ onSelectPatient, consultancyId, adminUse
             ))
           )}
         </div>
-      </div>
+      </Card>
 
       {/* New Plan Modal */}
       {showNewPlan && (

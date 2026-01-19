@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { Download, FileText, AlertCircle, Eye, X, Image } from 'lucide-react';
+import { Download, FileText, AlertCircle, Eye, X, Image, Calendar, Stethoscope, Activity, ClipboardList } from 'lucide-react';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
+import { Card, StatCard } from '../ui/Card';
+import { Badge } from '../ui/Badge';
 
 interface Attachment {
   id: string;
@@ -114,42 +116,52 @@ export function MedicalSection({ athleteId }: MedicalSectionProps) {
       </div>
 
       {/* Alert */}
-      <div className="bg-red-50 border-l-4 border-red-500 p-6 flex items-start gap-4">
-        <AlertCircle className="w-6 h-6 text-red-500 flex-shrink-0 mt-1" />
+      <Card className="bg-red-50 border-l-4 border-red-500 p-4 sm:p-6 flex items-start gap-4">
+        <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">
+          <AlertCircle className="w-5 h-5 text-red-500" />
+        </div>
         <div>
           <div className="font-bold text-lg mb-1 text-red-900">Exame Pendente</div>
-          <p className="text-red-800">
+          <p className="text-red-800 text-sm sm:text-base">
             Você precisa fazer o exame de TSH, T4 Livre e T3 solicitado pelo Dr. Ricardo. 
             Prazo até 20/01/2026.
           </p>
         </div>
-      </div>
+      </Card>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white p-6 border-l-4 border-lime-500">
-          <div className="text-sm tracking-wider text-zinc-600 mb-2">ÚLTIMA CONSULTA</div>
-          <div className="text-2xl font-bold">03/01/2026</div>
-        </div>
-        <div className="bg-white p-6 border-l-4 border-black">
-          <div className="text-sm tracking-wider text-zinc-600 mb-2">PRÓXIMA CONSULTA</div>
-          <div className="text-2xl font-bold">11/01/2026</div>
-        </div>
-        <div className="bg-white p-6 border-l-4 border-black">
-          <div className="text-sm tracking-wider text-zinc-600 mb-2">EXAMES FEITOS</div>
-          <div className="text-2xl font-bold">12</div>
-        </div>
-        <div className="bg-white p-6 border-l-4 border-black">
-          <div className="text-sm tracking-wider text-zinc-600 mb-2">CONSULTAS TOTAL</div>
-          <div className="text-2xl font-bold">7</div>
-        </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard
+          label="Última Consulta"
+          value="03/01/2026"
+          icon={<Calendar className="w-5 h-5" />}
+          color="lime"
+        />
+        <StatCard
+          label="Próxima Consulta"
+          value="11/01/2026"
+          icon={<Stethoscope className="w-5 h-5" />}
+          color="blue"
+        />
+        <StatCard
+          label="Exames Feitos"
+          value="12"
+          icon={<ClipboardList className="w-5 h-5" />}
+          color="zinc"
+        />
+        <StatCard
+          label="Consultas Total"
+          value="7"
+          icon={<Activity className="w-5 h-5" />}
+          color="zinc"
+        />
       </div>
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Exams */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white p-8">
+          <Card className="p-6 sm:p-8">
             <h2 className="text-2xl font-bold mb-6">Exames Recentes</h2>
             <div className="space-y-4">
               {exams.map((exam) => {
@@ -157,20 +169,18 @@ export function MedicalSection({ athleteId }: MedicalSectionProps) {
                 return (
                   <div key={exam.id} className="pb-4 border-b border-zinc-200 last:border-0 last:pb-0">
                     <div className="flex items-start gap-4">
-                      <div className={`w-16 h-16 ${exam.status === 'attention' ? 'bg-yellow-500/20' : 'bg-lime-500/20'} rounded flex items-center justify-center flex-shrink-0`}>
-                        <FileText className={`w-8 h-8 ${exam.status === 'attention' ? 'text-yellow-700' : 'text-lime-700'}`} />
+                      <div className={`w-14 h-14 sm:w-16 sm:h-16 ${exam.status === 'attention' ? 'bg-yellow-500/20' : 'bg-lime-500/20'} rounded-xl flex items-center justify-center flex-shrink-0`}>
+                        <FileText className={`w-7 h-7 sm:w-8 sm:h-8 ${exam.status === 'attention' ? 'text-yellow-700' : 'text-lime-700'}`} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="font-bold text-lg mb-1">{exam.title}</div>
                         <div className="text-sm text-zinc-600 mb-2">{exam.date} • {exam.lab}</div>
                         <div className="flex flex-wrap gap-2 mb-2">
-                          <span className={`px-3 py-1 ${statusStyle.bg} ${statusStyle.text} text-xs font-bold`}>
+                          <Badge className={`${statusStyle.bg} ${statusStyle.text}`}>
                             {statusStyle.label}
-                          </span>
+                          </Badge>
                           {exam.reviewed && (
-                            <span className="px-3 py-1 bg-zinc-100 text-zinc-700 text-xs font-bold">
-                              REVISADO
-                            </span>
+                            <Badge variant="secondary">REVISADO</Badge>
                           )}
                         </div>
                         {exam.doctorNote && (
@@ -182,20 +192,20 @@ export function MedicalSection({ athleteId }: MedicalSectionProps) {
                           {exam.attachments.map((attachment) => (
                             <div 
                               key={attachment.id}
-                              className="flex items-center gap-2 px-3 py-2 bg-zinc-50 border border-zinc-200 rounded hover:border-lime-500 transition-colors group"
+                              className="flex items-center gap-2 px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg hover:border-lime-500 transition-colors group"
                             >
                               {attachment.type === 'pdf' ? (
                                 <FileText className="w-4 h-4 text-red-500" />
                               ) : (
                                 <Image className="w-4 h-4 text-blue-500" />
                               )}
-                              <span className="text-sm max-w-[100px] truncate">{attachment.name}</span>
-                              <span className="text-xs text-zinc-400">{attachment.size}</span>
+                              <span className="text-sm max-w-[80px] sm:max-w-[100px] truncate">{attachment.name}</span>
+                              <span className="text-xs text-zinc-400 hidden sm:inline">{attachment.size}</span>
                               
                               {attachment.type === 'image' && (
                                 <button
                                   onClick={() => setShowImagePreview(attachment.url)}
-                                  className="p-1 hover:bg-lime-100 rounded transition-colors"
+                                  className="p-1 hover:bg-lime-100 rounded-lg transition-colors"
                                   title="Visualizar"
                                 >
                                   <Eye className="w-4 h-4 text-zinc-400 group-hover:text-lime-600" />
@@ -203,7 +213,7 @@ export function MedicalSection({ athleteId }: MedicalSectionProps) {
                               )}
                               <button
                                 onClick={() => handleDownload(attachment)}
-                                className="p-1 hover:bg-lime-100 rounded transition-colors"
+                                className="p-1 hover:bg-lime-100 rounded-lg transition-colors"
                                 title="Baixar arquivo"
                               >
                                 <Download className="w-4 h-4 text-zinc-400 group-hover:text-lime-600" />
@@ -217,27 +227,27 @@ export function MedicalSection({ athleteId }: MedicalSectionProps) {
                 );
               })}
             </div>
-          </div>
+          </Card>
 
           {/* Prescriptions */}
-          <div className="bg-white p-8">
+          <Card className="p-6 sm:p-8">
             <h2 className="text-2xl font-bold mb-6">Prescrições Ativas</h2>
             <div className="space-y-4">
-              <div className="p-6 border-l-4 border-lime-500 bg-zinc-50">
-                <div className="flex items-start justify-between">
+              <div className="p-4 sm:p-6 border-l-4 border-lime-500 bg-zinc-50 rounded-r-xl">
+                <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
                   <div className="flex-1">
                     <div className="font-bold text-lg mb-2">Vitamina D3 10.000 UI</div>
                     <div className="text-sm text-zinc-600 mb-3">
                       1 cápsula por semana • Tomar aos domingos
                     </div>
-                    <div className="flex items-center gap-4 text-sm">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm">
                       <span className="text-zinc-500">Prescrito em: 03/01/2026</span>
-                      <span className="text-zinc-500">•</span>
+                      <span className="text-zinc-500 hidden sm:inline">•</span>
                       <span className="text-zinc-500">Válido até: 03/04/2026</span>
                     </div>
                   </div>
                   <button 
-                    className="flex items-center gap-2 px-3 py-2 border border-black hover:bg-black hover:text-white transition-colors"
+                    className="flex items-center gap-2 px-3 py-2 border border-black hover:bg-black hover:text-white transition-colors rounded-lg"
                     title="Baixar prescrição"
                   >
                     <Download className="w-4 h-4" />
@@ -246,21 +256,21 @@ export function MedicalSection({ athleteId }: MedicalSectionProps) {
                 </div>
               </div>
 
-              <div className="p-6 border-l-4 border-lime-500 bg-zinc-50">
-                <div className="flex items-start justify-between">
+              <div className="p-4 sm:p-6 border-l-4 border-lime-500 bg-zinc-50 rounded-r-xl">
+                <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
                   <div className="flex-1">
                     <div className="font-bold text-lg mb-2">Ômega 3 1000mg</div>
                     <div className="text-sm text-zinc-600 mb-3">
                       2 cápsulas por dia • Tomar com as refeições
                     </div>
-                    <div className="flex items-center gap-4 text-sm">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm">
                       <span className="text-zinc-500">Prescrito em: 15/11/2025</span>
-                      <span className="text-zinc-500">•</span>
+                      <span className="text-zinc-500 hidden sm:inline">•</span>
                       <span className="text-zinc-500">Uso contínuo</span>
                     </div>
                   </div>
                   <button 
-                    className="flex items-center gap-2 px-3 py-2 border border-black hover:bg-black hover:text-white transition-colors"
+                    className="flex items-center gap-2 px-3 py-2 border border-black hover:bg-black hover:text-white transition-colors rounded-lg"
                     title="Baixar prescrição"
                   >
                     <Download className="w-4 h-4" />
@@ -269,15 +279,15 @@ export function MedicalSection({ athleteId }: MedicalSectionProps) {
                 </div>
               </div>
             </div>
-          </div>
+          </Card>
         </div>
 
         {/* Right Column - Summary */}
         <div className="space-y-6">
-          <div className="bg-black text-white p-8">
+          <Card className="bg-black text-white p-6 sm:p-8 border-none">
             <h3 className="text-xl font-bold mb-6">Seu Médico</h3>
             <div className="mb-6">
-              <div className="w-full aspect-square bg-zinc-800 mb-4 overflow-hidden">
+              <div className="w-full aspect-square bg-zinc-800 mb-4 overflow-hidden rounded-xl">
                 <ImageWithFallback
                   src="https://images.unsplash.com/photo-1755189118414-14c8dacdb082?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBkb2N0b3IlMjBwb3J0cmFpdHxlbnwxfHx8fDE3NjgwNzgxOTV8MA&ixlib=rb-4.1.0&q=80&w=1080"
                   alt="Dr. Ricardo Santos"
@@ -290,39 +300,39 @@ export function MedicalSection({ athleteId }: MedicalSectionProps) {
                 Especialista em longevidade e medicina preventiva com 18 anos de experiência.
               </div>
             </div>
-            <button className="w-full py-3 bg-lime-500 text-black font-bold tracking-wider hover:bg-lime-400 transition-colors">
+            <button className="w-full py-3 bg-lime-500 text-black font-bold tracking-wider hover:bg-lime-400 transition-colors rounded-lg">
               ENVIAR MENSAGEM
             </button>
-          </div>
+          </Card>
 
-          <div className="bg-white p-6">
+          <Card className="p-6">
             <h3 className="text-lg font-bold mb-4">Observações Médicas</h3>
             <div className="space-y-3 text-sm">
               <div className="pb-3 border-b border-zinc-200">
-                <div className="text-zinc-500 text-xs mb-1">03/01/2026</div>
+                <Badge variant="secondary" className="mb-1">03/01/2026</Badge>
                 <p className="text-zinc-700">
                   Paciente apresenta ótima evolução. Manter protocolo atual de suplementação.
                 </p>
               </div>
               <div className="pb-3 border-b border-zinc-200">
-                <div className="text-zinc-500 text-xs mb-1">15/12/2025</div>
+                <Badge variant="secondary" className="mb-1">15/12/2025</Badge>
                 <p className="text-zinc-700">
                   Ajustar dosagem de Vitamina D após novo exame. Agendar retorno em 3 semanas.
                 </p>
               </div>
               <div>
-                <div className="text-zinc-500 text-xs mb-1">20/11/2025</div>
+                <Badge variant="secondary" className="mb-1">20/11/2025</Badge>
                 <p className="text-zinc-700">
                   Primeira consulta. Iniciado protocolo de otimização metabólica.
                 </p>
               </div>
             </div>
-          </div>
+          </Card>
 
-          <div className="bg-white p-6">
+          <Card className="p-6">
             <h3 className="text-lg font-bold mb-4">Imagem Recente</h3>
             <div 
-              className="aspect-video overflow-hidden rounded cursor-pointer hover:opacity-90 transition-opacity"
+              className="aspect-video overflow-hidden rounded-xl cursor-pointer hover:opacity-90 transition-opacity"
               onClick={() => setShowImagePreview('https://images.unsplash.com/photo-1599814516385-5eb0a11888d4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxibG9vZCUyMHRlc3QlMjBtZWRpY2FsfGVufDF8fHx8MTc2ODA3ODc1NHww&ixlib=rb-4.1.0&q=80&w=1080')}
             >
               <ImageWithFallback
@@ -332,7 +342,7 @@ export function MedicalSection({ athleteId }: MedicalSectionProps) {
               />
             </div>
             <p className="text-sm text-zinc-500 mt-2">Clique para ampliar</p>
-          </div>
+          </Card>
         </div>
       </div>
 

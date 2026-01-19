@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Download, Loader2, Utensils, ChevronDown, ChevronRight, Apple, Droplets, Target } from 'lucide-react';
+import { Download, Loader2, Utensils, ChevronDown, ChevronRight, Apple, Droplets, Target, Flame, Beef, Wheat, CircleDot } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { Card, StatCard } from '../ui/Card';
+import { Badge } from '../ui/Badge';
+import { EmptyState } from '../ui/EmptyState';
 
 const API_URL = '/api';
 
@@ -279,15 +282,15 @@ export function NutritionSection({ athleteId }: NutritionSectionProps) {
     return (
       <div className="space-y-8">
         <div>
-          <h1 className="text-5xl font-bold tracking-tighter mb-2">
+          <h1 className="text-4xl sm:text-5xl font-bold tracking-tighter mb-2">
             <span className="text-lime-500">NUTRIÇÃO</span>
           </h1>
         </div>
-        <div className="bg-white p-12 text-center">
-          <Apple className="w-16 h-16 mx-auto text-zinc-300 mb-4" />
-          <h3 className="text-xl font-bold mb-2">Nenhum plano nutricional</h3>
-          <p className="text-zinc-500">Seu nutricionista ainda não criou um plano para você.</p>
-        </div>
+        <EmptyState
+          icon="nutrition"
+          title="Nenhum plano nutricional"
+          description="Seu nutricionista ainda não criou um plano para você."
+        />
       </div>
     );
   }
@@ -315,33 +318,35 @@ export function NutritionSection({ athleteId }: NutritionSectionProps) {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white p-6 border-l-4 border-lime-500">
-          <div className="text-sm tracking-wider text-zinc-600 mb-2">META CALÓRICA</div>
-          <div className="text-2xl font-bold">{plan.daily_calories} kcal</div>
-          <div className="text-xs text-zinc-500 mt-1">Por dia</div>
-        </div>
-        <div className="bg-white p-6 border-l-4 border-red-500">
-          <div className="text-sm tracking-wider text-zinc-600 mb-2">PROTEÍNA</div>
-          <div className="text-2xl font-bold">{plan.protein_grams}g</div>
-          <div className="text-xs text-zinc-500 mt-1">
-            {plan.protein_grams && plan.daily_calories ? Math.round((plan.protein_grams * 4 / plan.daily_calories) * 100) : 0}% das calorias
-          </div>
-        </div>
-        <div className="bg-white p-6 border-l-4 border-yellow-500">
-          <div className="text-sm tracking-wider text-zinc-600 mb-2">CARBOIDRATOS</div>
-          <div className="text-2xl font-bold">{plan.carbs_grams}g</div>
-          <div className="text-xs text-zinc-500 mt-1">
-            {plan.carbs_grams && plan.daily_calories ? Math.round((plan.carbs_grams * 4 / plan.daily_calories) * 100) : 0}% das calorias
-          </div>
-        </div>
-        <div className="bg-white p-6 border-l-4 border-blue-500">
-          <div className="text-sm tracking-wider text-zinc-600 mb-2">GORDURAS</div>
-          <div className="text-2xl font-bold">{plan.fat_grams}g</div>
-          <div className="text-xs text-zinc-500 mt-1">
-            {plan.fat_grams && plan.daily_calories ? Math.round((plan.fat_grams * 9 / plan.daily_calories) * 100) : 0}% das calorias
-          </div>
-        </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard
+          label="Meta Calórica"
+          value={`${plan.daily_calories} kcal`}
+          icon={<Flame className="w-5 h-5" />}
+          color="lime"
+          subtitle="Por dia"
+        />
+        <StatCard
+          label="Proteína"
+          value={`${plan.protein_grams}g`}
+          icon={<Beef className="w-5 h-5" />}
+          color="red"
+          subtitle={`${plan.protein_grams && plan.daily_calories ? Math.round((plan.protein_grams * 4 / plan.daily_calories) * 100) : 0}% das calorias`}
+        />
+        <StatCard
+          label="Carboidratos"
+          value={`${plan.carbs_grams}g`}
+          icon={<Wheat className="w-5 h-5" />}
+          color="orange"
+          subtitle={`${plan.carbs_grams && plan.daily_calories ? Math.round((plan.carbs_grams * 4 / plan.daily_calories) * 100) : 0}% das calorias`}
+        />
+        <StatCard
+          label="Gorduras"
+          value={`${plan.fat_grams}g`}
+          icon={<CircleDot className="w-5 h-5" />}
+          color="blue"
+          subtitle={`${plan.fat_grams && plan.daily_calories ? Math.round((plan.fat_grams * 9 / plan.daily_calories) * 100) : 0}% das calorias`}
+        />
       </div>
 
       {/* Meals */}
@@ -349,31 +354,33 @@ export function NutritionSection({ athleteId }: NutritionSectionProps) {
         <h2 className="text-2xl font-bold">Suas Refeições</h2>
         
         {plan.meals?.length === 0 ? (
-          <div className="bg-white p-8 text-center text-zinc-500">
-            Nenhuma refeição cadastrada neste plano ainda.
-          </div>
+          <EmptyState
+            icon="nutrition"
+            title="Nenhuma refeição cadastrada"
+            description="Seu nutricionista ainda não adicionou refeições neste plano."
+          />
         ) : (
           plan.meals?.map((meal) => {
             const currentOption = getSelectedOptionForMeal(meal.id);
             const totals = meal.foods ? calculateMealTotals(meal.foods, currentOption) : { calories: 0, protein: 0, carbs: 0, fat: 0 };
             
             return (
-              <div key={meal.id} className="bg-white overflow-hidden">
+              <Card key={meal.id} padding="none" className="overflow-hidden">
                 {/* Meal Header */}
                 <div 
-                  className="flex items-center justify-between p-6 cursor-pointer hover:bg-zinc-50 transition-colors"
+                  className="flex items-center justify-between p-4 sm:p-6 cursor-pointer hover:bg-zinc-50 transition-colors"
                   onClick={() => toggleMealExpand(meal.id)}
                 >
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-lime-500 rounded-lg flex items-center justify-center">
+                    <div className="w-12 h-12 bg-lime-500 rounded-xl flex items-center justify-center">
                       <Utensils className="w-6 h-6 text-black" />
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold">{meal.name}</h3>
-                      <div className="text-sm text-zinc-500">{meal.time?.substring(0, 5) || '--:--'}</div>
+                      <h3 className="text-lg sm:text-xl font-bold">{meal.name}</h3>
+                      <Badge variant="secondary" className="mt-1">{meal.time?.substring(0, 5) || '--:--'}</Badge>
                     </div>
                   </div>
-                  <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-4 sm:gap-6">
                     <div className="text-right hidden sm:block">
                       <div className="font-bold text-lg">{Math.round(totals.calories)} kcal</div>
                       <div className="text-sm text-zinc-500">{Math.round(totals.protein)}g P • {Math.round(totals.carbs)}g C • {Math.round(totals.fat)}g G</div>
@@ -388,7 +395,7 @@ export function NutritionSection({ athleteId }: NutritionSectionProps) {
 
                 {/* Meal Options */}
                 {expandedMeals.has(meal.id) && meal.foods && (
-                  <div className="border-t border-zinc-100 px-6 pb-6">
+                  <div className="border-t border-zinc-100 px-4 sm:px-6 pb-6">
                     {(() => {
                       const optionGroups = getOptionGroups(meal.foods);
                       const availableOptions = Object.keys(optionGroups).map(Number).sort((a, b) => a - b);
@@ -409,7 +416,7 @@ export function NutritionSection({ athleteId }: NutritionSectionProps) {
                                     <button
                                       key={optNum}
                                       onClick={() => setSelectedOption({ ...selectedOption, [meal.id]: optNum })}
-                                      className={`px-4 py-2 text-sm font-bold rounded transition-colors ${
+                                      className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors ${
                                         isSelected
                                           ? isMain ? 'bg-lime-500 text-black' : 'bg-orange-500 text-white'
                                           : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
@@ -460,41 +467,45 @@ export function NutritionSection({ athleteId }: NutritionSectionProps) {
                     })()}
                   </div>
                 )}
-              </div>
+              </Card>
             );
           })
         )}
       </div>
 
       {/* Tips */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white p-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card className="p-6">
           <div className="flex items-center gap-3 mb-4">
-            <Droplets className="w-6 h-6 text-blue-500" />
+            <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+              <Droplets className="w-5 h-5 text-blue-500" />
+            </div>
             <h3 className="text-lg font-bold">Hidratação</h3>
           </div>
           <p className="text-zinc-600 mb-3">
             Mantenha-se hidratado ao longo do dia. A recomendação é de pelo menos 35ml de água por kg de peso corporal.
           </p>
           <div className="bg-blue-50 p-3 rounded-lg">
-            <span className="text-blue-700 font-bold">Dica:</span>
+            <span className="text-blue-700 font-bold">💧 Dica:</span>
             <span className="text-blue-600 ml-2">Beba água antes das refeições para ajudar na digestão.</span>
           </div>
-        </div>
+        </Card>
 
-        <div className="bg-white p-6">
+        <Card className="p-6">
           <div className="flex items-center gap-3 mb-4">
-            <Target className="w-6 h-6 text-lime-500" />
+            <div className="w-10 h-10 bg-lime-100 rounded-xl flex items-center justify-center">
+              <Target className="w-5 h-5 text-lime-500" />
+            </div>
             <h3 className="text-lg font-bold">Consistência</h3>
           </div>
           <p className="text-zinc-600 mb-3">
             Tente manter os horários das refeições consistentes. Isso ajuda seu metabolismo a funcionar de forma otimizada.
           </p>
           <div className="bg-lime-50 p-3 rounded-lg">
-            <span className="text-lime-700 font-bold">Dica:</span>
+            <span className="text-lime-700 font-bold">🎯 Dica:</span>
             <span className="text-lime-600 ml-2">Use as substituições quando precisar variar o cardápio.</span>
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   );

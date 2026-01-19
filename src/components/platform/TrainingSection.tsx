@@ -2,10 +2,13 @@ import { useState, useEffect } from 'react';
 import { 
   Play, CheckCircle, Clock, Loader2, User, Download, 
   ChevronDown, ChevronUp, Dumbbell, Target, Calendar,
-  Timer, FileText
+  Timer, FileText, Video
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { Card, StatCard } from '../ui/Card';
+import { Badge } from '../ui/Badge';
+import { EmptyState } from '../ui/EmptyState';
 
 const API_URL = '/api';
 
@@ -350,18 +353,18 @@ export function TrainingSection({ athleteId }: TrainingSectionProps) {
     return (
       <div className="space-y-8">
         <div>
-          <h1 className="text-5xl font-bold tracking-tighter mb-2">
+          <h1 className="text-4xl sm:text-5xl font-bold tracking-tighter mb-2">
             <span className="text-lime-500">TREINAMENTO</span>
           </h1>
-          <p className="text-xl text-zinc-600">
+          <p className="text-lg sm:text-xl text-zinc-600">
             Seu programa de treino personalizado
           </p>
         </div>
-        <div className="bg-white p-12 text-center">
-          <Dumbbell className="w-16 h-16 text-zinc-300 mx-auto mb-4" />
-          <h3 className="text-2xl font-bold mb-2">Nenhum plano de treino</h3>
-          <p className="text-zinc-600">Seu treinador ainda não criou um plano de treino para você.</p>
-        </div>
+        <EmptyState
+          icon="training"
+          title="Nenhum plano de treino"
+          description="Seu treinador ainda não criou um plano de treino para você."
+        />
       </div>
     );
   }
@@ -417,56 +420,51 @@ export function TrainingSection({ athleteId }: TrainingSectionProps) {
 
       {/* Plan Info Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <div className="bg-white p-4 border-l-4 border-lime-500">
-          <div className="flex items-center gap-2 text-zinc-500 text-sm mb-1">
-            <FileText className="w-4 h-4" />
-            PLANO
-          </div>
-          <div className="font-bold text-lg truncate">{selectedPlan?.name}</div>
-        </div>
-        <div className="bg-white p-4 border-l-4 border-black">
-          <div className="flex items-center gap-2 text-zinc-500 text-sm mb-1">
-            <Target className="w-4 h-4" />
-            OBJETIVO
-          </div>
-          <div className="font-bold text-lg">{OBJECTIVES[selectedPlan?.objective || ''] || selectedPlan?.objective}</div>
-        </div>
-        <div className="bg-white p-4 border-l-4 border-black">
-          <div className="flex items-center gap-2 text-zinc-500 text-sm mb-1">
-            <Calendar className="w-4 h-4" />
-            FREQUÊNCIA
-          </div>
-          <div className="font-bold text-lg">{selectedPlan?.frequency_per_week}x/semana</div>
-        </div>
-        <div className="bg-white p-4 border-l-4 border-black">
-          <div className="flex items-center gap-2 text-zinc-500 text-sm mb-1">
-            <Timer className="w-4 h-4" />
-            DURAÇÃO
-          </div>
-          <div className="font-bold text-lg">{selectedPlan?.duration_weeks} semanas</div>
-        </div>
-        <div className="bg-white p-4 border-l-4 border-black">
-          <div className="flex items-center gap-2 text-zinc-500 text-sm mb-1">
-            <Dumbbell className="w-4 h-4" />
-            DIVISÃO
-          </div>
-          <div className="font-bold text-lg">{selectedPlan?.split_type || '-'}</div>
-        </div>
+        <StatCard
+          label="Plano"
+          value={selectedPlan?.name || '-'}
+          icon={<FileText className="w-5 h-5" />}
+          color="lime"
+        />
+        <StatCard
+          label="Objetivo"
+          value={OBJECTIVES[selectedPlan?.objective || ''] || selectedPlan?.objective || '-'}
+          icon={<Target className="w-5 h-5" />}
+          color="zinc"
+        />
+        <StatCard
+          label="Frequência"
+          value={`${selectedPlan?.frequency_per_week}x/sem`}
+          icon={<Calendar className="w-5 h-5" />}
+          color="zinc"
+        />
+        <StatCard
+          label="Duração"
+          value={`${selectedPlan?.duration_weeks} sem`}
+          icon={<Timer className="w-5 h-5" />}
+          color="zinc"
+        />
+        <StatCard
+          label="Divisão"
+          value={selectedPlan?.split_type || '-'}
+          icon={<Dumbbell className="w-5 h-5" />}
+          color="zinc"
+        />
       </div>
 
       {/* Today's Training Highlight */}
       {todaysTraining && (
-        <div className="bg-lime-500 text-black p-6">
-          <div className="flex items-center justify-between mb-4">
+        <Card className="bg-lime-500 text-black p-6 border-none">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-black text-white flex items-center justify-center">
+              <div className="w-14 h-14 bg-black text-white flex items-center justify-center rounded-xl">
                 <span className="text-2xl font-bold">{todaysTraining.day_letter}</span>
               </div>
               <div>
                 <div className="text-sm font-bold tracking-wider">TREINO DE HOJE • {DAY_NAMES[todayDayOfWeek].toUpperCase()}</div>
                 <div className="text-2xl font-bold">{todaysTraining.day_name}</div>
                 {todaysTraining.focus_muscles && (
-                  <div className="text-sm">Foco: {todaysTraining.focus_muscles}</div>
+                  <Badge className="bg-black/20 text-black mt-1">Foco: {todaysTraining.focus_muscles}</Badge>
                 )}
               </div>
             </div>
@@ -477,26 +475,27 @@ export function TrainingSection({ athleteId }: TrainingSectionProps) {
           </div>
           <button 
             onClick={() => toggleDay(todaysTraining.id)}
-            className="flex items-center gap-2 bg-black text-white px-6 py-3 font-bold tracking-wider hover:bg-zinc-800 transition-colors"
+            className="flex items-center gap-2 bg-black text-white px-6 py-3 font-bold tracking-wider hover:bg-zinc-800 transition-colors rounded-lg"
           >
             <Play className="w-5 h-5" />
             {expandedDays.has(todaysTraining.id) ? 'OCULTAR EXERCÍCIOS' : 'VER EXERCÍCIOS'}
           </button>
-        </div>
+        </Card>
       )}
 
       {/* Weekly Schedule */}
-      <div className="bg-white">
-        <div className="px-6 py-4 bg-zinc-900 text-white">
+      <Card padding="none" className="overflow-hidden">
+        <div className="px-6 py-4 bg-zinc-900 text-white rounded-t-2xl">
           <h2 className="text-xl font-bold tracking-wider">PROGRAMAÇÃO SEMANAL</h2>
         </div>
         
         <div className="divide-y divide-zinc-200">
           {trainingDays.length === 0 ? (
-            <div className="p-12 text-center text-zinc-500">
-              <Calendar className="w-12 h-12 text-zinc-300 mx-auto mb-4" />
-              <p>Nenhum dia de treino configurado</p>
-            </div>
+            <EmptyState
+              icon="calendar"
+              title="Nenhum dia configurado"
+              description="Seu treinador ainda não configurou os dias de treino."
+            />
           ) : (
             trainingDays.map(day => {
               const dayExercises = exercises[day.id] || [];
@@ -510,30 +509,30 @@ export function TrainingSection({ athleteId }: TrainingSectionProps) {
                     onClick={() => toggleDay(day.id)}
                     className={`flex items-center gap-4 p-4 cursor-pointer hover:bg-zinc-50 transition-colors ${isToday ? 'hover:bg-lime-100' : ''}`}
                   >
-                    <div className={`w-12 h-12 flex items-center justify-center font-bold text-xl ${isToday ? 'bg-lime-500 text-black' : 'bg-black text-white'}`}>
+                    <div className={`w-12 h-12 flex items-center justify-center font-bold text-xl rounded-xl ${isToday ? 'bg-lime-500 text-black' : 'bg-black text-white'}`}>
                       {day.day_letter}
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-bold text-lg">{day.day_name}</span>
                         {isToday && (
-                          <span className="px-2 py-0.5 bg-lime-500 text-black text-xs font-bold">HOJE</span>
+                          <Badge variant="success">HOJE</Badge>
                         )}
                       </div>
-                      <div className="flex items-center gap-3 text-sm text-zinc-500">
+                      <div className="flex items-center gap-2 sm:gap-3 text-sm text-zinc-500 flex-wrap">
                         <span>{DAY_NAMES[day.day_of_week]}</span>
                         {day.focus_muscles && (
                           <>
-                            <span>•</span>
-                            <span className="text-lime-600 font-medium">{day.focus_muscles}</span>
+                            <span className="hidden sm:inline">•</span>
+                            <Badge variant="info" className="text-xs">{day.focus_muscles}</Badge>
                           </>
                         )}
-                        <span>•</span>
+                        <span className="hidden sm:inline">•</span>
                         <span>{dayExercises.length} exercícios</span>
                         {day.estimated_duration && (
                           <>
-                            <span>•</span>
-                            <span>~{day.estimated_duration} min</span>
+                            <span className="hidden sm:inline">•</span>
+                            <span className="hidden sm:inline">~{day.estimated_duration} min</span>
                           </>
                         )}
                       </div>
@@ -558,21 +557,21 @@ export function TrainingSection({ athleteId }: TrainingSectionProps) {
                         <div className="divide-y divide-zinc-200">
                           {dayExercises.map((ex, idx) => (
                             <div key={ex.id} className="p-4 flex gap-4">
-                              <div className="w-10 h-10 bg-lime-500 text-black flex items-center justify-center font-bold flex-shrink-0">
+                              <div className="w-10 h-10 bg-lime-500 text-black flex items-center justify-center font-bold flex-shrink-0 rounded-lg">
                                 {idx + 1}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-start justify-between gap-4 mb-2">
+                                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 sm:gap-4 mb-2">
                                   <div>
                                     <h4 className="font-bold text-lg">{ex.name}</h4>
-                                    <div className="flex items-center gap-2 text-sm">
-                                      <span className="px-2 py-0.5 bg-zinc-200 text-zinc-700 font-medium">
+                                    <div className="flex items-center gap-2 text-sm flex-wrap mt-1">
+                                      <Badge variant="secondary">
                                         {MUSCLE_GROUPS[ex.muscle_group] || ex.muscle_group}
-                                      </span>
+                                      </Badge>
                                       {ex.technique && ex.technique !== 'normal' && (
-                                        <span className="px-2 py-0.5 bg-purple-100 text-purple-700 font-medium">
+                                        <Badge variant="warning">
                                           {TECHNIQUES[ex.technique] || ex.technique}
-                                        </span>
+                                        </Badge>
                                       )}
                                     </div>
                                   </div>
@@ -581,9 +580,9 @@ export function TrainingSection({ athleteId }: TrainingSectionProps) {
                                       href={ex.video_url}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="flex items-center gap-1 px-3 py-1 bg-black text-white text-sm font-bold hover:bg-lime-500 hover:text-black transition-colors"
+                                      className="flex items-center gap-1 px-3 py-1.5 bg-black text-white text-sm font-bold hover:bg-lime-500 hover:text-black transition-colors rounded-lg"
                                     >
-                                      <Play className="w-4 h-4" />
+                                      <Video className="w-4 h-4" />
                                       VÍDEO
                                     </a>
                                   )}
@@ -591,32 +590,32 @@ export function TrainingSection({ athleteId }: TrainingSectionProps) {
 
                                 {/* Exercise Details Grid */}
                                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2 text-sm">
-                                  <div className="bg-white p-2 border border-zinc-200">
+                                  <div className="bg-white p-2 border border-zinc-200 rounded-lg">
                                     <div className="text-zinc-500 text-xs">Séries</div>
                                     <div className="font-bold">{ex.sets}x</div>
                                   </div>
-                                  <div className="bg-white p-2 border border-zinc-200">
+                                  <div className="bg-white p-2 border border-zinc-200 rounded-lg">
                                     <div className="text-zinc-500 text-xs">Repetições</div>
                                     <div className="font-bold">{ex.reps}</div>
                                   </div>
                                   {ex.weight && (
-                                    <div className="bg-white p-2 border border-zinc-200">
+                                    <div className="bg-white p-2 border border-zinc-200 rounded-lg">
                                       <div className="text-zinc-500 text-xs">Carga</div>
                                       <div className="font-bold">{ex.weight}</div>
                                     </div>
                                   )}
-                                  <div className="bg-white p-2 border border-zinc-200">
+                                  <div className="bg-white p-2 border border-zinc-200 rounded-lg">
                                     <div className="text-zinc-500 text-xs">Descanso</div>
                                     <div className="font-bold">{ex.rest_seconds}s</div>
                                   </div>
                                   {ex.tempo && (
-                                    <div className="bg-white p-2 border border-zinc-200">
+                                    <div className="bg-white p-2 border border-zinc-200 rounded-lg">
                                       <div className="text-zinc-500 text-xs">Cadência</div>
                                       <div className="font-bold">{ex.tempo}</div>
                                     </div>
                                   )}
                                   {ex.rpe && (
-                                    <div className="bg-white p-2 border border-zinc-200">
+                                    <div className="bg-white p-2 border border-zinc-200 rounded-lg">
                                       <div className="text-zinc-500 text-xs">RPE</div>
                                       <div className="font-bold">{ex.rpe}</div>
                                     </div>
@@ -624,8 +623,8 @@ export function TrainingSection({ athleteId }: TrainingSectionProps) {
                                 </div>
 
                                 {ex.notes && (
-                                  <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 text-sm">
-                                    <strong>Observações:</strong> {ex.notes}
+                                  <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 text-sm rounded-lg">
+                                    <strong>💡 Observações:</strong> {ex.notes}
                                   </div>
                                 )}
                               </div>
@@ -640,11 +639,11 @@ export function TrainingSection({ athleteId }: TrainingSectionProps) {
             })
           )}
         </div>
-      </div>
+      </Card>
 
       {/* Coach Info */}
-      <div className="bg-black text-white p-6">
-        <div className="flex items-center gap-4">
+      <Card className="bg-black text-white p-6 border-none">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <div className="w-16 h-16 bg-zinc-800 rounded-full flex items-center justify-center">
             <User className="w-8 h-8 text-zinc-600" />
           </div>
@@ -652,11 +651,11 @@ export function TrainingSection({ athleteId }: TrainingSectionProps) {
             <div className="text-sm text-zinc-400">Seu Treinador</div>
             <div className="text-xl font-bold">{selectedPlan?.coach_name || 'Não atribuído'}</div>
           </div>
-          <button className="px-6 py-3 bg-lime-500 text-black font-bold tracking-wider hover:bg-lime-400 transition-colors">
+          <button className="px-6 py-3 bg-lime-500 text-black font-bold tracking-wider hover:bg-lime-400 transition-colors rounded-lg w-full sm:w-auto">
             MENSAGEM
           </button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

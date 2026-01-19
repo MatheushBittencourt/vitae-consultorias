@@ -2,8 +2,12 @@ import { useState, useEffect } from 'react';
 import { 
   Plus, Search, Edit, Dumbbell, Trash2, X, 
   ChevronRight, BookOpen, ChevronDown, ChevronUp, 
-  User, Target, Clock, TrendingUp, ArrowLeft, Calendar
+  User, Target, Clock, TrendingUp, ArrowLeft, Calendar,
+  Users, Library
 } from 'lucide-react';
+import { Card, StatCard } from '../ui/Card';
+import { Badge, StatusBadge } from '../ui/Badge';
+import { EmptyState } from '../ui/EmptyState';
 
 const API_URL = '/api';
 
@@ -905,28 +909,36 @@ export function AdminTrainingSection({ consultancyId, adminUser }: AdminTraining
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-4 gap-4">
-          <div className="bg-white p-4 border-l-4 border-lime-500">
-            <div className="text-2xl font-bold">{library.length}</div>
-            <div className="text-sm text-zinc-600">Total de Exercícios</div>
-          </div>
-          <div className="bg-white p-4 border-l-4 border-black">
-            <div className="text-2xl font-bold">{new Set(library.map(e => e.muscle_group)).size}</div>
-            <div className="text-sm text-zinc-600">Grupos Musculares</div>
-          </div>
-          <div className="bg-white p-4 border-l-4 border-black">
-            <div className="text-2xl font-bold">{library.filter(e => e.video_url).length}</div>
-            <div className="text-sm text-zinc-600">Com Vídeo</div>
-          </div>
-          <div className="bg-white p-4 border-l-4 border-black">
-            <div className="text-2xl font-bold">{new Set(library.map(e => e.equipment)).size}</div>
-            <div className="text-sm text-zinc-600">Tipos de Equipamento</div>
-          </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <StatCard
+            label="Total de Exercícios"
+            value={library.length}
+            icon={<Dumbbell className="w-5 h-5" />}
+            color="lime"
+          />
+          <StatCard
+            label="Grupos Musculares"
+            value={new Set(library.map(e => e.muscle_group)).size}
+            icon={<Target className="w-5 h-5" />}
+            color="blue"
+          />
+          <StatCard
+            label="Com Vídeo"
+            value={library.filter(e => e.video_url).length}
+            icon={<BookOpen className="w-5 h-5" />}
+            color="purple"
+          />
+          <StatCard
+            label="Tipos de Equipamento"
+            value={new Set(library.map(e => e.equipment)).size}
+            icon={<Library className="w-5 h-5" />}
+            color="orange"
+          />
         </div>
 
         {/* Library Table */}
-        <div className="bg-white">
-          <div className="grid grid-cols-6 gap-4 px-6 py-4 bg-zinc-900 text-white font-bold text-sm tracking-wider">
+        <Card padding="none" className="overflow-hidden">
+          <div className="grid grid-cols-6 gap-4 px-6 py-4 bg-zinc-900 text-white font-bold text-sm tracking-wider rounded-t-2xl">
             <div className="col-span-2">EXERCÍCIO</div>
             <div>MÚSCULO</div>
             <div>EQUIPAMENTO</div>
@@ -935,15 +947,20 @@ export function AdminTrainingSection({ consultancyId, adminUser }: AdminTraining
           </div>
           <div className="divide-y divide-zinc-200">
             {filteredLibrary.length === 0 ? (
-              <div className="px-6 py-12 text-center text-zinc-500">
-                <BookOpen className="w-12 h-12 text-zinc-300 mx-auto mb-4" />
-                <p>Nenhum exercício encontrado</p>
-              </div>
+              <EmptyState
+                icon="training"
+                title="Nenhum exercício encontrado"
+                description="Adicione exercícios à sua biblioteca para usar nos planos de treino."
+                action={{
+                  label: "Adicionar Exercício",
+                  onClick: openAddLibraryExercise
+                }}
+              />
             ) : (
               filteredLibrary.map(ex => (
                 <div key={ex.id} className="grid grid-cols-6 gap-4 px-6 py-4 items-center hover:bg-zinc-50 transition-colors">
                   <div className="col-span-2 flex items-center gap-3">
-                    <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center text-white">
+                    <div className="w-10 h-10 bg-lime-500 rounded-xl flex items-center justify-center text-black">
                       <Dumbbell className="w-5 h-5" />
                     </div>
                     <div>
@@ -952,9 +969,9 @@ export function AdminTrainingSection({ consultancyId, adminUser }: AdminTraining
                     </div>
                   </div>
                   <div>
-                    <span className={`px-3 py-1 text-xs font-bold ${MUSCLE_GROUPS[ex.muscle_group]?.color || 'bg-zinc-100'}`}>
+                    <Badge className={MUSCLE_GROUPS[ex.muscle_group]?.color || 'bg-zinc-100 text-zinc-700'}>
                       {MUSCLE_GROUPS[ex.muscle_group]?.name || ex.muscle_group}
-                    </span>
+                    </Badge>
                   </div>
                   <div className="text-sm">{EQUIPMENT[ex.equipment] || ex.equipment}</div>
                   <div>
@@ -974,14 +991,14 @@ export function AdminTrainingSection({ consultancyId, adminUser }: AdminTraining
                   <div className="flex items-center justify-end gap-2">
                     <button
                       onClick={() => openEditLibraryExercise(ex)}
-                      className="p-2 text-zinc-600 hover:text-lime-600 hover:bg-lime-50 rounded transition-colors"
+                      className="p-2 text-zinc-600 hover:text-lime-600 hover:bg-lime-50 rounded-lg transition-colors"
                       title="Editar"
                     >
                       <Edit className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => setShowDeleteConfirm({ type: 'library', id: ex.id })}
-                      className="p-2 text-zinc-600 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                      className="p-2 text-zinc-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                       title="Excluir"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -991,48 +1008,48 @@ export function AdminTrainingSection({ consultancyId, adminUser }: AdminTraining
               ))
             )}
           </div>
-        </div>
+        </Card>
 
         {/* Modal de Edição da Biblioteca */}
         {showLibraryEditModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <Card padding="none" className="w-full max-w-lg max-h-[90vh] overflow-y-auto">
               <div className="p-6 border-b border-zinc-200 flex items-center justify-between">
                 <h3 className="text-xl font-bold">
                   {editingLibraryExercise ? 'Editar Exercício' : 'Novo Exercício'}
                 </h3>
-                <button onClick={() => setShowLibraryEditModal(false)} className="text-zinc-400 hover:text-black">
-                  <X className="w-6 h-6" />
+                <button onClick={() => setShowLibraryEditModal(false)} className="text-zinc-400 hover:text-black p-1 rounded-full">
+                  <X className="w-5 h-5" />
                 </button>
               </div>
               <div className="p-6 space-y-4">
                 <div>
-                  <label className="block text-sm font-bold mb-2">Nome do Exercício *</label>
+                  <label className="block text-sm font-bold mb-2 text-zinc-700">Nome do Exercício *</label>
                   <input
                     type="text"
                     value={libraryForm.name}
                     onChange={(e) => setLibraryForm({ ...libraryForm, name: e.target.value })}
-                    className="w-full px-4 py-3 border-2 border-zinc-200 focus:border-lime-500 outline-none"
+                    className="w-full px-4 py-2.5 border border-zinc-300 focus:border-lime-500 outline-none rounded-lg text-sm"
                     placeholder="Ex: Supino Reto com Barra"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold mb-2">Descrição</label>
+                  <label className="block text-sm font-bold mb-2 text-zinc-700">Descrição</label>
                   <textarea
                     value={libraryForm.description}
                     onChange={(e) => setLibraryForm({ ...libraryForm, description: e.target.value })}
-                    className="w-full px-4 py-3 border-2 border-zinc-200 focus:border-lime-500 outline-none resize-none"
+                    className="w-full px-4 py-2.5 border border-zinc-300 focus:border-lime-500 outline-none resize-none rounded-lg text-sm"
                     rows={3}
                     placeholder="Descrição do exercício..."
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-bold mb-2">Grupo Muscular *</label>
+                    <label className="block text-sm font-bold mb-2 text-zinc-700">Grupo Muscular *</label>
                     <select
                       value={libraryForm.muscle_group}
                       onChange={(e) => setLibraryForm({ ...libraryForm, muscle_group: e.target.value })}
-                      className="w-full px-4 py-3 border-2 border-zinc-200 focus:border-lime-500 outline-none"
+                      className="w-full px-4 py-2.5 border border-zinc-300 focus:border-lime-500 outline-none rounded-lg text-sm"
                     >
                       {Object.entries(MUSCLE_GROUPS).map(([key, val]) => (
                         <option key={key} value={key}>{val.name}</option>
@@ -1040,11 +1057,11 @@ export function AdminTrainingSection({ consultancyId, adminUser }: AdminTraining
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-bold mb-2">Equipamento *</label>
+                    <label className="block text-sm font-bold mb-2 text-zinc-700">Equipamento *</label>
                     <select
                       value={libraryForm.equipment}
                       onChange={(e) => setLibraryForm({ ...libraryForm, equipment: e.target.value })}
-                      className="w-full px-4 py-3 border-2 border-zinc-200 focus:border-lime-500 outline-none"
+                      className="w-full px-4 py-2.5 border border-zinc-300 focus:border-lime-500 outline-none rounded-lg text-sm"
                     >
                       {Object.entries(EQUIPMENT).map(([key, val]) => (
                         <option key={key} value={key}>{val}</option>
@@ -1053,12 +1070,12 @@ export function AdminTrainingSection({ consultancyId, adminUser }: AdminTraining
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-bold mb-2">URL do Vídeo (opcional)</label>
+                  <label className="block text-sm font-bold mb-2 text-zinc-700">URL do Vídeo (opcional)</label>
                   <input
                     type="url"
                     value={libraryForm.video_url}
                     onChange={(e) => setLibraryForm({ ...libraryForm, video_url: e.target.value })}
-                    className="w-full px-4 py-3 border-2 border-zinc-200 focus:border-lime-500 outline-none"
+                    className="w-full px-4 py-2.5 border border-zinc-300 focus:border-lime-500 outline-none rounded-lg text-sm"
                     placeholder="https://youtube.com/..."
                   />
                 </div>
@@ -1066,45 +1083,48 @@ export function AdminTrainingSection({ consultancyId, adminUser }: AdminTraining
               <div className="p-6 border-t border-zinc-200 flex justify-end gap-3">
                 <button
                   onClick={() => setShowLibraryEditModal(false)}
-                  className="px-6 py-3 border-2 border-zinc-200 font-bold hover:border-black transition-colors"
+                  className="px-6 py-2.5 border border-zinc-300 font-bold hover:bg-zinc-50 transition-colors rounded-lg text-sm"
                 >
                   CANCELAR
                 </button>
                 <button
                   onClick={handleSaveLibraryExercise}
                   disabled={!libraryForm.name}
-                  className="px-6 py-3 bg-lime-500 text-black font-bold hover:bg-lime-400 transition-colors disabled:opacity-50"
+                  className="px-6 py-2.5 bg-lime-500 text-black font-bold hover:bg-lime-400 transition-colors disabled:opacity-50 rounded-lg text-sm"
                 >
                   {editingLibraryExercise ? 'SALVAR' : 'ADICIONAR'}
                 </button>
               </div>
-            </div>
+            </Card>
           </div>
         )}
 
         {/* Modal de Confirmação de Exclusão */}
         {showDeleteConfirm?.type === 'library' && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white p-8 max-w-md mx-4">
-              <h3 className="text-xl font-bold mb-4">Excluir Exercício?</h3>
-              <p className="text-zinc-600 mb-6">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <Card className="w-full max-w-sm text-center">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="w-6 h-6 text-red-500" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">Excluir Exercício?</h3>
+              <p className="text-zinc-600 text-sm mb-6">
                 Esta ação não pode ser desfeita. O exercício será removido permanentemente da sua biblioteca.
               </p>
-              <div className="flex justify-end gap-3">
+              <div className="flex gap-3">
                 <button
                   onClick={() => setShowDeleteConfirm(null)}
-                  className="px-6 py-3 border-2 border-zinc-200 font-bold hover:border-black transition-colors"
+                  className="flex-1 py-2.5 border border-zinc-300 font-bold hover:bg-zinc-50 transition-colors rounded-lg text-sm"
                 >
                   CANCELAR
                 </button>
                 <button
                   onClick={handleDeleteLibraryExercise}
-                  className="px-6 py-3 bg-red-600 text-white font-bold hover:bg-red-700 transition-colors"
+                  className="flex-1 py-2.5 bg-red-500 text-white font-bold hover:bg-red-600 transition-colors rounded-lg text-sm"
                 >
                   EXCLUIR
                 </button>
               </div>
-            </div>
+            </Card>
           </div>
         )}
       </div>
@@ -1155,29 +1175,37 @@ export function AdminTrainingSection({ consultancyId, adminUser }: AdminTraining
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-4 gap-4">
-        <div className="bg-white p-4 border-l-4 border-lime-500">
-          <div className="text-2xl font-bold">{plans.filter(p => p.status === 'active').length}</div>
-          <div className="text-sm text-zinc-600">Planos Ativos</div>
-        </div>
-        <div className="bg-white p-4 border-l-4 border-black">
-          <div className="text-2xl font-bold">{athletes.length}</div>
-          <div className="text-sm text-zinc-600">Atletas</div>
-        </div>
-        <div className="bg-white p-4 border-l-4 border-black">
-          <div className="text-2xl font-bold">{library.length}</div>
-          <div className="text-sm text-zinc-600">Exercícios na Biblioteca</div>
-        </div>
-        <div className="bg-white p-4 border-l-4 border-black">
-          <div className="text-2xl font-bold">{plans.length}</div>
-          <div className="text-sm text-zinc-600">Total de Planos</div>
-        </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard
+          label="Planos Ativos"
+          value={plans.filter(p => p.status === 'active').length}
+          icon={<Target className="w-5 h-5" />}
+          color="lime"
+        />
+        <StatCard
+          label="Atletas"
+          value={athletes.length}
+          icon={<Users className="w-5 h-5" />}
+          color="blue"
+        />
+        <StatCard
+          label="Exercícios na Biblioteca"
+          value={library.length}
+          icon={<Library className="w-5 h-5" />}
+          color="purple"
+        />
+        <StatCard
+          label="Total de Planos"
+          value={plans.length}
+          icon={<Dumbbell className="w-5 h-5" />}
+          color="zinc"
+        />
       </div>
 
       {/* Plans Table/Grid */}
-      <div className="bg-white">
+      <Card padding="none" className="overflow-hidden">
         {/* Table Header */}
-        <div className="grid grid-cols-7 gap-4 px-6 py-4 bg-zinc-900 text-white font-bold text-sm tracking-wider">
+        <div className="grid grid-cols-7 gap-4 px-6 py-4 bg-zinc-900 text-white font-bold text-sm tracking-wider rounded-t-2xl">
           <div className="col-span-2">ATLETA / PLANO</div>
           <div>OBJETIVO</div>
           <div>DURAÇÃO</div>
@@ -1189,18 +1217,15 @@ export function AdminTrainingSection({ consultancyId, adminUser }: AdminTraining
         {/* Table Body */}
         <div className="divide-y divide-zinc-200">
           {filteredPlans.length === 0 ? (
-            <div className="px-6 py-12 text-center text-zinc-500">
-              <Dumbbell className="w-12 h-12 text-zinc-300 mx-auto mb-4" />
-              <p className="font-bold text-lg mb-2">Nenhum plano de treino encontrado</p>
-              <p className="text-sm mb-4">Crie o primeiro plano de treino para seus atletas.</p>
-              <button
-                onClick={openAddPlan}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-lime-500 text-black font-bold hover:bg-lime-400 transition-colors"
-              >
-                <Plus className="w-5 h-5" />
-                CRIAR PLANO
-              </button>
-            </div>
+            <EmptyState
+              icon="training"
+              title="Nenhum plano de treino encontrado"
+              description="Crie o primeiro plano de treino para seus atletas."
+              action={{
+                label: "Criar Plano",
+                onClick: openAddPlan
+              }}
+            />
           ) : (
             filteredPlans.map(plan => (
               <div 
@@ -1209,7 +1234,7 @@ export function AdminTrainingSection({ consultancyId, adminUser }: AdminTraining
                 onClick={() => openPlanDetail(plan)}
               >
                 <div className="col-span-2 flex items-center gap-3">
-                  <div className="w-10 h-10 bg-lime-500 rounded-full flex items-center justify-center text-black">
+                  <div className="w-10 h-10 bg-lime-500 rounded-xl flex items-center justify-center text-black">
                     <Dumbbell className="w-5 h-5" />
                   </div>
                   <div>
@@ -1224,31 +1249,23 @@ export function AdminTrainingSection({ consultancyId, adminUser }: AdminTraining
                 <div>{plan.duration_weeks} sem • {plan.frequency_per_week}x</div>
                 <div>
                   {plan.split_type && (
-                    <span className="px-2 py-1 bg-black text-white text-xs font-bold">
-                      {plan.split_type}
-                    </span>
+                    <Badge variant="default">{plan.split_type}</Badge>
                   )}
                 </div>
                 <div>
-                  <span className={`px-3 py-1 text-xs font-bold ${
-                    plan.status === 'active' 
-                      ? 'bg-lime-100 text-lime-700' 
-                      : 'bg-zinc-100 text-zinc-600'
-                  }`}>
-                    {plan.status === 'active' ? 'ATIVO' : plan.status?.toUpperCase()}
-                  </span>
+                  <StatusBadge status={plan.status === 'active' ? 'active' : 'inactive'} />
                 </div>
                 <div className="flex justify-end gap-2">
                   <button 
                     onClick={(e) => { e.stopPropagation(); openEditPlan(plan); }}
-                    className="p-2 hover:bg-zinc-100 transition-colors"
+                    className="p-2 hover:bg-zinc-100 rounded-lg transition-colors"
                     title="Editar plano"
                   >
                     <Edit className="w-5 h-5" />
                   </button>
                   <button 
                     onClick={(e) => { e.stopPropagation(); openPlanDetail(plan); }}
-                    className="p-2 hover:bg-lime-100 text-lime-600 transition-colors"
+                    className="p-2 hover:bg-lime-100 text-lime-600 rounded-lg transition-colors"
                     title="Gerenciar"
                   >
                     <ChevronRight className="w-5 h-5" />
@@ -1258,7 +1275,7 @@ export function AdminTrainingSection({ consultancyId, adminUser }: AdminTraining
             ))
           )}
         </div>
-      </div>
+      </Card>
 
       {/* Modals */}
       {showPlanModal && <PlanModal />}
@@ -1271,23 +1288,23 @@ export function AdminTrainingSection({ consultancyId, adminUser }: AdminTraining
   function PlanModal() {
     return (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white w-full max-w-lg max-h-[90vh] overflow-y-auto">
-          <div className="p-6 border-b border-zinc-200 flex items-center justify-between bg-black text-white">
+        <Card padding="none" className="w-full max-w-lg max-h-[90vh] overflow-y-auto">
+          <div className="p-6 border-b border-zinc-200 flex items-center justify-between">
             <h3 className="text-xl font-bold">
               {editingPlan ? 'Editar Plano' : 'Novo Plano de Treino'}
             </h3>
-            <button onClick={() => setShowPlanModal(false)} className="text-zinc-400 hover:text-white">
+            <button onClick={() => setShowPlanModal(false)} className="text-zinc-400 hover:text-black p-1 rounded-full">
               <X className="w-5 h-5" />
             </button>
           </div>
           <form onSubmit={handleSavePlan} className="p-6 space-y-4">
             <div>
-              <label className="block text-sm font-bold mb-2">ATLETA *</label>
+              <label className="block text-sm font-bold mb-2 text-zinc-700">ATLETA *</label>
               <select 
                 value={planForm.athlete_id}
                 onChange={(e) => setPlanForm({...planForm, athlete_id: Number(e.target.value)})}
-                className={`w-full px-4 py-3 border-2 outline-none ${
-                  !planForm.athlete_id ? 'border-red-300 bg-red-50' : 'border-zinc-200 focus:border-lime-500'
+                className={`w-full px-4 py-2.5 border outline-none rounded-lg text-sm ${
+                  !planForm.athlete_id ? 'border-red-300 bg-red-50' : 'border-zinc-300 focus:border-lime-500'
                 }`}
                 required
               >
@@ -1299,12 +1316,12 @@ export function AdminTrainingSection({ consultancyId, adminUser }: AdminTraining
             </div>
 
             <div>
-              <label className="block text-sm font-bold mb-2">NOME DO PLANO *</label>
+              <label className="block text-sm font-bold mb-2 text-zinc-700">NOME DO PLANO *</label>
               <input 
                 type="text" 
                 value={planForm.name}
                 onChange={(e) => setPlanForm({...planForm, name: e.target.value})}
-                className="w-full px-4 py-3 border-2 border-zinc-200 focus:border-lime-500 outline-none" 
+                className="w-full px-4 py-2.5 border border-zinc-300 focus:border-lime-500 outline-none rounded-lg text-sm" 
                 placeholder="Ex: Hipertrofia - Fase 1"
                 required
               />
@@ -1312,11 +1329,11 @@ export function AdminTrainingSection({ consultancyId, adminUser }: AdminTraining
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-bold mb-2">OBJETIVO</label>
+                <label className="block text-sm font-bold mb-2 text-zinc-700">OBJETIVO</label>
                 <select 
                   value={planForm.objective}
                   onChange={(e) => setPlanForm({...planForm, objective: e.target.value})}
-                  className="w-full px-4 py-3 border-2 border-zinc-200 focus:border-lime-500 outline-none"
+                  className="w-full px-4 py-2.5 border border-zinc-300 focus:border-lime-500 outline-none rounded-lg text-sm"
                 >
                   {Object.entries(OBJECTIVES).map(([id, name]) => (
                     <option key={id} value={id}>{name}</option>
@@ -1324,11 +1341,11 @@ export function AdminTrainingSection({ consultancyId, adminUser }: AdminTraining
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-bold mb-2">NÍVEL</label>
+                <label className="block text-sm font-bold mb-2 text-zinc-700">NÍVEL</label>
                 <select 
                   value={planForm.level}
                   onChange={(e) => setPlanForm({...planForm, level: e.target.value})}
-                  className="w-full px-4 py-3 border-2 border-zinc-200 focus:border-lime-500 outline-none"
+                  className="w-full px-4 py-2.5 border border-zinc-300 focus:border-lime-500 outline-none rounded-lg text-sm"
                 >
                   {Object.entries(LEVELS).map(([id, name]) => (
                     <option key={id} value={id}>{name}</option>
@@ -1339,21 +1356,21 @@ export function AdminTrainingSection({ consultancyId, adminUser }: AdminTraining
 
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-bold mb-2">DURAÇÃO</label>
+                <label className="block text-sm font-bold mb-2 text-zinc-700">DURAÇÃO</label>
                 <input 
                   type="number" 
                   value={planForm.duration_weeks}
                   onChange={(e) => setPlanForm({...planForm, duration_weeks: Number(e.target.value)})}
-                  className="w-full px-4 py-3 border-2 border-zinc-200 focus:border-lime-500 outline-none" 
+                  className="w-full px-4 py-2.5 border border-zinc-300 focus:border-lime-500 outline-none rounded-lg text-sm" 
                   min="1"
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold mb-2">FREQUÊNCIA</label>
+                <label className="block text-sm font-bold mb-2 text-zinc-700">FREQUÊNCIA</label>
                 <select 
                   value={planForm.frequency_per_week}
                   onChange={(e) => setPlanForm({...planForm, frequency_per_week: Number(e.target.value)})}
-                  className="w-full px-4 py-3 border-2 border-zinc-200 focus:border-lime-500 outline-none"
+                  className="w-full px-4 py-2.5 border border-zinc-300 focus:border-lime-500 outline-none rounded-lg text-sm"
                 >
                   {[1,2,3,4,5,6,7].map(n => (
                     <option key={n} value={n}>{n}x/sem</option>
@@ -1361,12 +1378,12 @@ export function AdminTrainingSection({ consultancyId, adminUser }: AdminTraining
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-bold mb-2">DIVISÃO</label>
+                <label className="block text-sm font-bold mb-2 text-zinc-700">DIVISÃO</label>
                 <input 
                   type="text" 
                   value={planForm.split_type}
                   onChange={(e) => setPlanForm({...planForm, split_type: e.target.value.toUpperCase()})}
-                  className="w-full px-4 py-3 border-2 border-zinc-200 focus:border-lime-500 outline-none" 
+                  className="w-full px-4 py-2.5 border border-zinc-300 focus:border-lime-500 outline-none rounded-lg text-sm" 
                   placeholder="ABCD"
                 />
               </div>
@@ -1376,19 +1393,19 @@ export function AdminTrainingSection({ consultancyId, adminUser }: AdminTraining
               <button 
                 type="button"
                 onClick={() => setShowPlanModal(false)}
-                className="flex-1 py-3 border-2 border-black font-bold hover:bg-black hover:text-white transition-colors"
+                className="flex-1 py-2.5 border border-black font-bold hover:bg-black hover:text-white transition-colors rounded-lg text-sm"
               >
                 CANCELAR
               </button>
               <button 
                 type="submit"
-                className="flex-1 py-3 bg-lime-500 text-black font-bold hover:bg-lime-400 transition-colors"
+                className="flex-1 py-2.5 bg-lime-500 text-black font-bold hover:bg-lime-400 transition-colors rounded-lg text-sm"
               >
                 {editingPlan ? 'SALVAR' : 'CRIAR PLANO'}
               </button>
             </div>
           </form>
-        </div>
+        </Card>
       </div>
     );
   }
@@ -1396,34 +1413,34 @@ export function AdminTrainingSection({ consultancyId, adminUser }: AdminTraining
   function DayModal() {
     return (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white w-full max-w-md">
+        <Card padding="none" className="w-full max-w-md">
           <div className="p-6 border-b border-zinc-200 flex items-center justify-between">
             <h3 className="text-xl font-bold">
               {editingDay ? 'Editar Dia' : 'Novo Dia de Treino'}
             </h3>
-            <button onClick={() => setShowDayModal(false)} className="text-zinc-400 hover:text-black">
+            <button onClick={() => setShowDayModal(false)} className="text-zinc-400 hover:text-black p-1 rounded-full">
               <X className="w-5 h-5" />
             </button>
           </div>
           <form onSubmit={handleSaveDay} className="p-6 space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-bold mb-2">LETRA</label>
+                <label className="block text-sm font-bold mb-2 text-zinc-700">LETRA</label>
                 <input 
                   type="text" 
                   value={dayForm.day_letter}
                   onChange={(e) => setDayForm({...dayForm, day_letter: e.target.value.toUpperCase().slice(0,1)})}
-                  className="w-full px-4 py-3 border-2 border-zinc-200 focus:border-lime-500 outline-none text-center font-bold text-xl" 
+                  className="w-full px-4 py-2.5 border border-zinc-300 focus:border-lime-500 outline-none text-center font-bold text-xl rounded-lg" 
                   maxLength={1}
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold mb-2">DIA DA SEMANA</label>
+                <label className="block text-sm font-bold mb-2 text-zinc-700">DIA DA SEMANA</label>
                 <select 
                   value={dayForm.day_of_week}
                   onChange={(e) => setDayForm({...dayForm, day_of_week: Number(e.target.value)})}
-                  className="w-full px-4 py-3 border-2 border-zinc-200 focus:border-lime-500 outline-none"
+                  className="w-full px-4 py-2.5 border border-zinc-300 focus:border-lime-500 outline-none rounded-lg text-sm"
                 >
                   {Object.entries(DAY_OF_WEEK_NAMES).map(([v, label]) => (
                     <option key={v} value={v}>{label}</option>
@@ -1432,45 +1449,45 @@ export function AdminTrainingSection({ consultancyId, adminUser }: AdminTraining
               </div>
             </div>
             <div>
-              <label className="block text-sm font-bold mb-2">NOME DO TREINO</label>
+              <label className="block text-sm font-bold mb-2 text-zinc-700">NOME DO TREINO</label>
               <input 
                 type="text" 
                 value={dayForm.day_name}
                 onChange={(e) => setDayForm({...dayForm, day_name: e.target.value})}
-                className="w-full px-4 py-3 border-2 border-zinc-200 focus:border-lime-500 outline-none" 
+                className="w-full px-4 py-2.5 border border-zinc-300 focus:border-lime-500 outline-none rounded-lg text-sm" 
                 placeholder="Ex: Peito e Tríceps"
               />
             </div>
             <div>
-              <label className="block text-sm font-bold mb-2">FOCO MUSCULAR</label>
+              <label className="block text-sm font-bold mb-2 text-zinc-700">FOCO MUSCULAR</label>
               <input 
                 type="text" 
                 value={dayForm.focus_muscles}
                 onChange={(e) => setDayForm({...dayForm, focus_muscles: e.target.value})}
-                className="w-full px-4 py-3 border-2 border-zinc-200 focus:border-lime-500 outline-none" 
+                className="w-full px-4 py-2.5 border border-zinc-300 focus:border-lime-500 outline-none rounded-lg text-sm" 
                 placeholder="Ex: Peitoral, Deltóide, Tríceps"
               />
             </div>
             <div>
-              <label className="block text-sm font-bold mb-2">DURAÇÃO ESTIMADA (min)</label>
+              <label className="block text-sm font-bold mb-2 text-zinc-700">DURAÇÃO ESTIMADA (min)</label>
               <input 
                 type="number" 
                 value={dayForm.estimated_duration}
                 onChange={(e) => setDayForm({...dayForm, estimated_duration: Number(e.target.value)})}
-                className="w-full px-4 py-3 border-2 border-zinc-200 focus:border-lime-500 outline-none" 
+                className="w-full px-4 py-2.5 border border-zinc-300 focus:border-lime-500 outline-none rounded-lg text-sm" 
                 min="15" step="5"
               />
             </div>
             <div className="flex gap-3 pt-4">
-              <button type="button" onClick={() => setShowDayModal(false)} className="flex-1 py-3 border-2 border-black font-bold hover:bg-black hover:text-white transition-colors">
+              <button type="button" onClick={() => setShowDayModal(false)} className="flex-1 py-2.5 border border-black font-bold hover:bg-black hover:text-white transition-colors rounded-lg text-sm">
                 CANCELAR
               </button>
-              <button type="submit" className="flex-1 py-3 bg-lime-500 text-black font-bold hover:bg-lime-400 transition-colors">
+              <button type="submit" className="flex-1 py-2.5 bg-lime-500 text-black font-bold hover:bg-lime-400 transition-colors rounded-lg text-sm">
                 {editingDay ? 'SALVAR' : 'CRIAR DIA'}
               </button>
             </div>
           </form>
-        </div>
+        </Card>
       </div>
     );
   }
@@ -1620,19 +1637,17 @@ export function AdminTrainingSection({ consultancyId, adminUser }: AdminTraining
     
     return (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white w-full max-w-sm p-6">
-          <div className="text-center mb-6">
-            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Trash2 className="w-6 h-6 text-red-500" />
-            </div>
-            <h3 className="text-xl font-bold mb-2">{titles[showDeleteConfirm!.type]}</h3>
-            <p className="text-zinc-600 text-sm">{messages[showDeleteConfirm!.type]}</p>
+        <Card className="w-full max-w-sm text-center">
+          <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Trash2 className="w-6 h-6 text-red-500" />
           </div>
+          <h3 className="text-xl font-bold mb-2">{titles[showDeleteConfirm!.type]}</h3>
+          <p className="text-zinc-600 text-sm mb-6">{messages[showDeleteConfirm!.type]}</p>
           <div className="flex gap-3">
-            <button onClick={() => setShowDeleteConfirm(null)} className="flex-1 py-3 border-2 border-zinc-300 font-bold hover:border-black transition-colors">CANCELAR</button>
-            <button onClick={handlers[showDeleteConfirm!.type]} className="flex-1 py-3 bg-red-500 text-white font-bold hover:bg-red-600 transition-colors">EXCLUIR</button>
+            <button onClick={() => setShowDeleteConfirm(null)} className="flex-1 py-2.5 border border-zinc-300 font-bold hover:bg-zinc-50 transition-colors rounded-lg text-sm">CANCELAR</button>
+            <button onClick={handlers[showDeleteConfirm!.type]} className="flex-1 py-2.5 bg-red-500 text-white font-bold hover:bg-red-600 transition-colors rounded-lg text-sm">EXCLUIR</button>
           </div>
-        </div>
+        </Card>
       </div>
     );
   }

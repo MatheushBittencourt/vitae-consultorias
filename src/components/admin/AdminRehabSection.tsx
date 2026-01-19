@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Edit, Eye, Loader2, Activity } from 'lucide-react';
+import { Plus, Search, Edit, Eye, Loader2, Activity, HeartPulse, Calendar, CheckCircle } from 'lucide-react';
 import { Patient } from './AdminDashboard';
+import { Card, StatCard } from '../ui/Card';
+import { Badge, StatusBadge } from '../ui/Badge';
+import { EmptyState } from '../ui/EmptyState';
 
 const API_URL = '/api';
 
@@ -120,27 +123,35 @@ export function AdminRehabSection({ onSelectPatient, consultancyId }: AdminRehab
         />
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
-        <div className="bg-white p-4 border-l-4 border-lime-500">
-          <div className="text-2xl font-bold">{sessions.filter(s => s.status === 'in_progress').length}</div>
-          <div className="text-sm text-zinc-600">Em Tratamento</div>
-        </div>
-        <div className="bg-white p-4 border-l-4 border-blue-500">
-          <div className="text-2xl font-bold">{sessions.filter(s => s.status === 'scheduled').length}</div>
-          <div className="text-sm text-zinc-600">Agendadas</div>
-        </div>
-        <div className="bg-white p-4 border-l-4 border-black">
-          <div className="text-2xl font-bold">{sessions.filter(s => s.status === 'completed').length}</div>
-          <div className="text-sm text-zinc-600">Concluídas</div>
-        </div>
-        <div className="bg-white p-4 border-l-4 border-black">
-          <div className="text-2xl font-bold">{sessions.length}</div>
-          <div className="text-sm text-zinc-600">Total Sessões</div>
-        </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard
+          label="Em Tratamento"
+          value={sessions.filter(s => s.status === 'in_progress').length}
+          icon={<HeartPulse className="w-5 h-5" />}
+          color="lime"
+        />
+        <StatCard
+          label="Agendadas"
+          value={sessions.filter(s => s.status === 'scheduled').length}
+          icon={<Calendar className="w-5 h-5" />}
+          color="blue"
+        />
+        <StatCard
+          label="Concluídas"
+          value={sessions.filter(s => s.status === 'completed').length}
+          icon={<CheckCircle className="w-5 h-5" />}
+          color="zinc"
+        />
+        <StatCard
+          label="Total Sessões"
+          value={sessions.length}
+          icon={<Activity className="w-5 h-5" />}
+          color="purple"
+        />
       </div>
 
-      <div className="bg-white">
-        <div className="grid grid-cols-7 gap-4 px-6 py-4 bg-zinc-900 text-white font-bold text-sm tracking-wider">
+      <Card padding="none" className="overflow-hidden">
+        <div className="grid grid-cols-7 gap-4 px-6 py-4 bg-zinc-900 text-white font-bold text-sm tracking-wider rounded-t-2xl">
           <div className="col-span-2">PACIENTE / LESÃO</div>
           <div>TRATAMENTO</div>
           <div>DOR</div>
@@ -150,14 +161,20 @@ export function AdminRehabSection({ onSelectPatient, consultancyId }: AdminRehab
         </div>
         <div className="divide-y divide-zinc-200">
           {filteredSessions.length === 0 ? (
-            <div className="px-6 py-12 text-center text-zinc-500">
-              Nenhuma sessão de reabilitação encontrada
-            </div>
+            <EmptyState
+              icon="calendar"
+              title="Nenhuma sessão de reabilitação"
+              description="Adicione a primeira sessão de reabilitação para seus pacientes."
+              action={{
+                label: "Nova Sessão",
+                onClick: () => setShowNewSession(true)
+              }}
+            />
           ) : (
             filteredSessions.map((session) => (
               <div key={session.id} className="grid grid-cols-7 gap-4 px-6 py-4 items-center hover:bg-zinc-50 transition-colors">
                 <div className="col-span-2 flex items-center gap-3">
-                  <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white">
+                  <div className="w-10 h-10 bg-purple-500 rounded-xl flex items-center justify-center text-white">
                     <Activity className="w-5 h-5" />
                   </div>
                   <div>
@@ -184,9 +201,9 @@ export function AdminRehabSection({ onSelectPatient, consultancyId }: AdminRehab
                   {session.session_date ? new Date(session.session_date).toLocaleDateString('pt-BR') : '-'}
                 </div>
                 <div>
-                  <span className={`px-3 py-1 text-xs font-bold ${statusLabels[session.status]?.color || 'bg-zinc-100 text-zinc-700'}`}>
+                  <Badge className={statusLabels[session.status]?.color || 'bg-zinc-100 text-zinc-700'}>
                     {statusLabels[session.status]?.label || session.status?.toUpperCase()}
-                  </span>
+                  </Badge>
                 </div>
                 <div className="flex justify-end gap-2">
                   <button 
@@ -211,13 +228,13 @@ export function AdminRehabSection({ onSelectPatient, consultancyId }: AdminRehab
                         });
                       }
                     }}
-                    className="p-2 hover:bg-zinc-100 transition-colors"
+                    className="p-2 hover:bg-zinc-100 rounded-lg transition-colors"
                     title="Ver detalhes"
                   >
                     <Eye className="w-5 h-5" />
                   </button>
                   <button 
-                    className="p-2 hover:bg-zinc-100 transition-colors"
+                    className="p-2 hover:bg-zinc-100 rounded-lg transition-colors"
                     title="Editar sessão"
                   >
                     <Edit className="w-5 h-5" />
@@ -227,7 +244,7 @@ export function AdminRehabSection({ onSelectPatient, consultancyId }: AdminRehab
             ))
           )}
         </div>
-      </div>
+      </Card>
 
       {showNewSession && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
