@@ -1,136 +1,220 @@
-import { ImageWithFallback } from './figma/ImageWithFallback';
+import { Mail, MessageCircle, Instagram, Linkedin, ExternalLink, Shield, Clock, Headphones } from 'lucide-react';
 import { Logo } from './ui/Logo';
+import { ScrollReveal } from '../hooks/useScrollAnimation';
+
+const contactOptions = [
+  {
+    icon: MessageCircle,
+    title: 'WhatsApp',
+    description: 'Resposta em até 2h',
+    action: 'Conversar agora',
+    href: 'https://wa.me/5511999999999',
+    color: 'bg-green-500/10 text-green-500 border-green-500/20',
+    hoverColor: 'hover:bg-green-500 hover:text-white',
+  },
+  {
+    icon: Mail,
+    title: 'Email',
+    description: 'suporte@vitaeconsultorias.com.br',
+    action: 'Enviar email',
+    href: 'mailto:suporte@vitaeconsultorias.com.br',
+    color: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
+    hoverColor: 'hover:bg-blue-500 hover:text-white',
+  },
+];
+
+const socialLinks = [
+  { icon: Instagram, href: 'https://instagram.com/vitaeconsultorias', label: 'Instagram' },
+  { icon: Linkedin, href: 'https://linkedin.com/company/vitae', label: 'LinkedIn' },
+];
+
+const footerLinks = [
+  {
+    title: 'Produto',
+    links: [
+      { label: 'Módulos', href: '#modulos' },
+      { label: 'Preços', href: '#planos' },
+      { label: 'Como Funciona', href: '#como-funciona' },
+    ],
+  },
+  {
+    title: 'Empresa',
+    links: [
+      { label: 'Sobre', href: '#' },
+      { label: 'Blog', href: '#' },
+      { label: 'Carreiras', href: '#' },
+    ],
+  },
+  {
+    title: 'Legal',
+    links: [
+      { label: 'Privacidade', href: '#' },
+      { label: 'Termos de Uso', href: '#' },
+      { label: 'LGPD', href: '#' },
+    ],
+  },
+];
+
+const trustBadges = [
+  { icon: Shield, label: 'Dados protegidos LGPD' },
+  { icon: Clock, label: 'Uptime 99.9%' },
+  { icon: Headphones, label: 'Suporte brasileiro' },
+];
 
 export function Contact() {
+  const currentYear = new Date().getFullYear();
+
   return (
-    <section className="py-16 sm:py-24 lg:py-32 px-4 sm:px-6 lg:px-8">
+    <footer className="py-16 sm:py-24 lg:py-32 px-4 sm:px-6 lg:px-8 bg-white" role="contentinfo">
       <div className="max-w-screen-2xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center mb-16 sm:mb-24 lg:mb-32">
-          {/* Left - Contact Info */}
-          <div>
-            <div className="mb-8 sm:mb-12">
-              <div className="inline-block px-4 sm:px-6 py-1.5 sm:py-2 bg-lime-500 text-black text-xs sm:text-sm tracking-widest font-bold mb-4 sm:mb-8">
-                COMECE HOJE MESMO
-              </div>
-              <h2 className="text-4xl sm:text-6xl lg:text-8xl font-bold tracking-tighter mb-4 sm:mb-8">
-                VAMOS<br/>
-                <span className="text-lime-500">CONVERSAR</span>
-              </h2>
-              <p className="text-lg sm:text-xl lg:text-2xl text-zinc-600 leading-relaxed mb-4 sm:mb-8">
-                Agende uma demonstração gratuita e veja a plataforma funcionando.
+        {/* Contact Section */}
+        <ScrollReveal animation="fadeUp" className="mb-16 sm:mb-20 lg:mb-24">
+          <div className="text-center mb-10 sm:mb-14">
+            <div className="inline-block px-3 py-1.5 sm:px-4 sm:py-2 bg-lime-500 text-black text-[10px] sm:text-xs tracking-widest font-bold mb-4 sm:mb-8">
+              FALE CONOSCO
+            </div>
+            <h2 className="text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tighter mb-4 sm:mb-6">
+              PRECISA DE <span className="text-lime-500">AJUDA?</span>
+            </h2>
+            <p className="text-base sm:text-lg lg:text-xl text-zinc-600 max-w-2xl mx-auto">
+              Nossa equipe está pronta para ajudar você a dar o próximo passo na transformação digital da sua consultoria.
+            </p>
+          </div>
+
+          {/* Contact Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 max-w-2xl mx-auto">
+            {contactOptions.map((option) => {
+              const Icon = option.icon;
+              return (
+                <a
+                  key={option.title}
+                  href={option.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`
+                    block p-5 sm:p-6 border ${option.color} rounded-xl
+                    transition-all duration-300 group
+                    focus:outline-none focus-visible:ring-2 focus-visible:ring-lime-500 focus-visible:ring-offset-2
+                    ${option.hoverColor}
+                  `}
+                  aria-label={`${option.title}: ${option.description}`}
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-white/80 group-hover:bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors">
+                      <Icon className="w-6 h-6" aria-hidden="true" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-lg mb-1">{option.title}</h3>
+                      <p className="text-sm opacity-80 mb-3">{option.description}</p>
+                      <span className="inline-flex items-center gap-1 text-sm font-medium">
+                        {option.action}
+                        <ExternalLink className="w-4 h-4" aria-hidden="true" />
+                      </span>
+                    </div>
+                  </div>
+                </a>
+              );
+            })}
+          </div>
+        </ScrollReveal>
+
+        {/* Trust Badges */}
+        <ScrollReveal animation="fadeUp" delay={0.1}>
+          <div className="flex flex-wrap justify-center gap-6 sm:gap-10 mb-16 sm:mb-20 lg:mb-24 py-8 sm:py-10 border-y border-zinc-200">
+            {trustBadges.map((badge) => {
+              const Icon = badge.icon;
+              return (
+                <div key={badge.label} className="flex items-center gap-2 sm:gap-3 text-zinc-600">
+                  <Icon className="w-5 h-5 text-lime-500" aria-hidden="true" />
+                  <span className="text-sm sm:text-base font-medium">{badge.label}</span>
+                </div>
+              );
+            })}
+          </div>
+        </ScrollReveal>
+
+        {/* Footer Links */}
+        <ScrollReveal animation="fadeUp" delay={0.2}>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 sm:gap-10 mb-12 sm:mb-16">
+            {/* Logo column */}
+            <div className="col-span-2 md:col-span-1">
+              <Logo size="lg" showText={true} textColor="dark" className="mb-4" />
+              <p className="text-sm text-zinc-500 mb-4">
+                Plataforma completa para gestão de consultorias esportivas e de saúde.
               </p>
-              <p className="text-base sm:text-lg lg:text-xl text-zinc-500 leading-relaxed">
-                Nosso time vai te mostrar como a VITAE pode transformar a gestão da sua consultoria.
-                Sem compromisso, apenas valor.
-              </p>
-            </div>
-
-            <div className="space-y-4 sm:space-y-6 mb-8 sm:mb-12">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 p-4 sm:p-6 border-l-4 border-lime-500 bg-zinc-50 hover:bg-zinc-100 transition-colors">
-                <div className="text-xs sm:text-sm text-zinc-500 sm:min-w-[100px]">Email</div>
-                <a href="mailto:contato@vitae.app" className="text-lg sm:text-xl lg:text-2xl font-bold hover:text-lime-500 transition-colors break-all">
-                  contato@vitae.app
-                </a>
-              </div>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 p-4 sm:p-6 border-l-4 border-lime-500 bg-zinc-50 hover:bg-zinc-100 transition-colors">
-                <div className="text-xs sm:text-sm text-zinc-500 sm:min-w-[100px]">WhatsApp</div>
-                <a href="https://wa.me/5511999999999" className="text-lg sm:text-xl lg:text-2xl font-bold hover:text-lime-500 transition-colors">
-                  Falar com vendas →
-                </a>
-              </div>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 p-4 sm:p-6 border-l-4 border-lime-500 bg-zinc-50 hover:bg-zinc-100 transition-colors">
-                <div className="text-xs sm:text-sm text-zinc-500 sm:min-w-[100px]">Demo</div>
-                <a href="#" className="text-lg sm:text-xl lg:text-2xl font-bold hover:text-lime-500 transition-colors">
-                  Agendar demonstração →
-                </a>
+              {/* Social Links */}
+              <div className="flex gap-3">
+                {socialLinks.map((social) => {
+                  const Icon = social.icon;
+                  return (
+                    <a
+                      key={social.label}
+                      href={social.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-10 h-10 bg-zinc-100 hover:bg-lime-500 rounded-lg flex items-center justify-center 
+                                 text-zinc-600 hover:text-black transition-colors
+                                 focus:outline-none focus-visible:ring-2 focus-visible:ring-lime-500 focus-visible:ring-offset-2"
+                      aria-label={`Siga-nos no ${social.label}`}
+                    >
+                      <Icon className="w-5 h-5" aria-hidden="true" />
+                    </a>
+                  );
+                })}
               </div>
             </div>
 
-            <button className="w-full sm:w-auto bg-black text-white px-8 sm:px-12 py-4 sm:py-6 text-base sm:text-lg tracking-wider hover:bg-lime-500 hover:text-black transition-all duration-300">
-              COMEÇAR AGORA
-            </button>
+            {/* Link columns */}
+            {footerLinks.map((column) => (
+              <nav key={column.title} aria-label={`Links de ${column.title}`}>
+                <h3 className="font-bold text-sm uppercase tracking-wider text-zinc-900 mb-4">
+                  {column.title}
+                </h3>
+                <ul className="space-y-3">
+                  {column.links.map((link) => (
+                    <li key={link.label}>
+                      <a
+                        href={link.href}
+                        className="text-sm text-zinc-600 hover:text-lime-600 transition-colors
+                                   focus:outline-none focus-visible:text-lime-600 focus-visible:underline"
+                      >
+                        {link.label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            ))}
           </div>
+        </ScrollReveal>
 
-          {/* Right - Image */}
-          <div className="grid grid-cols-2 gap-2 sm:gap-4 h-[300px] sm:h-[400px] lg:h-[600px]">
-            <div className="space-y-2 sm:space-y-4">
-              <div className="h-2/3 overflow-hidden rounded-sm">
-                <ImageWithFallback
-                  src="https://images.unsplash.com/photo-1552664730-d307ca884978?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx0ZWFtJTIwbWVldGluZ3xlbnwxfHx8fDE3NjgwNzgzNTh8MA&ixlib=rb-4.1.0&q=80&w=1080"
-                  alt="Team meeting"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="h-1/3 overflow-hidden rounded-sm">
-                <ImageWithFallback
-                  src="https://images.unsplash.com/photo-1573164713988-8665fc963095?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkb2N0b3IlMjB0YWJsZXR8ZW58MXx8fHwxNzY3OTkzMjE0fDA&ixlib=rb-4.1.0&q=80&w=1080"
-                  alt="Doctor tablet"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            </div>
-            <div className="space-y-2 sm:space-y-4 pt-8 sm:pt-16">
-              <div className="h-1/3 overflow-hidden rounded-sm">
-                <ImageWithFallback
-                  src="https://images.unsplash.com/photo-1551434678-e076c223a692?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsYXB0b3AlMjB3b3JrfGVufDF8fHx8MTc2ODA3ODM2MXww&ixlib=rb-4.1.0&q=80&w=1080"
-                  alt="Laptop work"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="h-2/3 overflow-hidden rounded-sm">
-                <ImageWithFallback
-                  src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxoZWFsdGglMjB0ZWNofGVufDF8fHx8MTc2ODA3ODM2MHww&ixlib=rb-4.1.0&q=80&w=1080"
-                  alt="Health tech"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Footer Info */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 sm:gap-12 pt-12 sm:pt-16 lg:pt-20 border-t-2 border-black mb-12 sm:mb-16 lg:mb-20">
-          <div>
-            <div className="font-bold text-lg sm:text-xl mb-3 sm:mb-4">SOBRE</div>
-            <p className="text-sm sm:text-base text-zinc-600 leading-relaxed">
-              VITAE é a plataforma completa para<br/>
-              consultorias de saúde e performance.<br/>
-              Feita por profissionais, para profissionais.
-            </p>
-          </div>
-          <div>
-            <div className="font-bold text-lg sm:text-xl mb-3 sm:mb-4">SUPORTE</div>
-            <p className="text-sm sm:text-base text-zinc-600 leading-relaxed">
-              Segunda a Sexta: 8h - 18h<br/>
-              Sábado: 9h - 13h<br/>
-              Resposta em até 24h úteis
-            </p>
-          </div>
-          <div>
-            <div className="font-bold text-lg sm:text-xl mb-3 sm:mb-4">SEGURANÇA</div>
-            <p className="text-sm sm:text-base text-zinc-600 leading-relaxed">
-              Criptografia de ponta a ponta<br/>
-              Conformidade LGPD<br/>
-              Backups diários automáticos
-            </p>
-          </div>
-        </div>
-
-        {/* Final Footer */}
-        <div className="pt-8 sm:pt-12 border-t border-zinc-200">
+        {/* Bottom Bar */}
+        <div className="pt-8 sm:pt-10 border-t border-zinc-200">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 sm:gap-6">
             <Logo size="sm" showText={false} />
-            <div className="flex flex-wrap justify-center gap-4 sm:gap-8 text-xs sm:text-sm text-zinc-500">
-              <a href="#" className="hover:text-black transition-colors">Política de Privacidade</a>
-              <a href="#" className="hover:text-black transition-colors">Termos de Uso</a>
-              <a href="#" className="hover:text-black transition-colors">LGPD</a>
-            </div>
-            <div className="text-xs sm:text-sm text-zinc-500 text-center">
-              © 2026 VITAE. Todos os direitos reservados.
+            
+            <p className="text-xs sm:text-sm text-zinc-500 text-center">
+              © {currentYear} VITAE Consultorias. Todos os direitos reservados.
+            </p>
+            
+            <div className="flex items-center gap-4 text-xs sm:text-sm text-zinc-500">
+              <a 
+                href="#" 
+                className="hover:text-zinc-700 transition-colors focus:outline-none focus-visible:text-lime-600 focus-visible:underline"
+              >
+                Privacidade
+              </a>
+              <span aria-hidden="true">•</span>
+              <a 
+                href="#" 
+                className="hover:text-zinc-700 transition-colors focus:outline-none focus-visible:text-lime-600 focus-visible:underline"
+              >
+                Termos
+              </a>
             </div>
           </div>
         </div>
       </div>
-    </section>
+    </footer>
   );
 }

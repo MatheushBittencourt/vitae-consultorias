@@ -1,0 +1,15 @@
+# Robots.txt for VITAE Consultorias
+# https://vitaeconsultorias.com.br
+
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://vitaeconsultorias.com.br/sitemap.xml
+
+# Disallow admin/internal pages
+Disallow: /api/
+Disallow: /#superadmin
+
+# Crawl delay (optional, respected by some crawlers)
+Crawl-delay: 1

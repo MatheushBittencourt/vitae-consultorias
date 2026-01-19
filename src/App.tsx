@@ -4,6 +4,7 @@ import { Hero } from './components/Hero';
 import { Impact } from './components/Impact';
 import { Team } from './components/Team';
 import { Method } from './components/Method';
+import { Testimonials } from './components/Testimonials';
 import { Stats } from './components/Stats';
 import { Contact } from './components/Contact';
 import { LoginPage, PatientUser } from './components/platform/LoginPage';
@@ -231,6 +232,7 @@ export default function App() {
       <Impact />
       <Team />
       <Method />
+      <Testimonials />
       <Stats onSignupClick={handleSignupClick} />
       <Contact />
     </div>
