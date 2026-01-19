@@ -11,7 +11,9 @@ import {
   Crown,
   ChevronRight,
   X,
-  Sparkles
+  Sparkles,
+  ChefHat,
+  BookOpen
 } from 'lucide-react';
 import { AdminView } from './AdminDashboard';
 import { AdminUser } from './AdminLoginPage';
@@ -28,25 +30,17 @@ interface AdminSidebarProps {
   onClose?: () => void;
 }
 
-// Menu items com indicação de qual módulo pertence
-const menuSections = [
-  {
-    title: 'Principal',
-    items: [
-      { id: 'overview' as AdminView, label: 'Visão Geral', icon: LayoutDashboard, module: null },
-      { id: 'patients' as AdminView, label: 'Pacientes', icon: Users, module: null },
-      { id: 'appointments' as AdminView, label: 'Agendamentos', icon: Calendar, module: null },
-    ]
-  },
-  {
-    title: 'Módulos',
-    items: [
-      { id: 'training' as AdminView, label: 'Treinos', icon: Dumbbell, module: 'training' },
-      { id: 'nutrition' as AdminView, label: 'Nutrição', icon: Apple, module: 'nutrition' },
-      { id: 'medical' as AdminView, label: 'Médico', icon: Stethoscope, module: 'medical' },
-      { id: 'rehab' as AdminView, label: 'Reabilitação', icon: HeartPulse, module: 'rehab' },
-    ]
-  },
+// Menu simplificado - foco no paciente
+const menuItems = [
+  { id: 'overview' as AdminView, label: 'Visão Geral', icon: LayoutDashboard, description: 'Dashboard e métricas' },
+  { id: 'patients' as AdminView, label: 'Pacientes', icon: Users, description: 'Gerenciar pacientes' },
+  { id: 'appointments' as AdminView, label: 'Agendamentos', icon: Calendar, description: 'Consultas e agenda' },
+];
+
+// Ferramentas (recursos globais)
+const toolItems = [
+  { id: 'recipes' as AdminView, label: 'Receitas', icon: ChefHat, module: 'nutrition' },
+  { id: 'library' as AdminView, label: 'Biblioteca', icon: BookOpen, module: null },
 ];
 
 // Determinar o role/label baseado no role do usuário
@@ -68,9 +62,9 @@ const getRoleDisplay = (adminUser: AdminUser) => {
 export function AdminSidebar({ currentView, onViewChange, onLogout, adminUser, isOpen = false, onClose }: AdminSidebarProps) {
   const roleDisplay = getRoleDisplay(adminUser);
   
-  // Filtrar menu items baseado nos módulos habilitados
-  const filterByModules = (items: typeof menuSections[0]['items']) => {
-    return items.filter(item => {
+  // Filtrar ferramentas baseado nos módulos habilitados
+  const filterTools = () => {
+    return toolItems.filter(item => {
       if (item.module === null) return true;
       const modules = adminUser.modules;
       if (!modules) return true;
@@ -82,6 +76,9 @@ export function AdminSidebar({ currentView, onViewChange, onLogout, adminUser, i
     onViewChange(view);
     onClose?.();
   };
+
+  // Verificar se está em uma view de paciente (patient-detail ou suas sub-views)
+  const isPatientView = currentView === 'patient-detail' || currentView === 'patients';
 
   return (
     <>
@@ -149,42 +146,75 @@ export function AdminSidebar({ currentView, onViewChange, onLogout, adminUser, i
 
         {/* Navigation */}
         <nav className="flex-1 p-3 lg:p-4 overflow-y-auto">
-          {menuSections.map((section, idx) => {
-            const filteredItems = filterByModules(section.items);
-            if (filteredItems.length === 0) return null;
-            
-            return (
-              <div key={section.title} className={idx > 0 ? 'mt-6' : ''}>
-                <p className="px-4 text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-2">
-                  {section.title}
-                </p>
-                <div className="space-y-1">
-                  {filteredItems.map((item) => {
-                    const Icon = item.icon;
-                    const isActive = currentView === item.id;
-                    return (
-                      <button
-                        key={item.id}
-                        onClick={() => handleViewChange(item.id)}
-                        className={`
-                          w-full flex items-center gap-3 px-4 py-3 rounded-xl
-                          transition-all duration-200 group
-                          ${isActive
-                            ? 'bg-lime-500 text-black shadow-lg shadow-lime-500/20'
-                            : 'text-white/70 hover:bg-white/10 hover:text-white'
-                          }
-                        `}
-                      >
-                        <Icon className={`w-5 h-5 ${isActive ? '' : 'group-hover:scale-110'} transition-transform`} />
-                        <span className="font-medium flex-1 text-left">{item.label}</span>
-                        {isActive && <ChevronRight className="w-4 h-4" />}
-                      </button>
-                    );
-                  })}
-                </div>
+          {/* Menu Principal */}
+          <div>
+            <p className="px-4 text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-2">
+              Menu
+            </p>
+            <div className="space-y-1">
+              {menuItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = item.id === 'patients' 
+                  ? isPatientView 
+                  : currentView === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => handleViewChange(item.id)}
+                    className={`
+                      w-full flex items-center gap-3 px-4 py-3 rounded-xl
+                      transition-all duration-200 group
+                      ${isActive
+                        ? 'bg-lime-500 text-black shadow-lg shadow-lime-500/20'
+                        : 'text-white/70 hover:bg-white/10 hover:text-white'
+                      }
+                    `}
+                  >
+                    <Icon className={`w-5 h-5 ${isActive ? '' : 'group-hover:scale-110'} transition-transform`} />
+                    <div className="flex-1 text-left">
+                      <span className="font-medium block">{item.label}</span>
+                      <span className={`text-[11px] ${isActive ? 'text-black/60' : 'text-white/40'}`}>
+                        {item.description}
+                      </span>
+                    </div>
+                    {isActive && <ChevronRight className="w-4 h-4" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Ferramentas */}
+          {filterTools().length > 0 && (
+            <div className="mt-6">
+              <p className="px-4 text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-2">
+                Ferramentas
+              </p>
+              <div className="space-y-1">
+                {filterTools().map((item) => {
+                  const Icon = item.icon;
+                  const isActive = currentView === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => handleViewChange(item.id)}
+                      className={`
+                        w-full flex items-center gap-3 px-4 py-2.5 rounded-xl
+                        transition-all duration-200 group
+                        ${isActive
+                          ? 'bg-white/10 text-white'
+                          : 'text-white/50 hover:bg-white/5 hover:text-white/70'
+                        }
+                      `}
+                    >
+                      <Icon className="w-4 h-4" />
+                      <span className="font-medium text-sm">{item.label}</span>
+                    </button>
+                  );
+                })}
               </div>
-            );
-          })}
+            </div>
+          )}
         </nav>
 
         {/* Footer */}

@@ -30,38 +30,55 @@ import {
   Activity,
   Mail,
   Phone,
-  MapPin
+  MapPin,
+  ClipboardList,
+  Calculator,
+  BarChart3
 } from 'lucide-react';
 import { Patient } from './AdminDashboard';
+import { AdminUser } from './AdminLoginPage';
 import { Card, StatCard } from '../ui/Card';
 import { Avatar } from '../ui/Avatar';
 import { StatusBadge, Badge } from '../ui/Badge';
 import { EmptyState } from '../ui/EmptyState';
+import { 
+  NutritionAnamnesis, 
+  AnthropometricAssessment, 
+  EnergyCalculator,
+  NutritionEvolutionDashboard 
+} from '../nutrition';
 
 interface PatientDetailProps {
   patient: Patient;
   onBack: () => void;
   consultancyId?: number;
+  adminUser: AdminUser;
 }
 
 type Tab = 'info' | 'training' | 'nutrition' | 'medical' | 'rehab' | 'progress' | 'appointments';
 
-export function PatientDetail({ patient, onBack, consultancyId }: PatientDetailProps) {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _consultancyId = consultancyId; // Will be used for future API calls
+export function PatientDetail({ patient, onBack, consultancyId, adminUser }: PatientDetailProps) {
   const [activeTab, setActiveTab] = useState<Tab>('info');
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState(patient);
 
-  const tabs = [
-    { id: 'info' as Tab, label: 'Informações', icon: User },
-    { id: 'training' as Tab, label: 'Treinamento', icon: Dumbbell },
-    { id: 'nutrition' as Tab, label: 'Nutrição', icon: Apple },
-    { id: 'medical' as Tab, label: 'Médico', icon: Stethoscope },
-    { id: 'rehab' as Tab, label: 'Reabilitação', icon: HeartPulse },
-    { id: 'progress' as Tab, label: 'Progresso', icon: TrendingUp },
-    { id: 'appointments' as Tab, label: 'Agendamentos', icon: Calendar },
+  // Módulos disponíveis baseados na consultoria
+  const modules = adminUser.modules || { training: true, nutrition: true, medical: true, rehab: true };
+
+  // Tabs dinâmicas baseadas nos módulos ativos
+  const allTabs = [
+    { id: 'info' as Tab, label: 'Informações', icon: User, module: null },
+    { id: 'training' as Tab, label: 'Treinamento', icon: Dumbbell, module: 'training' },
+    { id: 'nutrition' as Tab, label: 'Nutrição', icon: Apple, module: 'nutrition' },
+    { id: 'medical' as Tab, label: 'Médico', icon: Stethoscope, module: 'medical' },
+    { id: 'rehab' as Tab, label: 'Reabilitação', icon: HeartPulse, module: 'rehab' },
+    { id: 'progress' as Tab, label: 'Progresso', icon: TrendingUp, module: null },
+    { id: 'appointments' as Tab, label: 'Agendamentos', icon: Calendar, module: null },
   ];
+
+  const tabs = allTabs.filter(tab => 
+    tab.module === null || modules[tab.module as keyof typeof modules]
+  );
 
   const handleSave = () => {
     // TODO: Salvar no banco de dados
@@ -190,7 +207,7 @@ export function PatientDetail({ patient, onBack, consultancyId }: PatientDetailP
             />
           )}
           {activeTab === 'training' && <TrainingTab patient={patient} consultancyId={consultancyId} />}
-          {activeTab === 'nutrition' && <NutritionTab patient={patient} consultancyId={consultancyId} />}
+          {activeTab === 'nutrition' && <NutritionTab patient={patient} consultancyId={consultancyId} adminUser={adminUser} />}
           {activeTab === 'medical' && <MedicalTab patient={patient} />}
           {activeTab === 'rehab' && <RehabTab patient={patient} />}
           {activeTab === 'progress' && <ProgressTab patient={patient} />}
@@ -765,9 +782,13 @@ interface NutritionFood {
   option_group: number;
 }
 
-function NutritionTab({ patient, consultancyId }: { patient: Patient; consultancyId?: number }) {
+type NutritionSubView = 'plan' | 'anamnesis' | 'anthropometric' | 'energy' | 'evolution';
+
+function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient; consultancyId?: number; adminUser: AdminUser }) {
   const [loading, setLoading] = useState(true);
   const [plan, setPlan] = useState<NutritionPlan | null>(null);
+  const [athleteId, setAthleteId] = useState<number | null>(null);
+  const [subView, setSubView] = useState<NutritionSubView>('plan');
 
   useEffect(() => {
     loadNutritionPlan();
@@ -784,10 +805,11 @@ function NutritionTab({ patient, consultancyId }: { patient: Patient; consultanc
         return;
       }
 
-      const athleteId = athletes[0].id;
+      const athlete = athletes[0];
+      setAthleteId(athlete.id);
       
       // Buscar planos do atleta
-      const plansRes = await fetch(`/api/nutrition-plans?athlete_id=${athleteId}`);
+      const plansRes = await fetch(`/api/nutrition-plans?athlete_id=${athlete.id}`);
       const plans = await plansRes.json();
       
       const activePlan = plans.find((p: NutritionPlan) => p.status === 'active') || plans[0];
@@ -816,6 +838,14 @@ function NutritionTab({ patient, consultancyId }: { patient: Patient; consultanc
     return groups;
   };
 
+  const subViewOptions = [
+    { id: 'plan' as NutritionSubView, label: 'Plano Alimentar', icon: Apple },
+    { id: 'anamnesis' as NutritionSubView, label: 'Anamnese', icon: ClipboardList },
+    { id: 'anthropometric' as NutritionSubView, label: 'Antropometria', icon: Ruler },
+    { id: 'energy' as NutritionSubView, label: 'Cálculo Energético', icon: Calculator },
+    { id: 'evolution' as NutritionSubView, label: 'Evolução', icon: BarChart3 },
+  ];
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -824,93 +854,192 @@ function NutritionTab({ patient, consultancyId }: { patient: Patient; consultanc
     );
   }
 
-  if (!plan) {
+  // Sub-navigation
+  const renderSubNav = () => (
+    <div className="flex flex-wrap gap-2 mb-6 pb-4 border-b border-zinc-200">
+      {subViewOptions.map(option => {
+        const Icon = option.icon;
+        const isActive = subView === option.id;
+        return (
+          <button
+            key={option.id}
+            onClick={() => setSubView(option.id)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              isActive
+                ? 'bg-lime-500 text-black'
+                : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+            }`}
+          >
+            <Icon className="w-4 h-4" />
+            <span className="hidden sm:inline">{option.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  // Renderizar conteúdo baseado na sub-view
+  if (subView === 'anamnesis' && athleteId) {
     return (
-      <EmptyState
-        icon="nutrition"
-        title="Nenhum plano nutricional"
-        description="Este paciente ainda não possui um plano nutricional. Para criar um plano, acesse Nutrição no menu lateral."
-      />
+      <div className="space-y-6">
+        {renderSubNav()}
+        <NutritionAnamnesis
+          athleteId={athleteId}
+          nutritionistId={adminUser.id}
+          athleteName={patient.name}
+          onSave={() => {}}
+        />
+      </div>
     );
   }
 
+  if (subView === 'anthropometric' && athleteId) {
+    return (
+      <div className="space-y-6">
+        {renderSubNav()}
+        <AnthropometricAssessment
+          athleteId={athleteId}
+          nutritionistId={adminUser.id}
+          athleteName={patient.name}
+          onSave={() => {}}
+        />
+      </div>
+    );
+  }
+
+  if (subView === 'energy' && athleteId) {
+    return (
+      <div className="space-y-6">
+        {renderSubNav()}
+        <EnergyCalculator
+          athleteId={athleteId}
+          nutritionistId={adminUser.id}
+          athleteName={patient.name}
+          initialWeight={patient.weight}
+          initialHeight={patient.height}
+          initialAge={new Date().getFullYear() - new Date(patient.birthDate).getFullYear()}
+          onSave={() => {}}
+        />
+      </div>
+    );
+  }
+
+  if (subView === 'evolution' && athleteId) {
+    return (
+      <div className="space-y-6">
+        {renderSubNav()}
+        <NutritionEvolutionDashboard
+          athleteId={athleteId}
+          athleteName={patient.name}
+        />
+      </div>
+    );
+  }
+
+  // Plano alimentar (default)
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h2 className="text-xl font-bold">{plan.name}</h2>
-          <p className="text-sm text-zinc-600">Nutricionista: {plan.nutritionist_name}</p>
-        </div>
-      </div>
+      {renderSubNav()}
 
-      {/* Macros */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-lime-50 border-lime-200 text-center p-4">
-          <div className="text-2xl font-bold text-lime-700">{plan.daily_calories}</div>
-          <div className="text-xs text-lime-600 font-medium uppercase">kcal/dia</div>
-        </Card>
-        <Card className="bg-zinc-50 text-center p-4">
-          <div className="text-2xl font-bold">{plan.protein_grams}g</div>
-          <div className="text-xs text-zinc-500 font-medium uppercase">Proteína</div>
-        </Card>
-        <Card className="bg-zinc-50 text-center p-4">
-          <div className="text-2xl font-bold">{plan.carbs_grams}g</div>
-          <div className="text-xs text-zinc-500 font-medium uppercase">Carboidrato</div>
-        </Card>
-        <Card className="bg-zinc-50 text-center p-4">
-          <div className="text-2xl font-bold">{plan.fat_grams}g</div>
-          <div className="text-xs text-zinc-500 font-medium uppercase">Gordura</div>
-        </Card>
-      </div>
+      {!plan ? (
+        <EmptyState
+          icon="nutrition"
+          title="Nenhum plano nutricional"
+          description="Este paciente ainda não possui um plano nutricional ativo."
+          action={{
+            label: 'Criar Plano',
+            onClick: () => {}
+          }}
+        />
+      ) : (
+        <>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-bold">{plan.name}</h2>
+              <p className="text-sm text-zinc-600">Nutricionista: {plan.nutritionist_name}</p>
+            </div>
+            <button className="flex items-center gap-2 px-4 py-2 border border-black hover:bg-black hover:text-white transition-colors text-sm rounded-md">
+              <Edit className="w-4 h-4" />
+              Editar Plano
+            </button>
+          </div>
 
-      {/* Meals */}
-      <div className="space-y-4">
-        <h3 className="text-xl font-bold">Refeições</h3>
-        {plan.meals && plan.meals.length > 0 ? (
-          plan.meals.map((meal) => {
-            const optionGroups = getOptionGroups(meal.foods);
-            const availableOptions = Object.keys(optionGroups).map(Number).sort((a, b) => a - b);
-            
-            return (
-              <Card key={meal.id} className="p-4 hover:border-lime-500 transition-colors">
-                <div className="flex items-center gap-4 mb-3">
-                  <div className="text-center min-w-[60px] bg-zinc-100 p-2 rounded-lg">
-                    <div className="text-lg font-bold">{meal.time?.substring(0, 5) || '--:--'}</div>
-                  </div>
-                  <div className="font-bold text-lg">{meal.name}</div>
-                </div>
+          {/* Macros */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Card className="bg-lime-50 border-lime-200 text-center p-4">
+              <div className="text-2xl font-bold text-lime-700">{plan.daily_calories}</div>
+              <div className="text-xs text-lime-600 font-medium uppercase">kcal/dia</div>
+            </Card>
+            <Card className="bg-zinc-50 text-center p-4">
+              <div className="text-2xl font-bold">{plan.protein_grams}g</div>
+              <div className="text-xs text-zinc-500 font-medium uppercase">Proteína</div>
+            </Card>
+            <Card className="bg-zinc-50 text-center p-4">
+              <div className="text-2xl font-bold">{plan.carbs_grams}g</div>
+              <div className="text-xs text-zinc-500 font-medium uppercase">Carboidrato</div>
+            </Card>
+            <Card className="bg-zinc-50 text-center p-4">
+              <div className="text-2xl font-bold">{plan.fat_grams}g</div>
+              <div className="text-xs text-zinc-500 font-medium uppercase">Gordura</div>
+            </Card>
+          </div>
+
+          {/* Meals */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-bold">Refeições</h3>
+              <button className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-lime-600 hover:bg-lime-50 rounded-lg transition-colors">
+                <Plus className="w-4 h-4" />
+                Adicionar
+              </button>
+            </div>
+            {plan.meals && plan.meals.length > 0 ? (
+              plan.meals.map((meal) => {
+                const optionGroups = getOptionGroups(meal.foods);
+                const availableOptions = Object.keys(optionGroups).map(Number).sort((a, b) => a - b);
                 
-                {availableOptions.map(optNum => {
-                  const foods = optionGroups[optNum] || [];
-                  if (foods.length === 0) return null;
-                  
-                  return (
-                    <div key={optNum} className={`ml-[76px] mb-3 pl-3 border-l-2 ${optNum === 0 ? 'border-lime-500' : 'border-orange-400'}`}>
-                      <div className={`text-xs font-bold mb-1 ${optNum === 0 ? 'text-lime-600' : 'text-orange-500'}`}>
-                        {optNum === 0 ? '🍽️ PRINCIPAL' : `🔄 SUBSTITUIÇÃO ${optNum}`}
+                return (
+                  <Card key={meal.id} className="p-4 hover:border-lime-500 transition-colors">
+                    <div className="flex items-center gap-4 mb-3">
+                      <div className="text-center min-w-[60px] bg-zinc-100 p-2 rounded-lg">
+                        <div className="text-lg font-bold">{meal.time?.substring(0, 5) || '--:--'}</div>
                       </div>
-                      <div className="text-sm text-zinc-600">
-                        {foods.map((food, idx) => (
-                          <span key={food.id}>
-                            {food.name} ({food.quantity} {food.unit})
-                            {idx < foods.length - 1 ? ', ' : ''}
-                          </span>
-                        ))}
-                      </div>
+                      <div className="font-bold text-lg">{meal.name}</div>
                     </div>
-                  );
-                })}
-              </Card>
-            );
-          })
-        ) : (
-          <EmptyState
-            icon="nutrition"
-            title="Nenhuma refeição"
-            description="Este plano ainda não possui refeições cadastradas."
-          />
-        )}
-      </div>
+                    
+                    {availableOptions.map(optNum => {
+                      const foods = optionGroups[optNum] || [];
+                      if (foods.length === 0) return null;
+                      
+                      return (
+                        <div key={optNum} className={`ml-[76px] mb-3 pl-3 border-l-2 ${optNum === 0 ? 'border-lime-500' : 'border-orange-400'}`}>
+                          <div className={`text-xs font-bold mb-1 ${optNum === 0 ? 'text-lime-600' : 'text-orange-500'}`}>
+                            {optNum === 0 ? '🍽️ PRINCIPAL' : `🔄 SUBSTITUIÇÃO ${optNum}`}
+                          </div>
+                          <div className="text-sm text-zinc-600">
+                            {foods.map((food, idx) => (
+                              <span key={food.id}>
+                                {food.name} ({food.quantity} {food.unit})
+                                {idx < foods.length - 1 ? ', ' : ''}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </Card>
+                );
+              })
+            ) : (
+              <EmptyState
+                icon="nutrition"
+                title="Nenhuma refeição"
+                description="Este plano ainda não possui refeições cadastradas."
+              />
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }
