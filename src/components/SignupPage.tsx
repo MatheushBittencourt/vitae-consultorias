@@ -41,7 +41,7 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
       rehab: false,
     },
     maxProfessionals: 3,
-    maxPatients: 30,
+    maxPatients: 999999, // Ilimitado
     // Step 3 - Pagamento
     cardNumber: '',
     cardholderName: '',
@@ -499,12 +499,12 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
     { id: 'rehab' as const, name: 'Reabilitação', description: 'Fisioterapeutas e reabilitadores', icon: HeartPulse, color: 'bg-pink-100 text-pink-600' },
   ];
 
-  // Planos fixos
+  // Planos fixos - Pacientes ilimitados em todos os planos
   const plans = [
-    { id: 'starter', name: 'Starter', modules: 1, professionals: 3, patients: 50, price: 159.90, popular: false },
-    { id: 'growth', name: 'Growth', modules: 2, professionals: 5, patients: 80, price: 297.90, popular: true },
-    { id: 'scale', name: 'Scale', modules: 3, professionals: 10, patients: 200, price: 497.90, popular: false },
-    { id: 'enterprise', name: 'Enterprise', modules: 4, professionals: 20, patients: 250, price: 797.90, popular: false },
+    { id: 'starter', name: 'Solo', modules: 1, professionals: 1, patients: '∞', price: 89.90, popular: false },
+    { id: 'growth', name: 'Pro', modules: 2, professionals: 3, patients: '∞', price: 149.90, popular: true },
+    { id: 'scale', name: 'Equipe', modules: 3, professionals: 5, patients: '∞', price: 249.90, popular: false, extraProfessional: 29.90 },
+    { id: 'enterprise', name: 'Clínica', modules: 4, professionals: 10, patients: '∞', price: 399.90, popular: false, extraProfessional: 24.90 },
   ];
 
   // Selecionar plano inicial baseado no initialPlanId ou Growth como padrão
@@ -543,7 +543,7 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
       ...formData,
       modules: { training: false, nutrition: false, medical: false, rehab: false },
       maxProfessionals: plan.professionals,
-      maxPatients: plan.patients,
+      maxPatients: 999999, // Ilimitado em todos os planos
     });
   };
 
@@ -801,11 +801,11 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
                           </div>
                           <div className="flex items-center justify-center gap-1">
                             <Check className="w-3 h-3 text-lime-500" />
-                            {plan.professionals} profissionais
+                            {plan.professionals === 1 ? '1 profissional' : `Até ${plan.professionals} profissionais`}
                           </div>
                           <div className="flex items-center justify-center gap-1">
                             <Check className="w-3 h-3 text-lime-500" />
-                            {plan.patients} pacientes
+                            <span className="text-lime-400 font-medium">Pacientes ilimitados</span>
                           </div>
                         </div>
                       </button>
@@ -884,11 +884,11 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
                     </div>
                     <div>
                       <div className="text-zinc-400">Profissionais</div>
-                      <div className="font-bold">{selectedPlan.professionals}</div>
+                      <div className="font-bold">{selectedPlan.professionals === 1 ? '1' : `Até ${selectedPlan.professionals}`}</div>
                     </div>
                     <div>
                       <div className="text-zinc-400">Pacientes</div>
-                      <div className="font-bold">{selectedPlan.patients}</div>
+                      <div className="font-bold text-lime-500">Ilimitados ♾️</div>
                     </div>
                   </div>
                 </div>
