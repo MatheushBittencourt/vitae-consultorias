@@ -1,6 +1,21 @@
 import { useState, useEffect } from 'react';
-import { Search, Plus, Filter, MoreVertical, Eye, Edit, Trash2, X, Loader2 } from 'lucide-react';
+import { 
+  Search, 
+  Plus, 
+  SlidersHorizontal, 
+  Eye, 
+  Edit, 
+  Trash2, 
+  X, 
+  ChevronDown,
+  UserPlus,
+  ArrowUpRight
+} from 'lucide-react';
 import { Patient } from './AdminDashboard';
+import { Card, StatCard } from '../ui/Card';
+import { Avatar } from '../ui/Avatar';
+import { StatusBadge, Badge, ProgressBadge } from '../ui/Badge';
+import { EmptyState, ListSkeleton, StatSkeleton } from '../ui/EmptyState';
 
 const API_URL = '/api';
 
@@ -31,7 +46,6 @@ export function PatientsList({ onSelectPatient, consultancyId }: PatientsListPro
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive' | 'pending'>('all');
   const [showAddModal, setShowAddModal] = useState(false);
-  const [openMenuId, setOpenMenuId] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<Patient | null>(null);
@@ -53,15 +67,6 @@ export function PatientsList({ onSelectPatient, consultancyId }: PatientsListPro
   useEffect(() => {
     loadPatients();
   }, [consultancyId]);
-
-  // Fechar menu ao clicar fora
-  useEffect(() => {
-    const handleClickOutside = () => setOpenMenuId(null);
-    if (openMenuId !== null) {
-      document.addEventListener('click', handleClickOutside);
-      return () => document.removeEventListener('click', handleClickOutside);
-    }
-  }, [openMenuId]);
 
   const loadPatients = async () => {
     try {
@@ -111,7 +116,6 @@ export function PatientsList({ onSelectPatient, consultancyId }: PatientsListPro
     }
     
     try {
-      // First, create the user
       const userResponse = await fetch(`${API_URL}/superadmin/consultancies/${consultancyId}/users`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -177,410 +181,424 @@ export function PatientsList({ onSelectPatient, consultancyId }: PatientsListPro
     return matchesSearch && matchesFilter;
   });
 
+  const stats = {
+    total: patients.length,
+    active: patients.filter(p => p.status === 'active').length,
+    pending: patients.filter(p => p.status === 'pending').length,
+    inactive: patients.filter(p => p.status === 'inactive').length,
+  };
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-lime-500" />
+      <div className="space-y-6">
+        {/* Header Skeleton */}
+        <div className="flex items-start justify-between">
+          <div>
+            <div className="h-10 w-48 bg-zinc-200 rounded-lg animate-pulse mb-2" />
+            <div className="h-5 w-64 bg-zinc-200 rounded animate-pulse" />
+          </div>
+          <div className="h-12 w-40 bg-zinc-200 rounded-xl animate-pulse" />
+        </div>
+        
+        {/* Stats Skeleton */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <StatSkeleton key={i} />
+          ))}
+        </div>
+        
+        {/* List Skeleton */}
+        <ListSkeleton items={5} />
       </div>
     );
   }
 
   return (
-    <div className="space-y-4 lg:space-y-8">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl lg:text-5xl font-bold tracking-tighter mb-1 sm:mb-2">
-            <span className="text-lime-500">PACIENTES</span>
+          <h1 className="text-3xl lg:text-4xl font-bold tracking-tight">
+            <span className="text-lime-500">Pacientes</span>
           </h1>
-          <p className="text-base lg:text-xl text-zinc-600">
+          <p className="text-zinc-500 mt-1">
             Gerencie todos os pacientes cadastrados
           </p>
         </div>
         <button 
           onClick={() => setShowAddModal(true)}
-          className="flex items-center justify-center gap-2 bg-lime-500 text-black px-4 sm:px-6 py-2.5 sm:py-3 font-bold text-sm sm:text-base tracking-wider hover:bg-lime-400 transition-colors w-full sm:w-auto"
+          className="flex items-center justify-center gap-2 bg-zinc-900 text-white px-5 py-3 
+                     font-semibold rounded-xl hover:bg-lime-500 hover:text-black 
+                     transition-all duration-200 shadow-sm hover:shadow-lg
+                     transform hover:-translate-y-0.5 w-full sm:w-auto"
         >
-          <Plus className="w-5 h-5" />
-          NOVO PACIENTE
+          <UserPlus className="w-5 h-5" />
+          Novo Paciente
         </button>
       </div>
 
+      {/* Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="bg-zinc-50 border-0">
+          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-1">Total</p>
+          <p className="text-2xl font-bold text-zinc-900">{stats.total}</p>
+        </Card>
+        <Card className="bg-green-50 border-0">
+          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-1">Ativos</p>
+          <p className="text-2xl font-bold text-green-700">{stats.active}</p>
+        </Card>
+        <Card className="bg-amber-50 border-0">
+          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-1">Pendentes</p>
+          <p className="text-2xl font-bold text-amber-700">{stats.pending}</p>
+        </Card>
+        <Card className="bg-zinc-100 border-0">
+          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-1">Inativos</p>
+          <p className="text-2xl font-bold text-zinc-600">{stats.inactive}</p>
+        </Card>
+      </div>
+
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+      <div className="flex flex-col sm:flex-row gap-3">
         <div className="flex-1 relative">
-          <Search className="absolute left-3 lg:left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
           <input
             type="text"
-            placeholder="Buscar..."
+            placeholder="Buscar por nome, email ou esporte..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 lg:pl-12 pr-4 py-2.5 lg:py-3 bg-white border-2 border-zinc-200 focus:border-lime-500 outline-none transition-colors text-sm lg:text-base"
+            className="w-full pl-12 pr-4 py-3 bg-white rounded-xl border border-zinc-200 
+                       focus:border-lime-500 focus:ring-2 focus:ring-lime-500/20 
+                       outline-none transition-all text-sm"
           />
         </div>
-        <div className="flex items-center gap-2 bg-white px-3 lg:px-4 py-2.5 lg:py-3 border-2 border-zinc-200">
-          <Filter className="w-5 h-5 text-zinc-400" />
+        <div className="relative">
+          <SlidersHorizontal className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value as typeof filterStatus)}
-            className="bg-transparent outline-none font-medium text-sm lg:text-base"
+            className="pl-12 pr-10 py-3 bg-white rounded-xl border border-zinc-200 
+                       focus:border-lime-500 focus:ring-2 focus:ring-lime-500/20 
+                       outline-none transition-all text-sm font-medium appearance-none cursor-pointer
+                       min-w-[160px]"
           >
-            <option value="all">Todos</option>
+            <option value="all">Todos os Status</option>
             <option value="active">Ativos</option>
             <option value="inactive">Inativos</option>
             <option value="pending">Pendentes</option>
           </select>
+          <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
-        <div className="bg-white p-3 lg:p-4 border-l-4 border-lime-500">
-          <div className="text-xl lg:text-2xl font-bold">{patients.length}</div>
-          <div className="text-xs lg:text-sm text-zinc-600">Total</div>
-        </div>
-        <div className="bg-white p-3 lg:p-4 border-l-4 border-green-500">
-          <div className="text-xl lg:text-2xl font-bold">{patients.filter(p => p.status === 'active').length}</div>
-          <div className="text-xs lg:text-sm text-zinc-600">Ativos</div>
-        </div>
-        <div className="bg-white p-3 lg:p-4 border-l-4 border-yellow-500">
-          <div className="text-xl lg:text-2xl font-bold">{patients.filter(p => p.status === 'pending').length}</div>
-          <div className="text-xs lg:text-sm text-zinc-600">Pendentes</div>
-        </div>
-        <div className="bg-white p-3 lg:p-4 border-l-4 border-zinc-400">
-          <div className="text-xl lg:text-2xl font-bold">{patients.filter(p => p.status === 'inactive').length}</div>
-          <div className="text-xs lg:text-sm text-zinc-600">Inativos</div>
-        </div>
-      </div>
-
-      {/* List/Table */}
-      <div className="bg-white">
-        {filteredPatients.length === 0 ? (
-          <div className="p-8 lg:p-12 text-center text-zinc-500 text-sm lg:text-base">
-            {patients.length === 0 ? 'Nenhum paciente cadastrado' : 'Nenhum paciente encontrado'}
-          </div>
-        ) : (
-          <>
-            {/* Mobile: Cards */}
-            <div className="lg:hidden divide-y divide-zinc-200">
-              {filteredPatients.map((patient) => (
-                <div 
-                  key={patient.id} 
-                  className="p-4 hover:bg-zinc-50 transition-colors"
-                  onClick={() => onSelectPatient(patient)}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="w-12 h-12 bg-lime-500 rounded-full flex items-center justify-center text-black font-bold overflow-hidden flex-shrink-0">
-                      {patient.avatarUrl ? (
-                        <img src={patient.avatarUrl} alt={patient.name} className="w-full h-full object-cover" />
-                      ) : (
-                        patient.name.charAt(0)
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <div className="font-bold truncate">{patient.name}</div>
-                          <div className="text-sm text-zinc-500 truncate">{patient.email}</div>
-                        </div>
-                        <span className={`flex-shrink-0 px-2 py-0.5 text-xs font-bold rounded ${
-                          patient.status === 'active' 
-                            ? 'bg-lime-500/20 text-lime-700'
-                            : patient.status === 'pending'
-                            ? 'bg-yellow-500/20 text-yellow-700'
-                            : 'bg-zinc-200 text-zinc-600'
-                        }`}>
-                          {patient.status === 'active' ? 'ATIVO' : patient.status === 'pending' ? 'PEND.' : 'INATIVO'}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-4 mt-2 text-xs text-zinc-600">
-                        <span>{patient.sport}</span>
-                        {patient.club && <span>• {patient.club}</span>}
-                      </div>
-                      <div className="flex items-center gap-3 mt-2">
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-12 bg-zinc-200 h-1.5 rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-lime-500 rounded-full" 
-                              style={{ width: `${patient.adherence}%` }}
-                            />
-                          </div>
-                          <span className="text-xs font-bold">{patient.adherence}%</span>
-                        </div>
-                        <span className="text-xs text-zinc-500">{patient.daysInProgram} dias</span>
-                      </div>
-                    </div>
+      {/* Patient List */}
+      {filteredPatients.length === 0 ? (
+        <Card>
+          <EmptyState
+            icon={patients.length === 0 ? 'users' : 'search'}
+            title={patients.length === 0 ? 'Nenhum paciente cadastrado' : 'Nenhum resultado encontrado'}
+            description={patients.length === 0 
+              ? 'Comece cadastrando seu primeiro paciente para gerenciar seus atendimentos' 
+              : 'Tente ajustar os filtros ou buscar por outros termos'
+            }
+            action={patients.length === 0 ? {
+              label: 'Cadastrar Paciente',
+              onClick: () => setShowAddModal(true)
+            } : undefined}
+          />
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {filteredPatients.map((patient) => (
+            <Card 
+              key={patient.id}
+              hover
+              padding="none"
+              onClick={() => onSelectPatient(patient)}
+              className="overflow-hidden"
+            >
+              <div className="flex items-center gap-4 p-4 lg:p-5">
+                {/* Avatar */}
+                <Avatar 
+                  name={patient.name} 
+                  src={patient.avatarUrl} 
+                  size="lg"
+                />
+                
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="font-bold text-zinc-900 truncate">{patient.name}</h3>
+                    <StatusBadge status={patient.status} size="sm" />
+                  </div>
+                  <p className="text-sm text-zinc-500 truncate">{patient.email}</p>
+                  <div className="flex items-center gap-3 mt-2">
+                    <Badge variant="default" size="sm">{patient.sport}</Badge>
+                    {patient.club && (
+                      <span className="text-xs text-zinc-400">{patient.club}</span>
+                    )}
                   </div>
                 </div>
-              ))}
-            </div>
 
-            {/* Desktop: Table */}
-            <table className="w-full hidden lg:table">
-              <thead className="bg-zinc-900 text-white">
-                <tr>
-                  <th className="text-left px-6 py-4 font-bold tracking-wider text-sm">PACIENTE</th>
-                  <th className="text-left px-6 py-4 font-bold tracking-wider text-sm">ESPORTE</th>
-                  <th className="text-left px-6 py-4 font-bold tracking-wider text-sm">CLUBE</th>
-                  <th className="text-left px-6 py-4 font-bold tracking-wider text-sm">STATUS</th>
-                  <th className="text-left px-6 py-4 font-bold tracking-wider text-sm">ADERÊNCIA</th>
-                  <th className="text-left px-6 py-4 font-bold tracking-wider text-sm">DIAS</th>
-                  <th className="text-right px-6 py-4 font-bold tracking-wider text-sm">AÇÕES</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-200">
-                {filteredPatients.map((patient) => (
-                  <tr key={patient.id} className="hover:bg-zinc-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-lime-500 rounded-full flex items-center justify-center text-black font-bold overflow-hidden">
-                          {patient.avatarUrl ? (
-                            <img src={patient.avatarUrl} alt={patient.name} className="w-full h-full object-cover" />
-                          ) : (
-                            patient.name.charAt(0)
-                          )}
-                        </div>
-                        <div>
-                          <div className="font-bold">{patient.name}</div>
-                          <div className="text-sm text-zinc-500">{patient.email}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="font-medium">{patient.sport}</div>
-                      <div className="text-sm text-zinc-500">{patient.position}</div>
-                    </td>
-                    <td className="px-6 py-4 text-zinc-600">{patient.club || '-'}</td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-block px-3 py-1 text-xs font-bold rounded ${
-                        patient.status === 'active' 
-                          ? 'bg-lime-500/20 text-lime-700'
-                          : patient.status === 'pending'
-                          ? 'bg-yellow-500/20 text-yellow-700'
-                          : 'bg-zinc-200 text-zinc-600'
-                      }`}>
-                        {patient.status === 'active' ? 'ATIVO' : patient.status === 'pending' ? 'PENDENTE' : 'INATIVO'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-16 bg-zinc-200 h-2 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-lime-500 rounded-full" 
-                            style={{ width: `${patient.adherence}%` }}
-                          />
-                        </div>
-                        <span className="font-bold text-sm">{patient.adherence}%</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 font-bold">{patient.daysInProgram}</td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="relative inline-block">
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setOpenMenuId(openMenuId === patient.id ? null : patient.id);
-                          }}
-                          className="p-2 hover:bg-zinc-100 rounded transition-colors"
-                        >
-                          <MoreVertical className="w-5 h-5" />
-                        </button>
-                        {openMenuId === patient.id && (
-                          <div className="absolute right-0 bottom-full mb-1 bg-white border border-zinc-200 shadow-xl z-50 min-w-[160px] rounded-lg overflow-hidden">
-                            <button 
-                              onClick={() => { onSelectPatient(patient); setOpenMenuId(null); }}
-                              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-zinc-50 text-left"
-                            >
-                              <Eye className="w-4 h-4" />
-                              <span>Ver Detalhes</span>
-                            </button>
-                            <button 
-                              onClick={() => { onSelectPatient(patient); setOpenMenuId(null); }}
-                              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-zinc-50 text-left"
-                            >
-                              <Edit className="w-4 h-4" />
-                              <span>Editar</span>
-                            </button>
-                            <button 
-                              onClick={() => { setShowDeleteConfirm(patient); setOpenMenuId(null); }}
-                              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-50 text-left text-red-600"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                              <span>Remover</span>
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </>
-        )}
-      </div>
+                {/* Stats (hidden on mobile) */}
+                <div className="hidden md:flex items-center gap-6">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-zinc-900">{patient.daysInProgram}</p>
+                    <p className="text-xs text-zinc-500">dias</p>
+                  </div>
+                  <div className="text-center">
+                    <ProgressBadge value={patient.adherence} />
+                    <p className="text-xs text-zinc-500 mt-1">aderência</p>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSelectPatient(patient);
+                    }}
+                    className="p-2.5 rounded-xl hover:bg-zinc-100 text-zinc-600 hover:text-zinc-900 transition-colors"
+                    title="Ver detalhes"
+                  >
+                    <Eye className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowDeleteConfirm(patient);
+                    }}
+                    className="p-2.5 rounded-xl hover:bg-red-50 text-zinc-400 hover:text-red-600 transition-colors"
+                    title="Remover paciente"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+              
+              {/* Mobile stats */}
+              <div className="flex md:hidden items-center justify-between px-4 py-3 bg-zinc-50 border-t border-zinc-100">
+                <div className="flex items-center gap-4">
+                  <span className="text-sm text-zinc-600">
+                    <strong>{patient.daysInProgram}</strong> dias
+                  </span>
+                  <span className="text-sm text-zinc-600">
+                    <strong>{patient.adherence}%</strong> aderência
+                  </span>
+                </div>
+                <ArrowUpRight className="w-4 h-4 text-zinc-400" />
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
 
       {/* Add Patient Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-3 lg:p-4">
-          <div className="bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="p-4 lg:p-6 border-b border-zinc-200 flex items-center justify-between">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto" padding="none">
+            <div className="p-6 border-b border-zinc-100 flex items-center justify-between sticky top-0 bg-white rounded-t-2xl">
               <div>
-                <h2 className="text-xl lg:text-2xl font-bold tracking-tighter">NOVO PACIENTE</h2>
-                <p className="text-zinc-600 text-xs lg:text-sm mt-1">Cadastre um novo paciente</p>
+                <h2 className="text-xl font-bold">Novo Paciente</h2>
+                <p className="text-zinc-500 text-sm">Preencha os dados para cadastrar</p>
               </div>
-              <button onClick={() => setShowAddModal(false)} className="text-zinc-400 hover:text-black p-1">
-                <X className="w-5 lg:w-6 h-5 lg:h-6" />
+              <button 
+                onClick={() => setShowAddModal(false)} 
+                className="p-2 hover:bg-zinc-100 rounded-xl transition-colors"
+              >
+                <X className="w-5 h-5" />
               </button>
             </div>
-            <form onSubmit={handleAddPatient} className="p-4 lg:p-6 space-y-4 lg:space-y-5">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4">
+            
+            <form onSubmit={handleAddPatient} className="p-6 space-y-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs lg:text-sm font-bold mb-1.5 lg:mb-2">NOME COMPLETO *</label>
+                  <label className="block text-sm font-semibold text-zinc-700 mb-2">Nome Completo *</label>
                   <input 
                     type="text" 
                     value={newPatient.name}
                     onChange={(e) => setNewPatient({...newPatient, name: e.target.value})}
-                    className="w-full px-3 lg:px-4 py-2.5 lg:py-3 border-2 border-zinc-200 focus:border-lime-500 outline-none text-sm lg:text-base" 
+                    className="w-full px-4 py-3 rounded-xl border border-zinc-200 
+                               focus:border-lime-500 focus:ring-2 focus:ring-lime-500/20 
+                               outline-none transition-all" 
                     placeholder="Nome do paciente"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-xs lg:text-sm font-bold mb-1.5 lg:mb-2">EMAIL *</label>
+                  <label className="block text-sm font-semibold text-zinc-700 mb-2">Email *</label>
                   <input 
                     type="email" 
                     value={newPatient.email}
                     onChange={(e) => setNewPatient({...newPatient, email: e.target.value})}
-                    className="w-full px-3 lg:px-4 py-2.5 lg:py-3 border-2 border-zinc-200 focus:border-lime-500 outline-none text-sm lg:text-base" 
+                    className="w-full px-4 py-3 rounded-xl border border-zinc-200 
+                               focus:border-lime-500 focus:ring-2 focus:ring-lime-500/20 
+                               outline-none transition-all" 
                     placeholder="email@exemplo.com"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-xs lg:text-sm font-bold mb-1.5 lg:mb-2">SENHA INICIAL</label>
+                  <label className="block text-sm font-semibold text-zinc-700 mb-2">Senha Inicial</label>
                   <input 
                     type="password" 
                     value={newPatient.password}
                     onChange={(e) => setNewPatient({...newPatient, password: e.target.value})}
-                    className="w-full px-3 lg:px-4 py-2.5 lg:py-3 border-2 border-zinc-200 focus:border-lime-500 outline-none text-sm lg:text-base" 
+                    className="w-full px-4 py-3 rounded-xl border border-zinc-200 
+                               focus:border-lime-500 focus:ring-2 focus:ring-lime-500/20 
+                               outline-none transition-all" 
                     placeholder="Senha de acesso"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs lg:text-sm font-bold mb-1.5 lg:mb-2">TELEFONE</label>
+                  <label className="block text-sm font-semibold text-zinc-700 mb-2">Telefone</label>
                   <input 
                     type="tel" 
                     value={newPatient.phone}
                     onChange={(e) => setNewPatient({...newPatient, phone: e.target.value})}
-                    className="w-full px-3 lg:px-4 py-2.5 lg:py-3 border-2 border-zinc-200 focus:border-lime-500 outline-none text-sm lg:text-base" 
+                    className="w-full px-4 py-3 rounded-xl border border-zinc-200 
+                               focus:border-lime-500 focus:ring-2 focus:ring-lime-500/20 
+                               outline-none transition-all" 
                     placeholder="(00) 00000-0000"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs lg:text-sm font-bold mb-1.5 lg:mb-2">ESPORTE</label>
+                  <label className="block text-sm font-semibold text-zinc-700 mb-2">Esporte</label>
                   <input 
                     type="text" 
                     value={newPatient.sport}
                     onChange={(e) => setNewPatient({...newPatient, sport: e.target.value})}
-                    className="w-full px-3 lg:px-4 py-2.5 lg:py-3 border-2 border-zinc-200 focus:border-lime-500 outline-none text-sm lg:text-base" 
+                    className="w-full px-4 py-3 rounded-xl border border-zinc-200 
+                               focus:border-lime-500 focus:ring-2 focus:ring-lime-500/20 
+                               outline-none transition-all" 
                     placeholder="Ex: Futebol"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs lg:text-sm font-bold mb-1.5 lg:mb-2">POSIÇÃO</label>
+                  <label className="block text-sm font-semibold text-zinc-700 mb-2">Posição</label>
                   <input 
                     type="text" 
                     value={newPatient.position}
                     onChange={(e) => setNewPatient({...newPatient, position: e.target.value})}
-                    className="w-full px-3 lg:px-4 py-2.5 lg:py-3 border-2 border-zinc-200 focus:border-lime-500 outline-none text-sm lg:text-base" 
+                    className="w-full px-4 py-3 rounded-xl border border-zinc-200 
+                               focus:border-lime-500 focus:ring-2 focus:ring-lime-500/20 
+                               outline-none transition-all" 
                     placeholder="Ex: Atacante"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs lg:text-sm font-bold mb-1.5 lg:mb-2">CLUBE/EQUIPE</label>
+                  <label className="block text-sm font-semibold text-zinc-700 mb-2">Clube/Equipe</label>
                   <input 
                     type="text" 
                     value={newPatient.club}
                     onChange={(e) => setNewPatient({...newPatient, club: e.target.value})}
-                    className="w-full px-3 lg:px-4 py-2.5 lg:py-3 border-2 border-zinc-200 focus:border-lime-500 outline-none text-sm lg:text-base" 
+                    className="w-full px-4 py-3 rounded-xl border border-zinc-200 
+                               focus:border-lime-500 focus:ring-2 focus:ring-lime-500/20 
+                               outline-none transition-all" 
                     placeholder="Nome do clube"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs lg:text-sm font-bold mb-1.5 lg:mb-2">DATA DE NASCIMENTO</label>
+                  <label className="block text-sm font-semibold text-zinc-700 mb-2">Data de Nascimento</label>
                   <input 
                     type="date" 
                     value={newPatient.birthDate}
                     onChange={(e) => setNewPatient({...newPatient, birthDate: e.target.value})}
-                    className="w-full px-3 lg:px-4 py-2.5 lg:py-3 border-2 border-zinc-200 focus:border-lime-500 outline-none text-sm lg:text-base"
+                    className="w-full px-4 py-3 rounded-xl border border-zinc-200 
+                               focus:border-lime-500 focus:ring-2 focus:ring-lime-500/20 
+                               outline-none transition-all"
                   />
                 </div>
               </div>
+              
               <div>
-                <label className="block text-xs lg:text-sm font-bold mb-1.5 lg:mb-2">OBJETIVOS</label>
+                <label className="block text-sm font-semibold text-zinc-700 mb-2">Objetivos</label>
                 <textarea 
                   value={newPatient.goals}
                   onChange={(e) => setNewPatient({...newPatient, goals: e.target.value})}
-                  className="w-full px-3 lg:px-4 py-2.5 lg:py-3 border-2 border-zinc-200 focus:border-lime-500 outline-none h-16 lg:h-20 resize-none text-sm lg:text-base" 
+                  className="w-full px-4 py-3 rounded-xl border border-zinc-200 
+                             focus:border-lime-500 focus:ring-2 focus:ring-lime-500/20 
+                             outline-none transition-all h-20 resize-none" 
                   placeholder="Descreva os objetivos do paciente..."
                 />
               </div>
-              <div className="flex flex-col sm:flex-row gap-3 lg:gap-4 pt-2 lg:pt-4">
+              
+              <div className="flex flex-col sm:flex-row gap-3 pt-4">
                 <button 
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="flex-1 py-2.5 lg:py-3 border-2 border-black font-bold text-sm lg:text-base hover:bg-black hover:text-white transition-colors order-2 sm:order-1"
+                  className="flex-1 py-3 px-6 border-2 border-zinc-200 rounded-xl font-semibold
+                             hover:bg-zinc-50 transition-colors order-2 sm:order-1"
                 >
-                  CANCELAR
+                  Cancelar
                 </button>
                 <button 
                   type="submit"
                   disabled={saving}
-                  className="flex-1 py-2.5 lg:py-3 bg-lime-500 text-black font-bold text-sm lg:text-base hover:bg-lime-400 transition-colors flex items-center justify-center gap-2 order-1 sm:order-2"
+                  className="flex-1 py-3 px-6 bg-lime-500 text-black rounded-xl font-semibold
+                             hover:bg-lime-400 transition-colors flex items-center justify-center gap-2
+                             disabled:opacity-50 disabled:cursor-not-allowed order-1 sm:order-2"
                 >
-                  {saving && <Loader2 className="w-4 lg:w-5 h-4 lg:h-5 animate-spin" />}
-                  {saving ? 'SALVANDO...' : 'CADASTRAR'}
+                  {saving ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    'Cadastrar Paciente'
+                  )}
                 </button>
               </div>
             </form>
-          </div>
+          </Card>
         </div>
       )}
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white w-full max-w-md rounded-lg overflow-hidden">
-            <div className="p-6 border-b border-zinc-200">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md" padding="none">
+            <div className="p-6 border-b border-zinc-100">
               <h2 className="text-xl font-bold text-red-600">Confirmar Exclusão</h2>
             </div>
             <div className="p-6">
-              <p className="text-zinc-600 mb-4">
-                Tem certeza que deseja remover o paciente <strong>{showDeleteConfirm.name}</strong>?
-              </p>
-              <p className="text-sm text-zinc-500">
-                Esta ação não pode ser desfeita. Todos os dados do paciente serão removidos permanentemente.
+              <div className="flex items-center gap-4 mb-4">
+                <Avatar name={showDeleteConfirm.name} src={showDeleteConfirm.avatarUrl} size="lg" />
+                <div>
+                  <p className="font-semibold text-zinc-900">{showDeleteConfirm.name}</p>
+                  <p className="text-sm text-zinc-500">{showDeleteConfirm.email}</p>
+                </div>
+              </div>
+              <p className="text-sm text-zinc-600">
+                Tem certeza que deseja remover este paciente? Esta ação não pode ser desfeita.
               </p>
             </div>
-            <div className="p-6 bg-zinc-50 flex gap-3">
+            <div className="p-6 bg-zinc-50 flex gap-3 rounded-b-2xl">
               <button 
                 onClick={() => setShowDeleteConfirm(null)}
                 disabled={deletingId !== null}
-                className="flex-1 py-3 border-2 border-zinc-300 font-bold hover:bg-zinc-100 transition-colors rounded"
+                className="flex-1 py-3 px-6 border border-zinc-200 rounded-xl font-semibold
+                           hover:bg-white transition-colors"
               >
-                CANCELAR
+                Cancelar
               </button>
               <button 
                 onClick={() => handleDeletePatient(showDeleteConfirm)}
                 disabled={deletingId !== null}
-                className="flex-1 py-3 bg-red-600 text-white font-bold hover:bg-red-700 transition-colors flex items-center justify-center gap-2 rounded"
+                className="flex-1 py-3 px-6 bg-red-600 text-white rounded-xl font-semibold
+                           hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
               >
-                {deletingId === showDeleteConfirm.id && <Loader2 className="w-5 h-5 animate-spin" />}
-                {deletingId === showDeleteConfirm.id ? 'REMOVENDO...' : 'REMOVER'}
+                {deletingId === showDeleteConfirm.id ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                    Removendo...
+                  </>
+                ) : (
+                  'Remover'
+                )}
               </button>
             </div>
-          </div>
+          </Card>
         </div>
       )}
     </div>

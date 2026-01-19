@@ -4,17 +4,20 @@ import {
   Calendar, 
   Settings,
   LogOut,
-  Shield,
   Dumbbell,
   Apple,
   Stethoscope,
   HeartPulse,
   Crown,
-  X
+  ChevronRight,
+  X,
+  Sparkles
 } from 'lucide-react';
 import { AdminView } from './AdminDashboard';
 import { AdminUser } from './AdminLoginPage';
 import { LogoIcon } from '../ui/Logo';
+import { Avatar } from '../ui/Avatar';
+import { NotificationBadge } from '../ui/Badge';
 
 interface AdminSidebarProps {
   currentView: AdminView;
@@ -26,15 +29,24 @@ interface AdminSidebarProps {
 }
 
 // Menu items com indicação de qual módulo pertence
-const menuItems = [
-  { id: 'overview' as AdminView, label: 'Visão Geral', icon: LayoutDashboard, module: null },
-  { id: 'patients' as AdminView, label: 'Pacientes', icon: Users, module: null },
-  { id: 'training' as AdminView, label: 'Treinos', icon: Dumbbell, module: 'training' },
-  { id: 'nutrition' as AdminView, label: 'Nutrição', icon: Apple, module: 'nutrition' },
-  { id: 'medical' as AdminView, label: 'Médico', icon: Stethoscope, module: 'medical' },
-  { id: 'rehab' as AdminView, label: 'Reabilitação', icon: HeartPulse, module: 'rehab' },
-  { id: 'appointments' as AdminView, label: 'Agendamentos', icon: Calendar, module: null },
-  { id: 'settings' as AdminView, label: 'Configurações', icon: Settings, module: null },
+const menuSections = [
+  {
+    title: 'Principal',
+    items: [
+      { id: 'overview' as AdminView, label: 'Visão Geral', icon: LayoutDashboard, module: null },
+      { id: 'patients' as AdminView, label: 'Pacientes', icon: Users, module: null },
+      { id: 'appointments' as AdminView, label: 'Agendamentos', icon: Calendar, module: null },
+    ]
+  },
+  {
+    title: 'Módulos',
+    items: [
+      { id: 'training' as AdminView, label: 'Treinos', icon: Dumbbell, module: 'training' },
+      { id: 'nutrition' as AdminView, label: 'Nutrição', icon: Apple, module: 'nutrition' },
+      { id: 'medical' as AdminView, label: 'Médico', icon: Stethoscope, module: 'medical' },
+      { id: 'rehab' as AdminView, label: 'Reabilitação', icon: HeartPulse, module: 'rehab' },
+    ]
+  },
 ];
 
 // Determinar o role/label baseado no role do usuário
@@ -49,21 +61,22 @@ const getRoleDisplay = (adminUser: AdminUser) => {
     case 'physio':
       return { label: 'Fisioterapeuta', icon: HeartPulse, color: 'bg-pink-500' };
     default:
-      return { label: 'Profissional', icon: Shield, color: 'bg-zinc-500' };
+      return { label: 'Profissional', icon: Sparkles, color: 'bg-zinc-500' };
   }
 };
 
 export function AdminSidebar({ currentView, onViewChange, onLogout, adminUser, isOpen = false, onClose }: AdminSidebarProps) {
   const roleDisplay = getRoleDisplay(adminUser);
-  const RoleIcon = roleDisplay.icon;
   
   // Filtrar menu items baseado nos módulos habilitados
-  const filteredMenuItems = menuItems.filter(item => {
-    if (item.module === null) return true;
-    const modules = adminUser.modules;
-    if (!modules) return true;
-    return modules[item.module as keyof typeof modules];
-  });
+  const filterByModules = (items: typeof menuSections[0]['items']) => {
+    return items.filter(item => {
+      if (item.module === null) return true;
+      const modules = adminUser.modules;
+      if (!modules) return true;
+      return modules[item.module as keyof typeof modules];
+    });
+  };
 
   const handleViewChange = (view: AdminView) => {
     onViewChange(view);
@@ -74,7 +87,7 @@ export function AdminSidebar({ currentView, onViewChange, onLogout, adminUser, i
     <>
       {/* Overlay para mobile */}
       <div 
-        className={`fixed inset-0 bg-black/60 z-40 lg:hidden transition-opacity duration-300 ${
+        className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300 ${
           isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
         onClick={onClose}
@@ -83,77 +96,124 @@ export function AdminSidebar({ currentView, onViewChange, onLogout, adminUser, i
       {/* Sidebar */}
       <aside 
         className={`
-          w-80 bg-zinc-900 text-white fixed h-screen flex flex-col z-50
-          transition-transform duration-300 ease-in-out
+          w-72 lg:w-80 bg-zinc-900 text-white fixed h-screen flex flex-col z-50
+          transition-transform duration-300 ease-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full'} 
           lg:translate-x-0
         `}
       >
-        {/* Logo */}
-        <div className="p-6 border-b border-white/10">
+        {/* Header */}
+        <div className="p-5 lg:p-6 border-b border-white/10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <LogoIcon size="lg" />
-              <p className="text-sm text-white/80 font-medium">Painel Profissional</p>
+              <div>
+                <h1 className="font-bold text-white text-lg">VITAE</h1>
+                <p className="text-xs text-white/50">Painel Profissional</p>
+              </div>
             </div>
             {/* Botão fechar - apenas mobile */}
             <button 
               onClick={onClose}
-              className="lg:hidden p-2 hover:bg-white/10 rounded-lg transition-colors"
+              className="lg:hidden p-2 hover:bg-white/10 rounded-xl transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
         </div>
 
-        {/* User Info */}
-        <div className="p-8 border-b border-white/10">
-          <div className="flex items-center gap-4">
-            <div className={`w-14 h-14 ${roleDisplay.color} rounded-full flex items-center justify-center`}>
-              <RoleIcon className="w-7 h-7 text-white" />
+        {/* User Card */}
+        <div className="p-4 lg:p-5 border-b border-white/10">
+          <div className="bg-white/5 rounded-2xl p-4">
+            <div className="flex items-center gap-3">
+              <Avatar 
+                name={adminUser.name} 
+                size="lg"
+              />
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-white truncate">{adminUser.name}</p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className={`w-2 h-2 rounded-full ${roleDisplay.color}`} />
+                  <span className="text-xs text-white/60">{roleDisplay.label}</span>
+                </div>
+              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <div className="font-bold text-lg truncate">{adminUser.name}</div>
-              <div className="text-sm text-lime-500">{roleDisplay.label}</div>
-              {adminUser.consultancyName && (
-                <div className="text-xs text-white/50 truncate">{adminUser.consultancyName}</div>
-              )}
-            </div>
+            {adminUser.consultancyName && (
+              <div className="mt-3 pt-3 border-t border-white/10">
+                <p className="text-xs text-white/40 uppercase tracking-wider mb-1">Consultoria</p>
+                <p className="text-sm text-white/80 truncate">{adminUser.consultancyName}</p>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Menu */}
-        <nav className="flex-1 p-4 overflow-y-auto">
-          <div className="space-y-2">
-            {filteredMenuItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = currentView === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => handleViewChange(item.id)}
-                  className={`w-full flex items-center gap-4 px-6 py-4 rounded transition-colors ${
-                    isActive
-                      ? 'bg-lime-500 text-black font-bold'
-                      : 'text-white/80 hover:bg-white/10 hover:text-white'
-                  }`}
-                >
-                  <Icon className="w-5 h-5" />
-                  <span className="tracking-wide">{item.label}</span>
-                </button>
-              );
-            })}
-          </div>
+        {/* Navigation */}
+        <nav className="flex-1 p-3 lg:p-4 overflow-y-auto">
+          {menuSections.map((section, idx) => {
+            const filteredItems = filterByModules(section.items);
+            if (filteredItems.length === 0) return null;
+            
+            return (
+              <div key={section.title} className={idx > 0 ? 'mt-6' : ''}>
+                <p className="px-4 text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-2">
+                  {section.title}
+                </p>
+                <div className="space-y-1">
+                  {filteredItems.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = currentView === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => handleViewChange(item.id)}
+                        className={`
+                          w-full flex items-center gap-3 px-4 py-3 rounded-xl
+                          transition-all duration-200 group
+                          ${isActive
+                            ? 'bg-lime-500 text-black shadow-lg shadow-lime-500/20'
+                            : 'text-white/70 hover:bg-white/10 hover:text-white'
+                          }
+                        `}
+                      >
+                        <Icon className={`w-5 h-5 ${isActive ? '' : 'group-hover:scale-110'} transition-transform`} />
+                        <span className="font-medium flex-1 text-left">{item.label}</span>
+                        {isActive && <ChevronRight className="w-4 h-4" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
         </nav>
 
-        {/* Logout */}
-        <div className="p-4 border-t border-white/10">
+        {/* Footer */}
+        <div className="p-3 lg:p-4 border-t border-white/10">
+          {/* Settings */}
+          <button
+            onClick={() => handleViewChange('settings')}
+            className={`
+              w-full flex items-center gap-3 px-4 py-3 rounded-xl mb-2
+              transition-all duration-200
+              ${currentView === 'settings'
+                ? 'bg-white/10 text-white'
+                : 'text-white/60 hover:bg-white/5 hover:text-white/80'
+              }
+            `}
+          >
+            <Settings className="w-5 h-5" />
+            <span className="font-medium">Configurações</span>
+          </button>
+          
+          {/* Logout */}
           <button
             onClick={onLogout}
-            className="w-full flex items-center gap-4 px-6 py-4 rounded text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl
+                       text-white/60 hover:bg-red-500/10 hover:text-red-400
+                       transition-all duration-200"
           >
             <LogOut className="w-5 h-5" />
-            <span className="tracking-wide">Sair</span>
+            <span className="font-medium">Sair</span>
           </button>
         </div>
       </aside>
