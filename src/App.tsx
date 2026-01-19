@@ -4,9 +4,11 @@ import { Hero } from './components/Hero';
 import { Impact } from './components/Impact';
 import { Team } from './components/Team';
 import { Method } from './components/Method';
+import { PlatformPreview } from './components/PlatformPreview';
 import { Testimonials } from './components/Testimonials';
 import { Stats } from './components/Stats';
 import { Contact } from './components/Contact';
+import { VideoModal } from './components/VideoModal';
 import { LoginPage, PatientUser } from './components/platform/LoginPage';
 import { Dashboard } from './components/platform/Dashboard';
 import { AdminLoginPage, AdminUser } from './components/admin/AdminLoginPage';
@@ -25,6 +27,10 @@ const STORAGE_KEYS = {
   VIEW: 'vitae_current_view'
 };
 
+// URL do vídeo de demonstração - quando tiver o vídeo, coloque a URL do YouTube aqui
+// Exemplo: const DEMO_VIDEO_URL = 'https://www.youtube.com/watch?v=SEU_VIDEO_ID';
+const DEMO_VIDEO_URL = ''; // Deixe vazio para mostrar placeholder
+
 export default function App() {
   const [currentView, setCurrentView] = useState<AppView>('site');
   const [patientUser, setPatientUser] = useState<PatientUser | null>(null);
@@ -32,6 +38,7 @@ export default function App() {
   const [superAdminUser, setSuperAdminUser] = useState<SuperAdminUser | null>(null);
   const [selectedPlanId, setSelectedPlanId] = useState<string | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(true);
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
 
   // Restaurar sessão do localStorage ao iniciar
   useEffect(() => {
@@ -228,13 +235,24 @@ export default function App() {
         onSuperAdminClick={() => setCurrentView('superadmin-login')}
         onSignupClick={() => handleSignupClick()}
       />
-      <Hero onSignupClick={() => handleSignupClick()} />
+      <Hero 
+        onSignupClick={() => handleSignupClick()} 
+        onWatchDemo={() => setIsVideoModalOpen(true)}
+      />
       <Impact />
       <Team />
       <Method />
+      <PlatformPreview />
       <Testimonials />
       <Stats onSignupClick={handleSignupClick} />
       <Contact />
+      
+      {/* Modal de Vídeo de Demonstração */}
+      <VideoModal 
+        isOpen={isVideoModalOpen} 
+        onClose={() => setIsVideoModalOpen(false)}
+        videoUrl={DEMO_VIDEO_URL || undefined}
+      />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { CheckCircle, Play } from 'lucide-react';
 
 interface HeroProps {
   onSignupClick: () => void;
+  onWatchDemo: () => void;
 }
 
 // Avatares de clientes para social proof
@@ -14,7 +15,7 @@ const clientAvatars = [
   'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=80&h=80&fit=crop&crop=face',
 ];
 
-export function Hero({ onSignupClick }: HeroProps) {
+export function Hero({ onSignupClick, onWatchDemo }: HeroProps) {
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Animação de entrada ao carregar
@@ -111,6 +112,7 @@ export function Hero({ onSignupClick }: HeroProps) {
                 </button>
                 
                 <button 
+                  onClick={onWatchDemo}
                   className="group w-full sm:w-auto flex items-center justify-center gap-2 
                              px-6 py-4 sm:py-5 border-2 border-zinc-300 text-zinc-700
                              hover:border-lime-500 hover:text-lime-600 transition-all duration-300

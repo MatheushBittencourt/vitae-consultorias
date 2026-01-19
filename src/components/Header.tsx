@@ -11,7 +11,7 @@ interface HeaderProps {
 }
 
 // IDs das seções para navegação
-const SECTION_IDS = ['modulos', 'como-funciona', 'planos'];
+const SECTION_IDS = ['modulos', 'como-funciona', 'plataforma', 'planos'];
 
 export function Header({ onLoginClick, onAdminClick, onSuperAdminClick, onSignupClick }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -82,6 +82,7 @@ export function Header({ onLoginClick, onAdminClick, onSuperAdminClick, onSignup
   const navLinks = [
     { href: '#modulos', label: 'Módulos' },
     { href: '#como-funciona', label: 'Como Funciona' },
+    { href: '#plataforma', label: 'Plataforma' },
     { href: '#planos', label: 'Planos' },
   ];
 
