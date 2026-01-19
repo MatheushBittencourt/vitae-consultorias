@@ -7,6 +7,7 @@ import bcrypt from 'bcryptjs'
 import crypto from 'crypto'
 import { createPool, RowDataPacket } from 'mysql2/promise'
 import { MercadoPagoConfig, PreApproval, Payment } from 'mercadopago'
+import { createNutritionAdvancedRoutes } from './routes/nutrition-advanced'
 
 // ===========================================
 // CONFIGURAÇÃO DO AMBIENTE
@@ -3627,6 +3628,12 @@ app.post('/api/upload', async (req, res) => {
     res.status(500).json({ error: String(error) })
   }
 })
+
+// ===============================
+// ROTAS AVANÇADAS DE NUTRIÇÃO
+// ===============================
+const nutritionAdvancedRouter = createNutritionAdvancedRoutes(pool)
+app.use('/api/nutrition-advanced', nutritionAdvancedRouter)
 
 // Start server
 app.listen(PORT, async () => {

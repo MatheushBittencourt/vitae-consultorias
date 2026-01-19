@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Edit, Eye, Loader2, Apple, Trash2, X, ChevronDown, ChevronRight, ArrowLeftRight, Utensils, Book, ArrowLeft, Users, Target, Library } from 'lucide-react';
+import { Plus, Search, Edit, Eye, Loader2, Apple, Trash2, X, ChevronDown, ChevronRight, ArrowLeftRight, Utensils, Book, ArrowLeft, Users, Target, Library, FileText, Ruler, Calculator, ClipboardList } from 'lucide-react';
 import { Patient } from './AdminDashboard';
 import { Card, StatCard } from '../ui/Card';
 import { Badge, StatusBadge } from '../ui/Badge';
 import { EmptyState } from '../ui/EmptyState';
+import { NutritionAnamnesis, AnthropometricAssessment, EnergyCalculator } from '../nutrition';
 
 const API_URL = '/api';
 
@@ -81,7 +82,7 @@ interface AthleteData {
   email: string;
 }
 
-type ViewMode = 'list' | 'plan' | 'library';
+type ViewMode = 'list' | 'plan' | 'library' | 'anamnesis' | 'anthropometric' | 'energy';
 
 export function AdminNutritionSection({ onSelectPatient, consultancyId, adminUserId }: AdminNutritionSectionProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('list');
@@ -104,6 +105,7 @@ export function AdminNutritionSection({ onSelectPatient, consultancyId, adminUse
   const [selectedMealId, setSelectedMealId] = useState<number | null>(null);
   const [meals, setMeals] = useState<Meal[]>([]);
   const [expandedMeals, setExpandedMeals] = useState<Set<number>>(new Set());
+  const [selectedAthleteForAssessment, setSelectedAthleteForAssessment] = useState<AthleteData | null>(null);
   
   // Form states
   const [planForm, setPlanForm] = useState({
@@ -417,6 +419,75 @@ export function AdminNutritionSection({ onSelectPatient, consultancyId, adminUse
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="w-8 h-8 animate-spin text-lime-500" />
+      </div>
+    );
+  }
+
+  // VIEW: Anamnese Nutricional
+  if (viewMode === 'anamnesis' && selectedAthleteForAssessment) {
+    return (
+      <div className="space-y-4">
+        <button 
+          onClick={() => { setViewMode('list'); setSelectedAthleteForAssessment(null); }} 
+          className="text-sm text-zinc-500 hover:text-black flex items-center gap-1"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Voltar à lista
+        </button>
+        <NutritionAnamnesis
+          athleteId={selectedAthleteForAssessment.id}
+          nutritionistId={adminUserId || 0}
+          athleteName={selectedAthleteForAssessment.name}
+          onSave={() => {
+            alert('Anamnese salva com sucesso!');
+          }}
+        />
+      </div>
+    );
+  }
+
+  // VIEW: Avaliação Antropométrica
+  if (viewMode === 'anthropometric' && selectedAthleteForAssessment) {
+    return (
+      <div className="space-y-4">
+        <button 
+          onClick={() => { setViewMode('list'); setSelectedAthleteForAssessment(null); }} 
+          className="text-sm text-zinc-500 hover:text-black flex items-center gap-1"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Voltar à lista
+        </button>
+        <AnthropometricAssessment
+          athleteId={selectedAthleteForAssessment.id}
+          nutritionistId={adminUserId || 0}
+          athleteName={selectedAthleteForAssessment.name}
+          onSave={() => {
+            alert('Avaliação salva com sucesso!');
+          }}
+        />
+      </div>
+    );
+  }
+
+  // VIEW: Calculadora de Energia
+  if (viewMode === 'energy' && selectedAthleteForAssessment) {
+    return (
+      <div className="space-y-4">
+        <button 
+          onClick={() => { setViewMode('list'); setSelectedAthleteForAssessment(null); }} 
+          className="text-sm text-zinc-500 hover:text-black flex items-center gap-1"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Voltar à lista
+        </button>
+        <EnergyCalculator
+          athleteId={selectedAthleteForAssessment.id}
+          nutritionistId={adminUserId || 0}
+          athleteName={selectedAthleteForAssessment.name}
+          onSave={() => {
+            alert('Cálculo salvo com sucesso!');
+          }}
+        />
       </div>
     );
   }
@@ -1024,6 +1095,75 @@ export function AdminNutritionSection({ onSelectPatient, consultancyId, adminUse
                 </div>
               </div>
             ))
+          )}
+        </div>
+      </Card>
+
+      {/* Seção de Avaliações Nutricionais */}
+      <Card>
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold tracking-tighter">Avaliações Nutricionais</h2>
+              <p className="text-zinc-500 mt-1">Anamnese, Antropometria e Cálculo de Necessidades Energéticas</p>
+            </div>
+          </div>
+
+          {athletes.length === 0 ? (
+            <EmptyState
+              icon="users"
+              title="Nenhum paciente cadastrado"
+              description="Cadastre pacientes para realizar avaliações nutricionais."
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {athletes.map(athlete => (
+                <div key={athlete.id} className="border border-zinc-200 rounded-xl p-4 hover:border-lime-500 transition-colors">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 bg-lime-100 rounded-xl flex items-center justify-center">
+                      <Users className="w-5 h-5 text-lime-600" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-zinc-900">{athlete.name}</h4>
+                      <p className="text-sm text-zinc-500">{athlete.email}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <button
+                      onClick={() => {
+                        setSelectedAthleteForAssessment(athlete);
+                        setViewMode('anamnesis');
+                      }}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm bg-zinc-100 hover:bg-zinc-200 rounded-lg transition-colors"
+                    >
+                      <FileText className="w-4 h-4" />
+                      Anamnese Nutricional
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSelectedAthleteForAssessment(athlete);
+                        setViewMode('anthropometric');
+                      }}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm bg-zinc-100 hover:bg-zinc-200 rounded-lg transition-colors"
+                    >
+                      <Ruler className="w-4 h-4" />
+                      Avaliação Antropométrica
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSelectedAthleteForAssessment(athlete);
+                        setViewMode('energy');
+                      }}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm bg-zinc-100 hover:bg-zinc-200 rounded-lg transition-colors"
+                    >
+                      <Calculator className="w-4 h-4" />
+                      Cálculo Energético
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       </Card>
