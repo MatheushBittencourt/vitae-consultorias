@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Menu, BookOpen, Dumbbell, Apple } from 'lucide-react';
+import { Menu, Dumbbell, Apple, ArrowLeft } from 'lucide-react';
 import { AdminSidebar } from './AdminSidebar';
 import { AdminOverview } from './AdminOverview';
 import { PatientsList } from './PatientsList';
@@ -8,11 +8,52 @@ import { AdminAppointmentsSection } from './AdminAppointmentsSection';
 import { AdminSettingsSection } from './AdminSettingsSection';
 import { AdminUser } from './AdminLoginPage';
 import { RecipeManager } from '../nutrition';
-import { Card, CardHeader } from '../ui/Card';
+import { FoodLibrary } from './FoodLibrary';
+import { Card } from '../ui/Card';
 import { EmptyState } from '../ui/EmptyState';
 
-// Componente placeholder para Biblioteca
+type LibrarySubView = 'main' | 'exercises' | 'foods';
+
+// Componente para Biblioteca
 function LibrarySection({ consultancyId }: { consultancyId: number }) {
+  const [subView, setSubView] = useState<LibrarySubView>('main');
+
+  if (subView === 'foods') {
+    return (
+      <div className="space-y-6">
+        <button
+          onClick={() => setSubView('main')}
+          className="flex items-center gap-2 text-zinc-600 hover:text-black transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Voltar para Biblioteca
+        </button>
+        <FoodLibrary consultancyId={consultancyId} />
+      </div>
+    );
+  }
+
+  if (subView === 'exercises') {
+    return (
+      <div className="space-y-6">
+        <button
+          onClick={() => setSubView('main')}
+          className="flex items-center gap-2 text-zinc-600 hover:text-black transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Voltar para Biblioteca
+        </button>
+        <Card className="p-8">
+          <EmptyState
+            icon="training"
+            title="Biblioteca de Exercícios"
+            description="Em breve você poderá gerenciar exercícios com vídeos, descrições e categorias."
+          />
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between">
@@ -25,7 +66,10 @@ function LibrarySection({ consultancyId }: { consultancyId: number }) {
       </div>
       
       <div className="grid md:grid-cols-2 gap-6">
-        <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer group">
+        <Card 
+          className="p-6 hover:shadow-lg transition-shadow cursor-pointer group hover:border-lime-500"
+          onClick={() => setSubView('exercises')}
+        >
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 bg-lime-500/10 rounded-2xl flex items-center justify-center group-hover:bg-lime-500/20 transition-colors">
               <Dumbbell className="w-7 h-7 text-lime-600" />
@@ -40,7 +84,10 @@ function LibrarySection({ consultancyId }: { consultancyId: number }) {
           </p>
         </Card>
         
-        <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer group">
+        <Card 
+          className="p-6 hover:shadow-lg transition-shadow cursor-pointer group hover:border-orange-500"
+          onClick={() => setSubView('foods')}
+        >
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 bg-orange-500/10 rounded-2xl flex items-center justify-center group-hover:bg-orange-500/20 transition-colors">
               <Apple className="w-7 h-7 text-orange-600" />
@@ -55,14 +102,6 @@ function LibrarySection({ consultancyId }: { consultancyId: number }) {
           </p>
         </Card>
       </div>
-
-      <Card className="p-8">
-        <EmptyState
-          icon="files"
-          title="Biblioteca em desenvolvimento"
-          description="Em breve você poderá gerenciar exercícios, alimentos e templates de planos diretamente daqui."
-        />
-      </Card>
     </div>
   );
 }

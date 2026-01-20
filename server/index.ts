@@ -3066,6 +3066,112 @@ app.post('/api/food-library', async (req, res) => {
   }
 })
 
+// Importar alimentos da Tabela TACO para uma consultoria
+app.post('/api/food-library/import-taco', async (req, res) => {
+  try {
+    const { consultancy_id } = req.body
+    
+    if (!consultancy_id) {
+      return res.status(400).json({ error: 'consultancy_id é obrigatório' })
+    }
+
+    // Dados da Tabela TACO (fonte: NEPA/UNICAMP)
+    // Categorias mapeadas para o ENUM do banco: proteina, carboidrato, gordura, vegetal, fruta, lacteo, bebida, suplemento, outros
+    const tacoFoods = [
+      // CEREAIS E DERIVADOS -> carboidrato
+      { name: 'Arroz integral cozido', category: 'carboidrato', serving_size: '100g', portion_description: '4 colheres de sopa', calories: 124, protein: 2.6, carbs: 25.8, fat: 1.0, fiber: 2.7, sugar: 0.3, glycemic_index: 50, has_gluten: false, has_lactose: false, is_vegan: true, is_vegetarian: true, taco_id: 1 },
+      { name: 'Arroz branco cozido', category: 'carboidrato', serving_size: '100g', portion_description: '4 colheres de sopa', calories: 128, protein: 2.5, carbs: 28.1, fat: 0.2, fiber: 1.6, sugar: 0.1, glycemic_index: 73, has_gluten: false, has_lactose: false, is_vegan: true, is_vegetarian: true, taco_id: 2 },
+      { name: 'Aveia em flocos', category: 'carboidrato', serving_size: '100g', portion_description: '10 colheres de sopa', calories: 394, protein: 14.0, carbs: 66.6, fat: 8.5, fiber: 9.1, sugar: 0.9, glycemic_index: 55, has_gluten: true, has_lactose: false, is_vegan: true, is_vegetarian: true, taco_id: 4 },
+      { name: 'Farinha de mandioca crua', category: 'carboidrato', serving_size: '100g', portion_description: '5 colheres de sopa', calories: 361, protein: 1.6, carbs: 87.9, fat: 0.3, fiber: 6.4, sugar: 0.3, glycemic_index: 70, has_gluten: false, has_lactose: false, is_vegan: true, is_vegetarian: true, taco_id: 6 },
+      { name: 'Macarrão cozido', category: 'carboidrato', serving_size: '100g', portion_description: '1 prato raso', calories: 102, protein: 3.4, carbs: 19.9, fat: 0.5, fiber: 1.2, sugar: 0.2, glycemic_index: 55, has_gluten: true, has_lactose: false, is_vegan: true, is_vegetarian: true, taco_id: 10 },
+      { name: 'Pão francês', category: 'carboidrato', serving_size: '100g', portion_description: '2 unidades', calories: 300, protein: 8.0, carbs: 58.6, fat: 3.1, fiber: 2.3, sugar: 2.8, glycemic_index: 95, has_gluten: true, has_lactose: false, is_vegan: true, is_vegetarian: true, taco_id: 13 },
+      { name: 'Pão integral', category: 'carboidrato', serving_size: '100g', portion_description: '4 fatias', calories: 253, protein: 9.4, carbs: 49.9, fat: 2.9, fiber: 6.9, sugar: 4.1, glycemic_index: 65, has_gluten: true, has_lactose: false, is_vegan: true, is_vegetarian: true, taco_id: 14 },
+      { name: 'Quinoa cozida', category: 'carboidrato', serving_size: '100g', portion_description: '4 colheres de sopa', calories: 120, protein: 4.4, carbs: 21.3, fat: 1.9, fiber: 2.8, sugar: 0.9, glycemic_index: 53, has_gluten: false, has_lactose: false, is_vegan: true, is_vegetarian: true, taco_id: 16 },
+      { name: 'Batata inglesa cozida', category: 'carboidrato', serving_size: '100g', portion_description: '1 unidade média', calories: 52, protein: 1.2, carbs: 11.9, fat: 0.1, fiber: 1.3, sugar: 0.8, glycemic_index: 78, has_gluten: false, has_lactose: false, is_vegan: true, is_vegetarian: true, taco_id: 206 },
+      { name: 'Batata doce cozida', category: 'carboidrato', serving_size: '100g', portion_description: '1 unidade média', calories: 77, protein: 0.6, carbs: 18.4, fat: 0.1, fiber: 2.2, sugar: 5.7, glycemic_index: 63, has_gluten: false, has_lactose: false, is_vegan: true, is_vegetarian: true, taco_id: 207 },
+      { name: 'Mandioca cozida', category: 'carboidrato', serving_size: '100g', portion_description: '2 pedaços médios', calories: 125, protein: 0.6, carbs: 30.1, fat: 0.3, fiber: 1.6, sugar: 1.4, glycemic_index: 55, has_gluten: false, has_lactose: false, is_vegan: true, is_vegetarian: true, taco_id: 216 },
+      
+      // LEGUMINOSAS -> proteina
+      { name: 'Feijão carioca cozido', category: 'proteina', serving_size: '100g', portion_description: '1 concha média', calories: 76, protein: 4.8, carbs: 13.6, fat: 0.5, fiber: 8.5, sugar: 0.3, glycemic_index: 30, has_gluten: false, has_lactose: false, is_vegan: true, is_vegetarian: true, taco_id: 101 },
+      { name: 'Feijão preto cozido', category: 'proteina', serving_size: '100g', portion_description: '1 concha média', calories: 77, protein: 4.5, carbs: 14.0, fat: 0.5, fiber: 8.4, sugar: 0.3, glycemic_index: 30, has_gluten: false, has_lactose: false, is_vegan: true, is_vegetarian: true, taco_id: 102 },
+      { name: 'Grão-de-bico cozido', category: 'proteina', serving_size: '100g', portion_description: '4 colheres de sopa', calories: 164, protein: 8.9, carbs: 27.4, fat: 2.6, fiber: 7.6, sugar: 4.8, glycemic_index: 33, has_gluten: false, has_lactose: false, is_vegan: true, is_vegetarian: true, taco_id: 104 },
+      { name: 'Lentilha cozida', category: 'proteina', serving_size: '100g', portion_description: '4 colheres de sopa', calories: 116, protein: 9.0, carbs: 20.1, fat: 0.4, fiber: 7.9, sugar: 1.8, glycemic_index: 30, has_gluten: false, has_lactose: false, is_vegan: true, is_vegetarian: true, taco_id: 105 },
+      
+      // VERDURAS E LEGUMES -> vegetal
+      { name: 'Brócolis cozido', category: 'vegetal', serving_size: '100g', portion_description: '4 colheres de sopa', calories: 25, protein: 2.1, carbs: 4.4, fat: 0.3, fiber: 3.4, sugar: 1.4, glycemic_index: 10, has_gluten: false, has_lactose: false, is_vegan: true, is_vegetarian: true, taco_id: 210 },
+      { name: 'Cenoura crua', category: 'vegetal', serving_size: '100g', portion_description: '1 unidade média', calories: 34, protein: 1.3, carbs: 7.7, fat: 0.2, fiber: 3.2, sugar: 3.2, glycemic_index: 47, has_gluten: false, has_lactose: false, is_vegan: true, is_vegetarian: true, taco_id: 211 },
+      { name: 'Tomate cru', category: 'vegetal', serving_size: '100g', portion_description: '1 unidade média', calories: 15, protein: 1.1, carbs: 3.1, fat: 0.2, fiber: 1.2, sugar: 2.6, glycemic_index: 30, has_gluten: false, has_lactose: false, is_vegan: true, is_vegetarian: true, taco_id: 220 },
+      { name: 'Alface crespa', category: 'vegetal', serving_size: '100g', portion_description: '1 prato cheio', calories: 11, protein: 1.3, carbs: 1.7, fat: 0.2, fiber: 1.8, sugar: 0.5, glycemic_index: 10, has_gluten: false, has_lactose: false, is_vegan: true, is_vegetarian: true, taco_id: 204 },
+      { name: 'Espinafre refogado', category: 'vegetal', serving_size: '100g', portion_description: '4 colheres de sopa', calories: 57, protein: 2.6, carbs: 3.8, fat: 4.0, fiber: 2.5, sugar: 0.4, glycemic_index: 15, has_gluten: false, has_lactose: false, is_vegan: true, is_vegetarian: true, taco_id: 215 },
+      { name: 'Abobrinha cozida', category: 'vegetal', serving_size: '100g', portion_description: '4 colheres de sopa', calories: 15, protein: 0.6, carbs: 3.3, fat: 0.1, fiber: 1.3, sugar: 1.5, glycemic_index: 15, has_gluten: false, has_lactose: false, is_vegan: true, is_vegetarian: true, taco_id: 202 },
+      
+      // FRUTAS -> fruta
+      { name: 'Abacate', category: 'fruta', serving_size: '100g', portion_description: '4 colheres de sopa', calories: 96, protein: 1.2, carbs: 6.0, fat: 8.4, fiber: 6.3, sugar: 0.3, glycemic_index: 10, has_gluten: false, has_lactose: false, is_vegan: true, is_vegetarian: true, taco_id: 301 },
+      { name: 'Banana prata', category: 'fruta', serving_size: '100g', portion_description: '1 unidade média', calories: 98, protein: 1.3, carbs: 26.0, fat: 0.1, fiber: 2.0, sugar: 15.9, glycemic_index: 55, has_gluten: false, has_lactose: false, is_vegan: true, is_vegetarian: true, taco_id: 304 },
+      { name: 'Laranja pera', category: 'fruta', serving_size: '100g', portion_description: '1 unidade média', calories: 37, protein: 1.0, carbs: 8.9, fat: 0.1, fiber: 0.8, sugar: 8.6, glycemic_index: 42, has_gluten: false, has_lactose: false, is_vegan: true, is_vegetarian: true, taco_id: 309 },
+      { name: 'Maçã fuji', category: 'fruta', serving_size: '100g', portion_description: '1 unidade pequena', calories: 56, protein: 0.3, carbs: 15.2, fat: 0.0, fiber: 1.3, sugar: 10.4, glycemic_index: 38, has_gluten: false, has_lactose: false, is_vegan: true, is_vegetarian: true, taco_id: 311 },
+      { name: 'Mamão papaya', category: 'fruta', serving_size: '100g', portion_description: '1 fatia média', calories: 45, protein: 0.5, carbs: 11.6, fat: 0.1, fiber: 1.0, sugar: 9.1, glycemic_index: 60, has_gluten: false, has_lactose: false, is_vegan: true, is_vegetarian: true, taco_id: 312 },
+      { name: 'Morango', category: 'fruta', serving_size: '100g', portion_description: '10 unidades médias', calories: 30, protein: 0.9, carbs: 6.8, fat: 0.3, fiber: 1.7, sugar: 4.1, glycemic_index: 40, has_gluten: false, has_lactose: false, is_vegan: true, is_vegetarian: true, taco_id: 317 },
+      { name: 'Melancia', category: 'fruta', serving_size: '100g', portion_description: '1 fatia média', calories: 33, protein: 0.9, carbs: 8.1, fat: 0.0, fiber: 0.1, sugar: 6.2, glycemic_index: 72, has_gluten: false, has_lactose: false, is_vegan: true, is_vegetarian: true, taco_id: 315 },
+      { name: 'Abacaxi', category: 'fruta', serving_size: '100g', portion_description: '1 fatia grossa', calories: 48, protein: 0.9, carbs: 12.3, fat: 0.1, fiber: 1.0, sugar: 9.3, glycemic_index: 66, has_gluten: false, has_lactose: false, is_vegan: true, is_vegetarian: true, taco_id: 302 },
+      
+      // CARNES -> proteina
+      { name: 'Frango peito sem pele grelhado', category: 'proteina', serving_size: '100g', portion_description: '1 filé médio', calories: 159, protein: 32.0, carbs: 0.0, fat: 3.2, fiber: 0.0, sugar: 0.0, glycemic_index: 0, has_gluten: false, has_lactose: false, is_vegan: false, is_vegetarian: false, taco_id: 401 },
+      { name: 'Carne bovina patinho grelhado', category: 'proteina', serving_size: '100g', portion_description: '1 bife médio', calories: 219, protein: 35.9, carbs: 0.0, fat: 7.3, fiber: 0.0, sugar: 0.0, glycemic_index: 0, has_gluten: false, has_lactose: false, is_vegan: false, is_vegetarian: false, taco_id: 403 },
+      { name: 'Carne bovina alcatra grelhada', category: 'proteina', serving_size: '100g', portion_description: '1 bife médio', calories: 195, protein: 32.0, carbs: 0.0, fat: 7.1, fiber: 0.0, sugar: 0.0, glycemic_index: 0, has_gluten: false, has_lactose: false, is_vegan: false, is_vegetarian: false, taco_id: 405 },
+      { name: 'Carne suína lombo assado', category: 'proteina', serving_size: '100g', portion_description: '2 fatias médias', calories: 210, protein: 27.8, carbs: 0.0, fat: 10.8, fiber: 0.0, sugar: 0.0, glycemic_index: 0, has_gluten: false, has_lactose: false, is_vegan: false, is_vegetarian: false, taco_id: 411 },
+      { name: 'Ovo de galinha cozido', category: 'proteina', serving_size: '100g', portion_description: '2 unidades', calories: 146, protein: 13.3, carbs: 0.6, fat: 9.5, fiber: 0.0, sugar: 0.6, glycemic_index: 0, has_gluten: false, has_lactose: false, is_vegan: false, is_vegetarian: true, taco_id: 415 },
+      { name: 'Atum em conserva', category: 'proteina', serving_size: '100g', portion_description: '1 lata drenada', calories: 166, protein: 26.2, carbs: 0.0, fat: 6.4, fiber: 0.0, sugar: 0.0, glycemic_index: 0, has_gluten: false, has_lactose: false, is_vegan: false, is_vegetarian: false, taco_id: 501 },
+      { name: 'Salmão grelhado', category: 'proteina', serving_size: '100g', portion_description: '1 filé pequeno', calories: 243, protein: 26.1, carbs: 0.0, fat: 15.6, fiber: 0.0, sugar: 0.0, glycemic_index: 0, has_gluten: false, has_lactose: false, is_vegan: false, is_vegetarian: false, taco_id: 502 },
+      { name: 'Tilápia grelhada', category: 'proteina', serving_size: '100g', portion_description: '1 filé médio', calories: 128, protein: 26.2, carbs: 0.0, fat: 2.7, fiber: 0.0, sugar: 0.0, glycemic_index: 0, has_gluten: false, has_lactose: false, is_vegan: false, is_vegetarian: false, taco_id: 503 },
+      
+      // LATICÍNIOS -> lacteo
+      { name: 'Leite integral', category: 'lacteo', serving_size: '100ml', portion_description: '1/2 copo', calories: 61, protein: 3.2, carbs: 4.5, fat: 3.5, fiber: 0.0, sugar: 4.5, glycemic_index: 31, has_gluten: false, has_lactose: true, is_vegan: false, is_vegetarian: true, taco_id: 601 },
+      { name: 'Leite desnatado', category: 'lacteo', serving_size: '100ml', portion_description: '1/2 copo', calories: 35, protein: 3.4, carbs: 5.0, fat: 0.1, fiber: 0.0, sugar: 5.0, glycemic_index: 32, has_gluten: false, has_lactose: true, is_vegan: false, is_vegetarian: true, taco_id: 602 },
+      { name: 'Iogurte natural', category: 'lacteo', serving_size: '100g', portion_description: '1 pote pequeno', calories: 51, protein: 4.1, carbs: 6.1, fat: 0.9, fiber: 0.0, sugar: 6.1, glycemic_index: 35, has_gluten: false, has_lactose: true, is_vegan: false, is_vegetarian: true, taco_id: 603 },
+      { name: 'Queijo minas frescal', category: 'lacteo', serving_size: '100g', portion_description: '4 fatias', calories: 264, protein: 17.4, carbs: 3.2, fat: 20.2, fiber: 0.0, sugar: 3.2, glycemic_index: 0, has_gluten: false, has_lactose: true, is_vegan: false, is_vegetarian: true, taco_id: 604 },
+      { name: 'Queijo mussarela', category: 'lacteo', serving_size: '100g', portion_description: '4 fatias', calories: 330, protein: 22.6, carbs: 3.0, fat: 25.2, fiber: 0.0, sugar: 1.0, glycemic_index: 0, has_gluten: false, has_lactose: true, is_vegan: false, is_vegetarian: true, taco_id: 605 },
+      { name: 'Ricota', category: 'lacteo', serving_size: '100g', portion_description: '4 colheres de sopa', calories: 140, protein: 12.6, carbs: 3.8, fat: 8.1, fiber: 0.0, sugar: 0.3, glycemic_index: 0, has_gluten: false, has_lactose: true, is_vegan: false, is_vegetarian: true, taco_id: 606 },
+      { name: 'Cottage', category: 'lacteo', serving_size: '100g', portion_description: '4 colheres de sopa', calories: 98, protein: 11.1, carbs: 3.4, fat: 4.3, fiber: 0.0, sugar: 2.7, glycemic_index: 0, has_gluten: false, has_lactose: true, is_vegan: false, is_vegetarian: true, taco_id: 607 },
+      
+      // GORDURAS E ÓLEOS -> gordura
+      { name: 'Azeite de oliva', category: 'gordura', serving_size: '100ml', portion_description: '7 colheres de sopa', calories: 884, protein: 0.0, carbs: 0.0, fat: 100.0, fiber: 0.0, sugar: 0.0, glycemic_index: 0, has_gluten: false, has_lactose: false, is_vegan: true, is_vegetarian: true, taco_id: 701 },
+      { name: 'Óleo de coco', category: 'gordura', serving_size: '100ml', portion_description: '7 colheres de sopa', calories: 862, protein: 0.0, carbs: 0.0, fat: 100.0, fiber: 0.0, sugar: 0.0, glycemic_index: 0, has_gluten: false, has_lactose: false, is_vegan: true, is_vegetarian: true, taco_id: 702 },
+      { name: 'Manteiga', category: 'gordura', serving_size: '100g', portion_description: '7 colheres de sopa', calories: 726, protein: 0.5, carbs: 0.0, fat: 82.0, fiber: 0.0, sugar: 0.0, glycemic_index: 0, has_gluten: false, has_lactose: true, is_vegan: false, is_vegetarian: true, taco_id: 703 },
+      { name: 'Castanha de caju', category: 'gordura', serving_size: '100g', portion_description: '30 unidades', calories: 570, protein: 18.5, carbs: 29.1, fat: 46.3, fiber: 3.7, sugar: 5.0, glycemic_index: 22, has_gluten: false, has_lactose: false, is_vegan: true, is_vegetarian: true, taco_id: 704 },
+      { name: 'Amendoim torrado', category: 'gordura', serving_size: '100g', portion_description: '2 punhados', calories: 589, protein: 27.2, carbs: 20.3, fat: 49.4, fiber: 8.0, sugar: 4.1, glycemic_index: 14, has_gluten: false, has_lactose: false, is_vegan: true, is_vegetarian: true, taco_id: 705 },
+      { name: 'Pasta de amendoim', category: 'gordura', serving_size: '100g', portion_description: '5 colheres de sopa', calories: 593, protein: 22.2, carbs: 22.3, fat: 49.2, fiber: 6.0, sugar: 9.2, glycemic_index: 14, has_gluten: false, has_lactose: false, is_vegan: true, is_vegetarian: true, taco_id: 706 },
+    ]
+
+    // Verificar quantos já existem
+    const [existing] = await pool.query<RowDataPacket[]>(
+      'SELECT COUNT(*) as count FROM food_library WHERE consultancy_id = ? AND taco_id IS NOT NULL',
+      [consultancy_id]
+    )
+
+    if (existing[0].count > 0) {
+      return res.json({ imported: 0, message: 'Alimentos TACO já foram importados anteriormente' })
+    }
+
+    // Inserir todos os alimentos
+    let imported = 0
+    for (const food of tacoFoods) {
+      await pool.query(
+        `INSERT INTO food_library 
+         (consultancy_id, name, category, serving_size, portion_description, calories, protein, carbs, fat, fiber, sugar, glycemic_index, has_gluten, has_lactose, is_vegan, is_vegetarian, taco_id, is_global)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, FALSE)`,
+        [consultancy_id, food.name, food.category, food.serving_size, food.portion_description, food.calories, food.protein, food.carbs, food.fat, food.fiber, food.sugar, food.glycemic_index, food.has_gluten, food.has_lactose, food.is_vegan, food.is_vegetarian, food.taco_id]
+      )
+      imported++
+    }
+
+    res.json({ imported, message: `${imported} alimentos da tabela TACO importados com sucesso` })
+  } catch (error) {
+    console.error('Erro ao importar TACO:', error)
+    res.status(500).json({ error: String(error) })
+  }
+})
+
 // Atualizar alimento na biblioteca
 app.put('/api/food-library/:id', async (req, res) => {
   try {
