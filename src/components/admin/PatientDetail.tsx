@@ -206,7 +206,7 @@ export function PatientDetail({ patient, onBack, consultancyId, adminUser }: Pat
               onSave={handleSave}
             />
           )}
-          {activeTab === 'training' && <TrainingTab patient={patient} consultancyId={consultancyId} />}
+          {activeTab === 'training' && <TrainingTab patient={patient} consultancyId={consultancyId} adminUser={adminUser} />}
           {activeTab === 'nutrition' && <NutritionTab patient={patient} consultancyId={consultancyId} adminUser={adminUser} />}
           {activeTab === 'medical' && <MedicalTab patient={patient} />}
           {activeTab === 'rehab' && <RehabTab patient={patient} />}
@@ -519,33 +519,169 @@ const OBJECTIVES: Record<string, string> = {
 };
 
 
-function TrainingTab({ patient, consultancyId }: { patient: Patient; consultancyId?: number }) {
+interface ExerciseLibraryItem {
+  id: number;
+  name: string;
+  muscle_group: string;
+  equipment: string;
+  description?: string;
+  video_url?: string;
+}
+
+interface PlanForm {
+  name: string;
+  objective: string;
+  duration_weeks: number;
+  frequency_per_week: number;
+  split_type: string;
+}
+
+interface DayForm {
+  day_letter: string;
+  day_name: string;
+  day_of_week: number;
+  focus_muscles: string;
+  estimated_duration: number;
+}
+
+interface ExerciseForm {
+  exercise_library_id: number | null;
+  name: string;
+  muscle_group: string;
+  equipment: string;
+  sets: number;
+  reps: string;
+  weight: string;
+  rest_seconds: number;
+  tempo: string;
+  technique: string;
+  notes: string;
+  video_url: string;
+}
+
+const DAY_TEMPLATES = [
+  { letter: 'A', name: 'Treino A', focus: 'Peito e Tríceps' },
+  { letter: 'B', name: 'Treino B', focus: 'Costas e Bíceps' },
+  { letter: 'C', name: 'Treino C', focus: 'Pernas' },
+  { letter: 'D', name: 'Treino D', focus: 'Ombros e Abdômen' },
+  { letter: 'E', name: 'Treino E', focus: 'Full Body' },
+  { letter: 'F', name: 'Treino F', focus: 'Cardio' },
+];
+
+function TrainingTab({ patient, consultancyId, adminUser }: { patient: Patient; consultancyId?: number; adminUser: AdminUser }) {
   const [plans, setPlans] = useState<TrainingPlan[]>([]);
   const [trainingDays, setTrainingDays] = useState<TrainingDay[]>([]);
   const [exercisesByDay, setExercisesByDay] = useState<Record<number, TrainingExercise[]>>({});
   const [loading, setLoading] = useState(true);
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
   const [expandedDays, setExpandedDays] = useState<Set<number>>(new Set());
+  const [athleteId, setAthleteId] = useState<number | null>(null);
+  
+  // Modais
+  const [showCreatePlanModal, setShowCreatePlanModal] = useState(false);
+  const [showEditPlanModal, setShowEditPlanModal] = useState(false);
+  const [showAddDayModal, setShowAddDayModal] = useState(false);
+  const [showEditDayModal, setShowEditDayModal] = useState(false);
+  const [showAddExerciseModal, setShowAddExerciseModal] = useState(false);
+  const [showEditExerciseModal, setShowEditExerciseModal] = useState(false);
+  
+  // Estados de form
+  const [planForm, setPlanForm] = useState<PlanForm>({
+    name: '',
+    objective: 'hipertrofia',
+    duration_weeks: 12,
+    frequency_per_week: 4,
+    split_type: 'ABCD',
+  });
+  const [dayForm, setDayForm] = useState<DayForm>({
+    day_letter: 'A',
+    day_name: 'Treino A',
+    day_of_week: 1,
+    focus_muscles: 'Peito e Tríceps',
+    estimated_duration: 60,
+  });
+  const [exerciseForm, setExerciseForm] = useState<ExerciseForm>({
+    exercise_library_id: null,
+    name: '',
+    muscle_group: 'peito',
+    equipment: 'barra',
+    sets: 3,
+    reps: '10-12',
+    weight: '',
+    rest_seconds: 60,
+    tempo: '',
+    technique: 'normal',
+    notes: '',
+    video_url: '',
+  });
+  
+  // Estados de edição
+  const [editingDayId, setEditingDayId] = useState<number | null>(null);
+  const [editingExerciseId, setEditingExerciseId] = useState<number | null>(null);
+  const [selectedDayId, setSelectedDayId] = useState<number | null>(null);
+  
+  // Biblioteca de exercícios
+  const [exerciseLibrary, setExerciseLibrary] = useState<ExerciseLibraryItem[]>([]);
+  const [exerciseSearch, setExerciseSearch] = useState('');
+  const [filteredExercises, setFilteredExercises] = useState<ExerciseLibraryItem[]>([]);
+  
+  // Loading states
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     loadPlans();
+    loadExerciseLibrary();
   }, [patient.id, consultancyId]);
+
+  useEffect(() => {
+    if (exerciseSearch.trim()) {
+      const filtered = exerciseLibrary.filter(ex =>
+        ex.name.toLowerCase().includes(exerciseSearch.toLowerCase()) ||
+        ex.muscle_group.toLowerCase().includes(exerciseSearch.toLowerCase())
+      );
+      setFilteredExercises(filtered.slice(0, 10));
+    } else {
+      setFilteredExercises([]);
+    }
+  }, [exerciseSearch, exerciseLibrary]);
+
+  const loadExerciseLibrary = async () => {
+    try {
+      const res = await fetch(`${API_URL}/exercise-library?consultancy_id=${consultancyId}`);
+      const data = await res.json();
+      setExerciseLibrary(data as ExerciseLibraryItem[]);
+    } catch (error) {
+      console.error('Error loading exercise library:', error);
+    }
+  };
 
   const loadPlans = async () => {
     try {
+      setLoading(true);
       const athleteRes = await fetch(`${API_URL}/athletes?user_id=${patient.id}&consultancy_id=${consultancyId}`);
       const athletes = await athleteRes.json();
       const athlete = athletes[0];
       
       if (athlete) {
+        setAthleteId(athlete.id);
         const response = await fetch(`${API_URL}/training-plans?athlete_id=${athlete.id}`);
         const data = await response.json();
         setPlans(data);
         
-        if (data.length > 0) {
-          setSelectedPlanId(data[0].id);
-          await loadPlanDetails(data[0].id);
+        const activePlan = data.find((p: TrainingPlan) => p.status === 'active') || data[0];
+        if (activePlan) {
+          setSelectedPlanId(activePlan.id);
+          setPlanForm({
+            name: activePlan.name,
+            objective: activePlan.objective || 'hipertrofia',
+            duration_weeks: activePlan.duration_weeks || 12,
+            frequency_per_week: activePlan.frequency_per_week || 4,
+            split_type: activePlan.split_type || 'ABCD',
+          });
+          await loadPlanDetails(activePlan.id);
         }
+      } else {
+        setAthleteId(null);
       }
     } catch (error) {
       console.error('Error loading plans:', error);
@@ -581,6 +717,224 @@ function TrainingTab({ patient, consultancyId }: { patient: Patient; consultancy
     });
   };
 
+  // CRUD Plano
+  const handleCreatePlan = async () => {
+    if (!athleteId || !planForm.name) return;
+    setSaving(true);
+    try {
+      await fetch(`${API_URL}/training-plans`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          athlete_id: athleteId,
+          trainer_id: adminUser.id,
+          name: planForm.name,
+          objective: planForm.objective,
+          duration_weeks: planForm.duration_weeks,
+          frequency_per_week: planForm.frequency_per_week,
+          split_type: planForm.split_type,
+          status: 'active',
+        }),
+      });
+      setShowCreatePlanModal(false);
+      loadPlans();
+    } catch (error) {
+      console.error('Erro ao criar plano:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleEditPlan = async () => {
+    if (!selectedPlanId || !planForm.name) return;
+    setSaving(true);
+    try {
+      await fetch(`${API_URL}/training-plans/${selectedPlanId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: planForm.name,
+          objective: planForm.objective,
+          duration_weeks: planForm.duration_weeks,
+          frequency_per_week: planForm.frequency_per_week,
+          split_type: planForm.split_type,
+        }),
+      });
+      setShowEditPlanModal(false);
+      loadPlans();
+    } catch (error) {
+      console.error('Erro ao editar plano:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // CRUD Dia
+  const openAddDayModal = () => {
+    const usedLetters = trainingDays.map(d => d.day_letter);
+    const nextTemplate = DAY_TEMPLATES.find(t => !usedLetters.includes(t.letter)) || DAY_TEMPLATES[0];
+    setDayForm({
+      day_letter: nextTemplate.letter,
+      day_name: nextTemplate.name,
+      day_of_week: 1,
+      focus_muscles: nextTemplate.focus,
+      estimated_duration: 60,
+    });
+    setEditingDayId(null);
+    setShowAddDayModal(true);
+  };
+
+  const openEditDayModal = (day: TrainingDay) => {
+    setDayForm({
+      day_letter: day.day_letter,
+      day_name: day.day_name || '',
+      day_of_week: day.day_of_week || 1,
+      focus_muscles: day.focus_muscles || '',
+      estimated_duration: day.estimated_duration || 60,
+    });
+    setEditingDayId(day.id);
+    setShowEditDayModal(true);
+  };
+
+  const handleSaveDay = async () => {
+    if (!selectedPlanId || !dayForm.day_letter) return;
+    setSaving(true);
+    try {
+      if (editingDayId) {
+        await fetch(`${API_URL}/training-days/${editingDayId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(dayForm),
+        });
+      } else {
+        await fetch(`${API_URL}/training-days`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            plan_id: selectedPlanId,
+            ...dayForm,
+          }),
+        });
+      }
+      setShowAddDayModal(false);
+      setShowEditDayModal(false);
+      loadPlanDetails(selectedPlanId);
+    } catch (error) {
+      console.error('Erro ao salvar dia:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteDay = async (dayId: number) => {
+    if (!confirm('Excluir este dia de treino? Todos os exercícios serão removidos.')) return;
+    try {
+      await fetch(`${API_URL}/training-days/${dayId}`, { method: 'DELETE' });
+      if (selectedPlanId) loadPlanDetails(selectedPlanId);
+    } catch (error) {
+      console.error('Erro ao excluir dia:', error);
+    }
+  };
+
+  // CRUD Exercício
+  const openAddExerciseModal = (dayId: number) => {
+    setSelectedDayId(dayId);
+    setExerciseForm({
+      exercise_library_id: null,
+      name: '',
+      muscle_group: 'peito',
+      equipment: 'barra',
+      sets: 3,
+      reps: '10-12',
+      weight: '',
+      rest_seconds: 60,
+      tempo: '',
+      technique: 'normal',
+      notes: '',
+      video_url: '',
+    });
+    setExerciseSearch('');
+    setEditingExerciseId(null);
+    setShowAddExerciseModal(true);
+  };
+
+  const openEditExerciseModal = (exercise: TrainingExercise, dayId: number) => {
+    setSelectedDayId(dayId);
+    setExerciseForm({
+      exercise_library_id: exercise.exercise_library_id || null,
+      name: exercise.name,
+      muscle_group: exercise.muscle_group,
+      equipment: exercise.equipment || 'barra',
+      sets: exercise.sets,
+      reps: exercise.reps,
+      weight: exercise.weight || '',
+      rest_seconds: exercise.rest_seconds,
+      tempo: exercise.tempo || '',
+      technique: exercise.technique || 'normal',
+      notes: exercise.notes || '',
+      video_url: exercise.video_url || '',
+    });
+    setEditingExerciseId(exercise.id);
+    setShowEditExerciseModal(true);
+  };
+
+  const selectExerciseFromLibrary = (ex: ExerciseLibraryItem) => {
+    setExerciseForm({
+      ...exerciseForm,
+      exercise_library_id: ex.id,
+      name: ex.name,
+      muscle_group: ex.muscle_group,
+      equipment: ex.equipment,
+      video_url: ex.video_url || '',
+    });
+    setExerciseSearch('');
+    setFilteredExercises([]);
+  };
+
+  const handleSaveExercise = async () => {
+    if (!selectedDayId || !exerciseForm.name) return;
+    setSaving(true);
+    try {
+      if (editingExerciseId) {
+        await fetch(`${API_URL}/training-exercises/${editingExerciseId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            training_day_id: selectedDayId,
+            ...exerciseForm,
+          }),
+        });
+      } else {
+        await fetch(`${API_URL}/training-exercises`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            plan_id: selectedPlanId,
+            training_day_id: selectedDayId,
+            ...exerciseForm,
+          }),
+        });
+      }
+      setShowAddExerciseModal(false);
+      setShowEditExerciseModal(false);
+      if (selectedPlanId) loadPlanDetails(selectedPlanId);
+    } catch (error) {
+      console.error('Erro ao salvar exercício:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteExercise = async (exerciseId: number) => {
+    if (!confirm('Excluir este exercício?')) return;
+    try {
+      await fetch(`${API_URL}/training-exercises/${exerciseId}`, { method: 'DELETE' });
+      if (selectedPlanId) loadPlanDetails(selectedPlanId);
+    } catch (error) {
+      console.error('Erro ao excluir exercício:', error);
+    }
+  };
+
   const currentPlan = plans.find(p => p.id === selectedPlanId);
 
   if (loading) {
@@ -591,13 +945,125 @@ function TrainingTab({ patient, consultancyId }: { patient: Patient; consultancy
     );
   }
 
-  if (plans.length === 0) {
+  if (!athleteId) {
     return (
       <EmptyState
         icon="training"
-        title="Nenhum plano de treino"
-        description="Este paciente ainda não possui um plano de treino ativo. Para criar um plano, acesse Treinamento no menu lateral."
+        title="Paciente não configurado"
+        description="Este paciente ainda não está configurado como atleta no sistema."
       />
+    );
+  }
+
+  if (plans.length === 0) {
+    return (
+      <>
+        <EmptyState
+          icon="training"
+          title="Nenhum plano de treino"
+          description="Este paciente ainda não possui um plano de treino ativo."
+          action={{
+            label: 'Criar Plano de Treino',
+            onClick: () => {
+              setPlanForm({
+                name: `Treino - ${patient.name}`,
+                objective: 'hipertrofia',
+                duration_weeks: 12,
+                frequency_per_week: 4,
+                split_type: 'ABCD',
+              });
+              setShowCreatePlanModal(true);
+            }
+          }}
+        />
+
+        {/* Modal Criar Plano */}
+        {showCreatePlanModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <Card className="w-full max-w-lg p-0">
+              <div className="p-6 border-b border-zinc-200 flex items-center justify-between">
+                <h3 className="text-xl font-bold">Novo Plano de Treino</h3>
+                <button onClick={() => setShowCreatePlanModal(false)} className="p-2 hover:bg-zinc-100 rounded-lg">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Nome do Plano</label>
+                  <input
+                    type="text"
+                    value={planForm.name}
+                    onChange={(e) => setPlanForm({ ...planForm, name: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Objetivo</label>
+                    <select
+                      value={planForm.objective}
+                      onChange={(e) => setPlanForm({ ...planForm, objective: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                    >
+                      {Object.entries(OBJECTIVES).map(([key, label]) => (
+                        <option key={key} value={key}>{label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Duração (semanas)</label>
+                    <input
+                      type="number"
+                      value={planForm.duration_weeks}
+                      onChange={(e) => setPlanForm({ ...planForm, duration_weeks: Number(e.target.value) })}
+                      className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Frequência (x/semana)</label>
+                    <input
+                      type="number"
+                      value={planForm.frequency_per_week}
+                      onChange={(e) => setPlanForm({ ...planForm, frequency_per_week: Number(e.target.value) })}
+                      className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Divisão</label>
+                    <select
+                      value={planForm.split_type}
+                      onChange={(e) => setPlanForm({ ...planForm, split_type: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                    >
+                      <option value="ABC">ABC (3 dias)</option>
+                      <option value="ABCD">ABCD (4 dias)</option>
+                      <option value="ABCDE">ABCDE (5 dias)</option>
+                      <option value="PUSH_PULL_LEGS">Push/Pull/Legs</option>
+                      <option value="UPPER_LOWER">Upper/Lower</option>
+                      <option value="FULL_BODY">Full Body</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div className="p-6 border-t border-zinc-200 flex gap-3">
+                <button
+                  onClick={() => setShowCreatePlanModal(false)}
+                  className="flex-1 py-2.5 border border-black font-bold hover:bg-black hover:text-white transition-colors rounded-lg"
+                >
+                  CANCELAR
+                </button>
+                <button
+                  onClick={handleCreatePlan}
+                  disabled={saving || !planForm.name}
+                  className="flex-1 py-2.5 bg-lime-500 text-black font-bold hover:bg-lime-400 transition-colors rounded-lg disabled:opacity-50"
+                >
+                  {saving ? 'CRIANDO...' : 'CRIAR PLANO'}
+                </button>
+              </div>
+            </Card>
+          </div>
+        )}
+      </>
     );
   }
 
@@ -635,40 +1101,54 @@ function TrainingTab({ patient, consultancyId }: { patient: Patient; consultancy
               )}
             </div>
           </div>
-          {plans.length > 1 && (
-            <select 
-              value={selectedPlanId || ''}
-              onChange={(e) => {
-                const id = Number(e.target.value);
-                setSelectedPlanId(id);
-                loadPlanDetails(id);
-              }}
-              className="px-3 py-2 bg-white text-black font-bold text-sm rounded-md"
+          <div className="flex gap-2">
+            {plans.length > 1 && (
+              <select 
+                value={selectedPlanId || ''}
+                onChange={(e) => {
+                  const id = Number(e.target.value);
+                  setSelectedPlanId(id);
+                  loadPlanDetails(id);
+                }}
+                className="px-3 py-2 bg-white text-black font-bold text-sm rounded-md"
+              >
+                {plans.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            )}
+            <button
+              onClick={() => setShowEditPlanModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-white text-black font-bold text-sm hover:bg-lime-500 transition-colors rounded-md"
             >
-              {plans.map(p => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
-          )}
-        </div>
-      </div>
-
-      {/* Info Box */}
-      <div className="bg-blue-50 border border-blue-200 p-4 flex items-center gap-3 rounded-lg">
-        <div className="text-blue-500 text-xl">ℹ️</div>
-        <div>
-          <p className="text-sm text-blue-700">
-            Esta é uma visualização do plano de treino. Para editar, acesse <strong>Treinamento</strong> no menu lateral.
-          </p>
+              <Edit className="w-4 h-4" />
+              Editar
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Days List */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-xl font-bold">Dias de Treino</h3>
+        <button
+          onClick={openAddDayModal}
+          className="flex items-center gap-2 px-4 py-2 bg-lime-500 text-black font-bold hover:bg-lime-400 text-sm rounded-lg transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          Adicionar Dia
+        </button>
+      </div>
+
       {trainingDays.length === 0 ? (
         <EmptyState
           icon="calendar"
           title="Nenhum dia de treino configurado"
-          description="Configure os dias de treino na área de Treinamento."
+          description="Adicione os dias de treino para este plano."
+          action={{
+            label: 'Adicionar Primeiro Dia',
+            onClick: openAddDayModal
+          }}
         />
       ) : (
         <div className="space-y-3">
@@ -697,54 +1177,479 @@ function TrainingTab({ patient, consultancyId }: { patient: Patient; consultancy
                       <span>~{day.estimated_duration} min</span>
                     </div>
                   </div>
+                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={() => openEditDayModal(day)}
+                      className="p-2 text-zinc-400 hover:text-lime-600 hover:bg-lime-50 rounded-md transition-colors"
+                      title="Editar dia"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteDay(day.id)}
+                      className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                      title="Excluir dia"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                   {isExpanded ? <ChevronUp className="w-5 h-5 text-zinc-400" /> : <ChevronDown className="w-5 h-5 text-zinc-400" />}
                 </div>
 
-                {isExpanded && dayExercises.length > 0 && (
-                  <div className="border-t border-zinc-200 divide-y divide-zinc-100">
-                    {dayExercises.map((ex, idx) => (
-                      <div key={ex.id} className="flex items-start gap-4 p-4">
-                        <span className="w-8 h-8 flex items-center justify-center bg-zinc-100 text-zinc-600 font-bold text-sm flex-shrink-0 rounded-md">
-                          {idx + 1}
-                        </span>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <span className="font-medium">{ex.name}</span>
-                            {ex.video_url && (
-                              <a href={ex.video_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline">📹 vídeo</a>
-                            )}
-                          </div>
-                          <div className="flex flex-wrap items-center gap-2 text-sm">
-                            <span className={`px-2 py-0.5 text-xs font-bold rounded ${MUSCLE_GROUPS[ex.muscle_group]?.color || 'bg-zinc-100'}`}>
-                              {MUSCLE_GROUPS[ex.muscle_group]?.name || ex.muscle_group}
+                {isExpanded && (
+                  <div className="border-t border-zinc-200">
+                    {dayExercises.length > 0 ? (
+                      <div className="divide-y divide-zinc-100">
+                        {dayExercises.map((ex, idx) => (
+                          <div key={ex.id} className="flex items-start gap-4 p-4 group hover:bg-zinc-50">
+                            <span className="w-8 h-8 flex items-center justify-center bg-zinc-100 text-zinc-600 font-bold text-sm flex-shrink-0 rounded-md">
+                              {idx + 1}
                             </span>
-                            <span className="text-zinc-600">{ex.sets}x {ex.reps}</span>
-                            {ex.weight && <span className="text-zinc-600 font-medium">{ex.weight}</span>}
-                            <span className="text-zinc-400">Desc: {ex.rest_seconds}s</span>
-                            {ex.tempo && <span className="text-zinc-400">Cadência: {ex.tempo}</span>}
-                            {ex.technique !== 'normal' && (
-                              <Badge variant="info">
-                                {TECHNIQUES[ex.technique] || ex.technique}
-                              </Badge>
-                            )}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                <span className="font-medium">{ex.name}</span>
+                                {ex.video_url && (
+                                  <a href={ex.video_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline">📹 vídeo</a>
+                                )}
+                              </div>
+                              <div className="flex flex-wrap items-center gap-2 text-sm">
+                                <span className={`px-2 py-0.5 text-xs font-bold rounded ${MUSCLE_GROUPS[ex.muscle_group]?.color || 'bg-zinc-100'}`}>
+                                  {MUSCLE_GROUPS[ex.muscle_group]?.name || ex.muscle_group}
+                                </span>
+                                <span className="text-zinc-600">{ex.sets}x {ex.reps}</span>
+                                {ex.weight && <span className="text-zinc-600 font-medium">{ex.weight}</span>}
+                                <span className="text-zinc-400">Desc: {ex.rest_seconds}s</span>
+                                {ex.tempo && <span className="text-zinc-400">Cadência: {ex.tempo}</span>}
+                                {ex.technique !== 'normal' && (
+                                  <Badge variant="info">
+                                    {TECHNIQUES[ex.technique] || ex.technique}
+                                  </Badge>
+                                )}
+                              </div>
+                              {ex.notes && (
+                                <p className="text-xs text-zinc-500 mt-2 italic">💡 {ex.notes}</p>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
+                                onClick={() => openEditExerciseModal(ex, day.id)}
+                                className="p-1.5 text-zinc-400 hover:text-lime-600 hover:bg-lime-50 rounded-md transition-colors"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteExercise(ex.id)}
+                                className="p-1.5 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </div>
-                          {ex.notes && (
-                            <p className="text-xs text-zinc-500 mt-2 italic">💡 {ex.notes}</p>
-                          )}
-                        </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                )}
-
-                {isExpanded && dayExercises.length === 0 && (
-                  <div className="border-t border-zinc-200 p-4 text-center text-zinc-400 text-sm">
-                    Nenhum exercício configurado para este dia
+                    ) : (
+                      <div className="p-4 text-center text-zinc-400 text-sm">
+                        Nenhum exercício configurado para este dia
+                      </div>
+                    )}
+                    <div className="p-3 border-t border-zinc-200 bg-zinc-50">
+                      <button
+                        onClick={() => openAddExerciseModal(day.id)}
+                        className="w-full flex items-center justify-center gap-2 py-2 text-sm font-medium text-lime-600 hover:bg-lime-100 rounded-lg transition-colors"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Adicionar Exercício
+                      </button>
+                    </div>
                   </div>
                 )}
               </Card>
             );
           })}
+        </div>
+      )}
+
+      {/* Modal Editar Plano */}
+      {showEditPlanModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-lg p-0">
+            <div className="p-6 border-b border-zinc-200 flex items-center justify-between">
+              <h3 className="text-xl font-bold">Editar Plano de Treino</h3>
+              <button onClick={() => setShowEditPlanModal(false)} className="p-2 hover:bg-zinc-100 rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Nome do Plano</label>
+                <input
+                  type="text"
+                  value={planForm.name}
+                  onChange={(e) => setPlanForm({ ...planForm, name: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Objetivo</label>
+                  <select
+                    value={planForm.objective}
+                    onChange={(e) => setPlanForm({ ...planForm, objective: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                  >
+                    {Object.entries(OBJECTIVES).map(([key, label]) => (
+                      <option key={key} value={key}>{label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Duração (semanas)</label>
+                  <input
+                    type="number"
+                    value={planForm.duration_weeks}
+                    onChange={(e) => setPlanForm({ ...planForm, duration_weeks: Number(e.target.value) })}
+                    className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Frequência (x/semana)</label>
+                  <input
+                    type="number"
+                    value={planForm.frequency_per_week}
+                    onChange={(e) => setPlanForm({ ...planForm, frequency_per_week: Number(e.target.value) })}
+                    className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Divisão</label>
+                  <select
+                    value={planForm.split_type}
+                    onChange={(e) => setPlanForm({ ...planForm, split_type: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                  >
+                    <option value="ABC">ABC (3 dias)</option>
+                    <option value="ABCD">ABCD (4 dias)</option>
+                    <option value="ABCDE">ABCDE (5 dias)</option>
+                    <option value="PUSH_PULL_LEGS">Push/Pull/Legs</option>
+                    <option value="UPPER_LOWER">Upper/Lower</option>
+                    <option value="FULL_BODY">Full Body</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div className="p-6 border-t border-zinc-200 flex gap-3">
+              <button
+                onClick={() => setShowEditPlanModal(false)}
+                className="flex-1 py-2.5 border border-black font-bold hover:bg-black hover:text-white transition-colors rounded-lg"
+              >
+                CANCELAR
+              </button>
+              <button
+                onClick={handleEditPlan}
+                disabled={saving || !planForm.name}
+                className="flex-1 py-2.5 bg-lime-500 text-black font-bold hover:bg-lime-400 transition-colors rounded-lg disabled:opacity-50"
+              >
+                {saving ? 'SALVANDO...' : 'SALVAR ALTERAÇÕES'}
+              </button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Modal Adicionar/Editar Dia */}
+      {(showAddDayModal || showEditDayModal) && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-lg p-0">
+            <div className="p-6 border-b border-zinc-200 flex items-center justify-between">
+              <h3 className="text-xl font-bold">{editingDayId ? 'Editar Dia de Treino' : 'Novo Dia de Treino'}</h3>
+              <button onClick={() => { setShowAddDayModal(false); setShowEditDayModal(false); }} className="p-2 hover:bg-zinc-100 rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              {!editingDayId && (
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {DAY_TEMPLATES.map(template => (
+                    <button
+                      key={template.letter}
+                      onClick={() => setDayForm({
+                        ...dayForm,
+                        day_letter: template.letter,
+                        day_name: template.name,
+                        focus_muscles: template.focus,
+                      })}
+                      className={`px-3 py-2 text-sm font-bold rounded-lg transition-colors ${
+                        dayForm.day_letter === template.letter
+                          ? 'bg-lime-500 text-black'
+                          : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+                      }`}
+                    >
+                      {template.letter}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Letra do Dia</label>
+                  <input
+                    type="text"
+                    value={dayForm.day_letter}
+                    onChange={(e) => setDayForm({ ...dayForm, day_letter: e.target.value.toUpperCase() })}
+                    className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                    maxLength={2}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Nome do Treino</label>
+                  <input
+                    type="text"
+                    value={dayForm.day_name}
+                    onChange={(e) => setDayForm({ ...dayForm, day_name: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Foco Muscular</label>
+                <input
+                  type="text"
+                  value={dayForm.focus_muscles}
+                  onChange={(e) => setDayForm({ ...dayForm, focus_muscles: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                  placeholder="Ex: Peito e Tríceps"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Dia da Semana</label>
+                  <select
+                    value={dayForm.day_of_week}
+                    onChange={(e) => setDayForm({ ...dayForm, day_of_week: Number(e.target.value) })}
+                    className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                  >
+                    {Object.entries(DAY_OF_WEEK_NAMES).map(([key, name]) => (
+                      <option key={key} value={key}>{name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Duração (min)</label>
+                  <input
+                    type="number"
+                    value={dayForm.estimated_duration}
+                    onChange={(e) => setDayForm({ ...dayForm, estimated_duration: Number(e.target.value) })}
+                    className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="p-6 border-t border-zinc-200 flex gap-3">
+              <button
+                onClick={() => { setShowAddDayModal(false); setShowEditDayModal(false); }}
+                className="flex-1 py-2.5 border border-black font-bold hover:bg-black hover:text-white transition-colors rounded-lg"
+              >
+                CANCELAR
+              </button>
+              <button
+                onClick={handleSaveDay}
+                disabled={saving || !dayForm.day_letter}
+                className="flex-1 py-2.5 bg-lime-500 text-black font-bold hover:bg-lime-400 transition-colors rounded-lg disabled:opacity-50"
+              >
+                {saving ? 'SALVANDO...' : (editingDayId ? 'SALVAR' : 'ADICIONAR DIA')}
+              </button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Modal Adicionar/Editar Exercício */}
+      {(showAddExerciseModal || showEditExerciseModal) && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto p-0">
+            <div className="p-6 border-b border-zinc-200 flex items-center justify-between">
+              <h3 className="text-xl font-bold">{editingExerciseId ? 'Editar Exercício' : 'Adicionar Exercício'}</h3>
+              <button onClick={() => { setShowAddExerciseModal(false); setShowEditExerciseModal(false); }} className="p-2 hover:bg-zinc-100 rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              {/* Busca na biblioteca */}
+              {!editingExerciseId && (
+                <div className="relative">
+                  <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Buscar na Biblioteca</label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                    <input
+                      type="text"
+                      value={exerciseSearch}
+                      onChange={(e) => setExerciseSearch(e.target.value)}
+                      placeholder="Digite o nome do exercício..."
+                      className="w-full pl-10 pr-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                    />
+                  </div>
+                  {filteredExercises.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-zinc-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {filteredExercises.map(ex => (
+                        <button
+                          key={ex.id}
+                          onClick={() => selectExerciseFromLibrary(ex)}
+                          className="w-full px-4 py-3 text-left hover:bg-lime-50 flex items-center gap-3 transition-colors"
+                        >
+                          <span className={`px-2 py-0.5 text-xs font-bold rounded ${MUSCLE_GROUPS[ex.muscle_group]?.color || 'bg-zinc-100'}`}>
+                            {MUSCLE_GROUPS[ex.muscle_group]?.name || ex.muscle_group}
+                          </span>
+                          <span className="font-medium">{ex.name}</span>
+                          <span className="text-xs text-zinc-400 ml-auto">{EQUIPMENT[ex.equipment] || ex.equipment}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Nome do Exercício</label>
+                <input
+                  type="text"
+                  value={exerciseForm.name}
+                  onChange={(e) => setExerciseForm({ ...exerciseForm, name: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Grupo Muscular</label>
+                  <select
+                    value={exerciseForm.muscle_group}
+                    onChange={(e) => setExerciseForm({ ...exerciseForm, muscle_group: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                  >
+                    {Object.entries(MUSCLE_GROUPS).map(([key, val]) => (
+                      <option key={key} value={key}>{val.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Equipamento</label>
+                  <select
+                    value={exerciseForm.equipment}
+                    onChange={(e) => setExerciseForm({ ...exerciseForm, equipment: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                  >
+                    {Object.entries(EQUIPMENT).map(([key, label]) => (
+                      <option key={key} value={key}>{label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Séries</label>
+                  <input
+                    type="number"
+                    value={exerciseForm.sets}
+                    onChange={(e) => setExerciseForm({ ...exerciseForm, sets: Number(e.target.value) })}
+                    className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Repetições</label>
+                  <input
+                    type="text"
+                    value={exerciseForm.reps}
+                    onChange={(e) => setExerciseForm({ ...exerciseForm, reps: e.target.value })}
+                    placeholder="10-12"
+                    className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Carga</label>
+                  <input
+                    type="text"
+                    value={exerciseForm.weight}
+                    onChange={(e) => setExerciseForm({ ...exerciseForm, weight: e.target.value })}
+                    placeholder="20kg"
+                    className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Descanso (s)</label>
+                  <input
+                    type="number"
+                    value={exerciseForm.rest_seconds}
+                    onChange={(e) => setExerciseForm({ ...exerciseForm, rest_seconds: Number(e.target.value) })}
+                    className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Cadência/Tempo</label>
+                  <input
+                    type="text"
+                    value={exerciseForm.tempo}
+                    onChange={(e) => setExerciseForm({ ...exerciseForm, tempo: e.target.value })}
+                    placeholder="2-0-2-0"
+                    className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Técnica</label>
+                  <select
+                    value={exerciseForm.technique}
+                    onChange={(e) => setExerciseForm({ ...exerciseForm, technique: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                  >
+                    {Object.entries(TECHNIQUES).map(([key, label]) => (
+                      <option key={key} value={key}>{label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">URL do Vídeo</label>
+                <input
+                  type="text"
+                  value={exerciseForm.video_url}
+                  onChange={(e) => setExerciseForm({ ...exerciseForm, video_url: e.target.value })}
+                  placeholder="https://youtube.com/..."
+                  className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Observações</label>
+                <textarea
+                  value={exerciseForm.notes}
+                  onChange={(e) => setExerciseForm({ ...exerciseForm, notes: e.target.value })}
+                  placeholder="Dicas de execução, ajustes, etc..."
+                  rows={3}
+                  className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none resize-none"
+                />
+              </div>
+            </div>
+            <div className="p-6 border-t border-zinc-200 flex gap-3">
+              <button
+                onClick={() => { setShowAddExerciseModal(false); setShowEditExerciseModal(false); }}
+                className="flex-1 py-2.5 border border-black font-bold hover:bg-black hover:text-white transition-colors rounded-lg"
+              >
+                CANCELAR
+              </button>
+              <button
+                onClick={handleSaveExercise}
+                disabled={saving || !exerciseForm.name}
+                className="flex-1 py-2.5 bg-lime-500 text-black font-bold hover:bg-lime-400 transition-colors rounded-lg disabled:opacity-50"
+              >
+                {saving ? 'SALVANDO...' : (editingExerciseId ? 'SALVAR' : 'ADICIONAR EXERCÍCIO')}
+              </button>
+            </div>
+          </Card>
         </div>
       )}
     </div>
