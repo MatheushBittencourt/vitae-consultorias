@@ -627,6 +627,12 @@ function TrainingTab({ patient, consultancyId, adminUser }: { patient: Patient; 
   
   // Loading states
   const [saving, setSaving] = useState(false);
+  
+  // Delete confirmation modals
+  const [showDeleteDayModal, setShowDeleteDayModal] = useState(false);
+  const [showDeleteExerciseModal, setShowDeleteExerciseModal] = useState(false);
+  const [deletingDayId, setDeletingDayId] = useState<number | null>(null);
+  const [deletingExerciseId, setDeletingExerciseId] = useState<number | null>(null);
 
   useEffect(() => {
     loadPlans();
@@ -826,13 +832,21 @@ function TrainingTab({ patient, consultancyId, adminUser }: { patient: Patient; 
     }
   };
 
-  const handleDeleteDay = async (dayId: number) => {
-    if (!confirm('Excluir este dia de treino? Todos os exercícios serão removidos.')) return;
+  const confirmDeleteDay = (dayId: number) => {
+    setDeletingDayId(dayId);
+    setShowDeleteDayModal(true);
+  };
+
+  const handleDeleteDay = async () => {
+    if (!deletingDayId) return;
     try {
-      await fetch(`${API_URL}/training-days/${dayId}`, { method: 'DELETE' });
+      await fetch(`${API_URL}/training-days/${deletingDayId}`, { method: 'DELETE' });
       if (selectedPlanId) loadPlanDetails(selectedPlanId);
     } catch (error) {
       console.error('Erro ao excluir dia:', error);
+    } finally {
+      setShowDeleteDayModal(false);
+      setDeletingDayId(null);
     }
   };
 
@@ -925,13 +939,21 @@ function TrainingTab({ patient, consultancyId, adminUser }: { patient: Patient; 
     }
   };
 
-  const handleDeleteExercise = async (exerciseId: number) => {
-    if (!confirm('Excluir este exercício?')) return;
+  const confirmDeleteExercise = (exerciseId: number) => {
+    setDeletingExerciseId(exerciseId);
+    setShowDeleteExerciseModal(true);
+  };
+
+  const handleDeleteExercise = async () => {
+    if (!deletingExerciseId) return;
     try {
-      await fetch(`${API_URL}/training-exercises/${exerciseId}`, { method: 'DELETE' });
+      await fetch(`${API_URL}/training-exercises/${deletingExerciseId}`, { method: 'DELETE' });
       if (selectedPlanId) loadPlanDetails(selectedPlanId);
     } catch (error) {
       console.error('Erro ao excluir exercício:', error);
+    } finally {
+      setShowDeleteExerciseModal(false);
+      setDeletingExerciseId(null);
     }
   };
 
@@ -1186,7 +1208,7 @@ function TrainingTab({ patient, consultancyId, adminUser }: { patient: Patient; 
                       <Edit className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => handleDeleteDay(day.id)}
+                      onClick={() => confirmDeleteDay(day.id)}
                       className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
                       title="Excluir dia"
                     >
@@ -1238,7 +1260,7 @@ function TrainingTab({ patient, consultancyId, adminUser }: { patient: Patient; 
                                 <Edit className="w-4 h-4" />
                               </button>
                               <button
-                                onClick={() => handleDeleteExercise(ex.id)}
+                                onClick={() => confirmDeleteExercise(ex.id)}
                                 className="p-1.5 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -1652,6 +1674,74 @@ function TrainingTab({ patient, consultancyId, adminUser }: { patient: Patient; 
           </Card>
         </div>
       )}
+
+      {/* Modal Confirmar Exclusão de Dia */}
+      {showDeleteDayModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-sm p-6">
+            <div className="text-center mb-6">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="w-6 h-6 text-red-500" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">Excluir Dia de Treino</h3>
+              <p className="text-zinc-600 text-sm">
+                Tem certeza que deseja excluir este dia? Todos os exercícios serão removidos. Esta ação não pode ser desfeita.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteDayModal(false);
+                  setDeletingDayId(null);
+                }}
+                className="flex-1 py-2.5 border border-zinc-300 font-bold hover:border-black transition-colors text-sm rounded-lg"
+              >
+                CANCELAR
+              </button>
+              <button
+                onClick={handleDeleteDay}
+                className="flex-1 py-2.5 bg-red-500 text-white font-bold hover:bg-red-600 transition-colors text-sm rounded-lg"
+              >
+                EXCLUIR
+              </button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Modal Confirmar Exclusão de Exercício */}
+      {showDeleteExerciseModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-sm p-6">
+            <div className="text-center mb-6">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="w-6 h-6 text-red-500" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">Excluir Exercício</h3>
+              <p className="text-zinc-600 text-sm">
+                Tem certeza que deseja remover este exercício do treino?
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteExerciseModal(false);
+                  setDeletingExerciseId(null);
+                }}
+                className="flex-1 py-2.5 border border-zinc-300 font-bold hover:border-black transition-colors text-sm rounded-lg"
+              >
+                CANCELAR
+              </button>
+              <button
+                onClick={handleDeleteExercise}
+                className="flex-1 py-2.5 bg-red-500 text-white font-bold hover:bg-red-600 transition-colors text-sm rounded-lg"
+              >
+                EXCLUIR
+              </button>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
@@ -1747,6 +1837,12 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
     fat: 0,
     option_group: 0
   });
+
+  // Delete confirmation modals
+  const [showDeleteMealModal, setShowDeleteMealModal] = useState(false);
+  const [showDeleteFoodModal, setShowDeleteFoodModal] = useState(false);
+  const [deletingMealId, setDeletingMealId] = useState<number | null>(null);
+  const [deletingFoodId, setDeletingFoodId] = useState<number | null>(null);
 
   const mealTemplates = [
     { name: 'Café da manhã', time: '07:00' },
@@ -1957,15 +2053,22 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
     setShowMealModal(true);
   };
 
-  const handleDeleteMeal = async (mealId: number) => {
-    if (!confirm('Tem certeza que deseja excluir esta refeição?')) return;
+  const confirmDeleteMeal = (mealId: number) => {
+    setDeletingMealId(mealId);
+    setShowDeleteMealModal(true);
+  };
+
+  const handleDeleteMeal = async () => {
+    if (!deletingMealId) return;
 
     try {
-      await fetch(`/api/meals/${mealId}`, { method: 'DELETE' });
+      await fetch(`/api/meals/${deletingMealId}`, { method: 'DELETE' });
       loadNutritionPlan();
     } catch (error) {
       console.error('Erro ao excluir refeição:', error);
-      alert('Erro ao excluir refeição');
+    } finally {
+      setShowDeleteMealModal(false);
+      setDeletingMealId(null);
     }
   };
 
@@ -2032,14 +2135,22 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
     }
   };
 
-  const handleDeleteFood = async (foodId: number) => {
-    if (!confirm('Remover este alimento da refeição?')) return;
+  const confirmDeleteFood = (foodId: number) => {
+    setDeletingFoodId(foodId);
+    setShowDeleteFoodModal(true);
+  };
+
+  const handleDeleteFood = async () => {
+    if (!deletingFoodId) return;
 
     try {
-      await fetch(`/api/meal-foods/${foodId}`, { method: 'DELETE' });
+      await fetch(`/api/meal-foods/${deletingFoodId}`, { method: 'DELETE' });
       loadNutritionPlan();
     } catch (error) {
       console.error('Erro ao remover alimento:', error);
+    } finally {
+      setShowDeleteFoodModal(false);
+      setDeletingFoodId(null);
     }
   };
 
@@ -2323,7 +2434,7 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => handleDeleteMeal(meal.id)}
+                          onClick={() => confirmDeleteMeal(meal.id)}
                           className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                           title="Excluir refeição"
                         >
@@ -2346,7 +2457,7 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
                                 </span>
                               </div>
                               <button
-                                onClick={() => handleDeleteFood(food.id)}
+                                onClick={() => confirmDeleteFood(food.id)}
                                 className="p-1 text-zinc-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
                               >
                                 <X className="w-4 h-4" />
@@ -2382,7 +2493,7 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
                                   {food.name} ({food.quantity} {food.unit})
                                 </span>
                                 <button
-                                  onClick={() => handleDeleteFood(food.id)}
+                                  onClick={() => confirmDeleteFood(food.id)}
                                   className="p-1 text-zinc-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
                                 >
                                   <X className="w-3 h-3" />
@@ -2723,6 +2834,74 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
             </div>
           )}
         </>
+      )}
+
+      {/* Modal Confirmar Exclusão de Refeição */}
+      {showDeleteMealModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-sm p-6">
+            <div className="text-center mb-6">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="w-6 h-6 text-red-500" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">Excluir Refeição</h3>
+              <p className="text-zinc-600 text-sm">
+                Tem certeza que deseja excluir esta refeição? Todos os alimentos serão removidos.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteMealModal(false);
+                  setDeletingMealId(null);
+                }}
+                className="flex-1 py-2.5 border border-zinc-300 font-bold hover:border-black transition-colors text-sm rounded-lg"
+              >
+                CANCELAR
+              </button>
+              <button
+                onClick={handleDeleteMeal}
+                className="flex-1 py-2.5 bg-red-500 text-white font-bold hover:bg-red-600 transition-colors text-sm rounded-lg"
+              >
+                EXCLUIR
+              </button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Modal Confirmar Exclusão de Alimento */}
+      {showDeleteFoodModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-sm p-6">
+            <div className="text-center mb-6">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="w-6 h-6 text-red-500" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">Remover Alimento</h3>
+              <p className="text-zinc-600 text-sm">
+                Tem certeza que deseja remover este alimento da refeição?
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteFoodModal(false);
+                  setDeletingFoodId(null);
+                }}
+                className="flex-1 py-2.5 border border-zinc-300 font-bold hover:border-black transition-colors text-sm rounded-lg"
+              >
+                CANCELAR
+              </button>
+              <button
+                onClick={handleDeleteFood}
+                className="flex-1 py-2.5 bg-red-500 text-white font-bold hover:bg-red-600 transition-colors text-sm rounded-lg"
+              >
+                REMOVER
+              </button>
+            </div>
+          </Card>
+        </div>
       )}
     </div>
   );
