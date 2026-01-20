@@ -789,6 +789,15 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
   const [plan, setPlan] = useState<NutritionPlan | null>(null);
   const [athleteId, setAthleteId] = useState<number | null>(null);
   const [subView, setSubView] = useState<NutritionSubView>('plan');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [planForm, setPlanForm] = useState({
+    name: `Plano Nutricional - ${patient.name}`,
+    daily_calories: 2000,
+    protein_grams: 150,
+    carbs_grams: 250,
+    fat_grams: 70,
+  });
 
   useEffect(() => {
     loadNutritionPlan();
@@ -836,6 +845,43 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
       groups[group].push(food);
     });
     return groups;
+  };
+
+  const handleCreatePlan = async () => {
+    if (!athleteId) {
+      alert('Erro: Atleta não encontrado');
+      return;
+    }
+
+    try {
+      setCreating(true);
+      const response = await fetch('/api/nutrition-plans', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          athlete_id: athleteId,
+          nutritionist_id: adminUser.id,
+          name: planForm.name,
+          daily_calories: planForm.daily_calories,
+          protein_grams: planForm.protein_grams,
+          carbs_grams: planForm.carbs_grams,
+          fat_grams: planForm.fat_grams,
+          status: 'active'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Erro ao criar plano');
+      }
+
+      setShowCreateModal(false);
+      loadNutritionPlan();
+    } catch (error) {
+      console.error('Erro ao criar plano:', error);
+      alert('Erro ao criar plano nutricional');
+    } finally {
+      setCreating(false);
+    }
   };
 
   const subViewOptions = [
@@ -942,15 +988,104 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
       {renderSubNav()}
 
       {!plan ? (
-        <EmptyState
-          icon="nutrition"
-          title="Nenhum plano nutricional"
-          description="Este paciente ainda não possui um plano nutricional ativo."
-          action={{
-            label: 'Criar Plano',
-            onClick: () => {}
-          }}
-        />
+        <>
+          <EmptyState
+            icon="nutrition"
+            title="Nenhum plano nutricional"
+            description="Este paciente ainda não possui um plano nutricional ativo."
+            action={{
+              label: 'Criar Plano',
+              onClick: () => setShowCreateModal(true)
+            }}
+          />
+
+          {/* Modal de Criação de Plano */}
+          {showCreateModal && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+              <Card className="w-full max-w-lg p-0">
+                <div className="p-6 border-b border-zinc-200 flex items-center justify-between">
+                  <h3 className="text-xl font-bold">Novo Plano Nutricional</h3>
+                  <button onClick={() => setShowCreateModal(false)} className="p-2 hover:bg-zinc-100 rounded-lg">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="p-6 space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Nome do Plano</label>
+                    <input
+                      type="text"
+                      value={planForm.name}
+                      onChange={(e) => setPlanForm({ ...planForm, name: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Calorias Diárias</label>
+                      <input
+                        type="number"
+                        value={planForm.daily_calories}
+                        onChange={(e) => setPlanForm({ ...planForm, daily_calories: Number(e.target.value) })}
+                        className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Proteína (g)</label>
+                      <input
+                        type="number"
+                        value={planForm.protein_grams}
+                        onChange={(e) => setPlanForm({ ...planForm, protein_grams: Number(e.target.value) })}
+                        className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Carboidrato (g)</label>
+                      <input
+                        type="number"
+                        value={planForm.carbs_grams}
+                        onChange={(e) => setPlanForm({ ...planForm, carbs_grams: Number(e.target.value) })}
+                        className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Gordura (g)</label>
+                      <input
+                        type="number"
+                        value={planForm.fat_grams}
+                        onChange={(e) => setPlanForm({ ...planForm, fat_grams: Number(e.target.value) })}
+                        className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="bg-lime-50 p-4 rounded-lg">
+                    <p className="text-sm text-lime-700">
+                      💡 <strong>Dica:</strong> Use o <strong>Cálculo Energético</strong> para determinar os valores ideais de macronutrientes para este paciente.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="p-6 border-t border-zinc-200 flex gap-3">
+                  <button
+                    onClick={() => setShowCreateModal(false)}
+                    className="flex-1 py-2.5 border border-black font-bold hover:bg-black hover:text-white transition-colors rounded-lg"
+                  >
+                    CANCELAR
+                  </button>
+                  <button
+                    onClick={handleCreatePlan}
+                    disabled={creating || !planForm.name}
+                    className="flex-1 py-2.5 bg-lime-500 text-black font-bold hover:bg-lime-400 transition-colors rounded-lg disabled:opacity-50"
+                  >
+                    {creating ? 'CRIANDO...' : 'CRIAR PLANO'}
+                  </button>
+                </div>
+              </Card>
+            </div>
+          )}
+        </>
       ) : (
         <>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
