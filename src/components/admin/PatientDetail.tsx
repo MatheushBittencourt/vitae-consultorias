@@ -1008,7 +1008,7 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
       
       if (editingMealId) {
         // Editar refeição existente
-        await fetch(`/api/nutrition-meals/${editingMealId}`, {
+        await fetch(`/api/meals/${editingMealId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -1019,7 +1019,7 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
         });
       } else {
         // Criar nova refeição
-        await fetch('/api/nutrition-meals', {
+        await fetch('/api/meals', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -1056,7 +1056,7 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
     if (!confirm('Tem certeza que deseja excluir esta refeição?')) return;
 
     try {
-      await fetch(`/api/nutrition-meals/${mealId}`, { method: 'DELETE' });
+      await fetch(`/api/meals/${mealId}`, { method: 'DELETE' });
       loadNutritionPlan();
     } catch (error) {
       console.error('Erro ao excluir refeição:', error);
@@ -1384,13 +1384,15 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-xl font-bold">Refeições</h3>
-              <button 
-                onClick={openAddMeal}
-                className="flex items-center gap-2 px-4 py-2 bg-lime-500 text-black font-bold hover:bg-lime-400 text-sm rounded-lg transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                Adicionar Refeição
-              </button>
+              {plan.meals && plan.meals.length > 0 && (
+                <button 
+                  onClick={openAddMeal}
+                  className="flex items-center gap-2 px-4 py-2 bg-lime-500 text-black font-bold hover:bg-lime-400 text-sm rounded-lg transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Adicionar Refeição
+                </button>
+              )}
             </div>
             {plan.meals && plan.meals.length > 0 ? (
               plan.meals.map((meal) => {
