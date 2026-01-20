@@ -784,13 +784,39 @@ interface NutritionFood {
 
 type NutritionSubView = 'plan' | 'anamnesis' | 'anthropometric' | 'energy' | 'evolution';
 
+interface MealForm {
+  name: string;
+  time: string;
+  notes: string;
+}
+
+interface FoodForm {
+  food_id: number | null;
+  name: string;
+  quantity: number;
+  unit: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  option_group: number;
+}
+
 function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient; consultancyId?: number; adminUser: AdminUser }) {
   const [loading, setLoading] = useState(true);
   const [plan, setPlan] = useState<NutritionPlan | null>(null);
   const [athleteId, setAthleteId] = useState<number | null>(null);
   const [subView, setSubView] = useState<NutritionSubView>('plan');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showMealModal, setShowMealModal] = useState(false);
+  const [showFoodModal, setShowFoodModal] = useState(false);
+  const [editingMealId, setEditingMealId] = useState<number | null>(null);
   const [creating, setCreating] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [foodLibrary, setFoodLibrary] = useState<Array<{ id: number; name: string; calories: number; protein: number; carbs: number; fat: number; serving_size: string }>>([]);
+  const [foodSearch, setFoodSearch] = useState('');
+  
   const [planForm, setPlanForm] = useState({
     name: `Plano Nutricional - ${patient.name}`,
     daily_calories: 2000,
@@ -799,9 +825,49 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
     fat_grams: 70,
   });
 
+  const [mealForm, setMealForm] = useState<MealForm>({
+    name: '',
+    time: '08:00',
+    notes: ''
+  });
+
+  const [foodForm, setFoodForm] = useState<FoodForm>({
+    food_id: null,
+    name: '',
+    quantity: 1,
+    unit: 'porção',
+    calories: 0,
+    protein: 0,
+    carbs: 0,
+    fat: 0,
+    option_group: 0
+  });
+
+  const mealTemplates = [
+    { name: 'Café da manhã', time: '07:00' },
+    { name: 'Lanche da manhã', time: '10:00' },
+    { name: 'Almoço', time: '12:30' },
+    { name: 'Lanche da tarde', time: '15:30' },
+    { name: 'Jantar', time: '19:00' },
+    { name: 'Ceia', time: '21:30' },
+    { name: 'Pré-treino', time: '17:00' },
+    { name: 'Pós-treino', time: '18:30' },
+  ];
+
   useEffect(() => {
     loadNutritionPlan();
+    loadFoodLibrary();
   }, [patient.id, consultancyId]);
+
+  const loadFoodLibrary = async () => {
+    try {
+      const response = await fetch(`/api/food-library?consultancy_id=${consultancyId}`);
+      const data = await response.json();
+      setFoodLibrary(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar biblioteca:', error);
+    }
+  };
 
   const loadNutritionPlan = async () => {
     try {
@@ -883,6 +949,198 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
       setCreating(false);
     }
   };
+
+  const handleEditPlan = async () => {
+    if (!plan) return;
+
+    try {
+      setSaving(true);
+      const response = await fetch(`/api/nutrition-plans/${plan.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: planForm.name,
+          daily_calories: planForm.daily_calories,
+          protein_grams: planForm.protein_grams,
+          carbs_grams: planForm.carbs_grams,
+          fat_grams: planForm.fat_grams,
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Erro ao atualizar plano');
+      }
+
+      setShowEditModal(false);
+      loadNutritionPlan();
+    } catch (error) {
+      console.error('Erro ao atualizar plano:', error);
+      alert('Erro ao atualizar plano nutricional');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const openEditPlan = () => {
+    if (plan) {
+      setPlanForm({
+        name: plan.name,
+        daily_calories: plan.daily_calories,
+        protein_grams: plan.protein_grams,
+        carbs_grams: plan.carbs_grams,
+        fat_grams: plan.fat_grams,
+      });
+      setShowEditModal(true);
+    }
+  };
+
+  const openAddMeal = () => {
+    setEditingMealId(null);
+    setMealForm({ name: '', time: '08:00', notes: '' });
+    setShowMealModal(true);
+  };
+
+  const handleSaveMeal = async () => {
+    if (!plan || !mealForm.name) return;
+
+    try {
+      setSaving(true);
+      
+      if (editingMealId) {
+        // Editar refeição existente
+        await fetch(`/api/nutrition-meals/${editingMealId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: mealForm.name,
+            time: mealForm.time,
+            notes: mealForm.notes
+          })
+        });
+      } else {
+        // Criar nova refeição
+        await fetch('/api/nutrition-meals', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            plan_id: plan.id,
+            name: mealForm.name,
+            time: mealForm.time,
+            notes: mealForm.notes,
+            order_index: (plan.meals?.length || 0) + 1
+          })
+        });
+      }
+
+      setShowMealModal(false);
+      loadNutritionPlan();
+    } catch (error) {
+      console.error('Erro ao salvar refeição:', error);
+      alert('Erro ao salvar refeição');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const openEditMeal = (meal: NutritionMeal) => {
+    setEditingMealId(meal.id);
+    setMealForm({
+      name: meal.name,
+      time: meal.time || '08:00',
+      notes: ''
+    });
+    setShowMealModal(true);
+  };
+
+  const handleDeleteMeal = async (mealId: number) => {
+    if (!confirm('Tem certeza que deseja excluir esta refeição?')) return;
+
+    try {
+      await fetch(`/api/nutrition-meals/${mealId}`, { method: 'DELETE' });
+      loadNutritionPlan();
+    } catch (error) {
+      console.error('Erro ao excluir refeição:', error);
+      alert('Erro ao excluir refeição');
+    }
+  };
+
+  const openAddFood = (mealId: number, optionGroup: number = 0) => {
+    setEditingMealId(mealId);
+    setFoodForm({
+      food_id: null,
+      name: '',
+      quantity: 1,
+      unit: 'porção',
+      calories: 0,
+      protein: 0,
+      carbs: 0,
+      fat: 0,
+      option_group: optionGroup
+    });
+    setFoodSearch('');
+    setShowFoodModal(true);
+  };
+
+  const selectFoodFromLibrary = (food: typeof foodLibrary[0]) => {
+    setFoodForm({
+      ...foodForm,
+      food_id: food.id,
+      name: food.name,
+      calories: food.calories,
+      protein: food.protein,
+      carbs: food.carbs,
+      fat: food.fat,
+      unit: food.serving_size || 'porção'
+    });
+    setFoodSearch(food.name);
+  };
+
+  const handleSaveFood = async () => {
+    if (!editingMealId || !foodForm.name) return;
+
+    try {
+      setSaving(true);
+      await fetch('/api/meal-foods', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          meal_id: editingMealId,
+          food_id: foodForm.food_id,
+          name: foodForm.name,
+          quantity: foodForm.quantity,
+          unit: foodForm.unit,
+          calories: foodForm.calories * foodForm.quantity,
+          protein: foodForm.protein * foodForm.quantity,
+          carbs: foodForm.carbs * foodForm.quantity,
+          fat: foodForm.fat * foodForm.quantity,
+          option_group: foodForm.option_group
+        })
+      });
+
+      setShowFoodModal(false);
+      loadNutritionPlan();
+    } catch (error) {
+      console.error('Erro ao adicionar alimento:', error);
+      alert('Erro ao adicionar alimento');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteFood = async (foodId: number) => {
+    if (!confirm('Remover este alimento da refeição?')) return;
+
+    try {
+      await fetch(`/api/meal-foods/${foodId}`, { method: 'DELETE' });
+      loadNutritionPlan();
+    } catch (error) {
+      console.error('Erro ao remover alimento:', error);
+    }
+  };
+
+  const filteredFoods = foodLibrary.filter(f => 
+    f.name.toLowerCase().includes(foodSearch.toLowerCase())
+  ).slice(0, 10);
 
   const subViewOptions = [
     { id: 'plan' as NutritionSubView, label: 'Plano Alimentar', icon: Apple },
@@ -1093,7 +1351,10 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
               <h2 className="text-xl font-bold">{plan.name}</h2>
               <p className="text-sm text-zinc-600">Nutricionista: {plan.nutritionist_name}</p>
             </div>
-            <button className="flex items-center gap-2 px-4 py-2 border border-black hover:bg-black hover:text-white transition-colors text-sm rounded-md">
+            <button 
+              onClick={openEditPlan}
+              className="flex items-center gap-2 px-4 py-2 border border-black hover:bg-black hover:text-white transition-colors text-sm rounded-md"
+            >
               <Edit className="w-4 h-4" />
               Editar Plano
             </button>
@@ -1123,45 +1384,125 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-xl font-bold">Refeições</h3>
-              <button className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-lime-600 hover:bg-lime-50 rounded-lg transition-colors">
+              <button 
+                onClick={openAddMeal}
+                className="flex items-center gap-2 px-4 py-2 bg-lime-500 text-black font-bold hover:bg-lime-400 text-sm rounded-lg transition-colors"
+              >
                 <Plus className="w-4 h-4" />
-                Adicionar
+                Adicionar Refeição
               </button>
             </div>
             {plan.meals && plan.meals.length > 0 ? (
               plan.meals.map((meal) => {
                 const optionGroups = getOptionGroups(meal.foods);
                 const availableOptions = Object.keys(optionGroups).map(Number).sort((a, b) => a - b);
+                const hasMainFoods = optionGroups[0]?.length > 0;
                 
                 return (
                   <Card key={meal.id} className="p-4 hover:border-lime-500 transition-colors">
-                    <div className="flex items-center gap-4 mb-3">
-                      <div className="text-center min-w-[60px] bg-zinc-100 p-2 rounded-lg">
-                        <div className="text-lg font-bold">{meal.time?.substring(0, 5) || '--:--'}</div>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-4">
+                        <div className="text-center min-w-[60px] bg-lime-100 text-lime-700 p-2 rounded-lg">
+                          <div className="text-lg font-bold">{meal.time?.substring(0, 5) || '--:--'}</div>
+                        </div>
+                        <div className="font-bold text-lg">{meal.name}</div>
                       </div>
-                      <div className="font-bold text-lg">{meal.name}</div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => openEditMeal(meal)}
+                          className="p-2 text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 rounded-lg transition-colors"
+                          title="Editar refeição"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteMeal(meal.id)}
+                          className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Excluir refeição"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                     
-                    {availableOptions.map(optNum => {
-                      const foods = optionGroups[optNum] || [];
-                      if (foods.length === 0) return null;
+                    {/* Alimentos principais */}
+                    <div className="ml-[76px] mb-3">
+                      {hasMainFoods ? (
+                        <div className="space-y-2">
+                          {optionGroups[0].map((food) => (
+                            <div key={food.id} className="flex items-center justify-between py-1.5 px-3 bg-lime-50 rounded-lg group">
+                              <div className="flex-1">
+                                <span className="font-medium text-zinc-800">{food.name}</span>
+                                <span className="text-zinc-500 ml-2">({food.quantity} {food.unit})</span>
+                                <span className="text-xs text-zinc-400 ml-2">
+                                  {food.calories}kcal | P:{food.protein}g | C:{food.carbs}g | G:{food.fat}g
+                                </span>
+                              </div>
+                              <button
+                                onClick={() => handleDeleteFood(food.id)}
+                                className="p-1 text-zinc-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-zinc-400 italic">Nenhum alimento adicionado</p>
+                      )}
                       
+                      <button
+                        onClick={() => openAddFood(meal.id, 0)}
+                        className="mt-2 flex items-center gap-1 text-sm text-lime-600 hover:text-lime-700 font-medium"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Adicionar alimento
+                      </button>
+                    </div>
+
+                    {/* Substituições */}
+                    {availableOptions.filter(n => n > 0).map(optNum => {
+                      const foods = optionGroups[optNum] || [];
                       return (
-                        <div key={optNum} className={`ml-[76px] mb-3 pl-3 border-l-2 ${optNum === 0 ? 'border-lime-500' : 'border-orange-400'}`}>
-                          <div className={`text-xs font-bold mb-1 ${optNum === 0 ? 'text-lime-600' : 'text-orange-500'}`}>
-                            {optNum === 0 ? '🍽️ PRINCIPAL' : `🔄 SUBSTITUIÇÃO ${optNum}`}
+                        <div key={optNum} className="ml-[76px] mb-3 pl-3 border-l-2 border-orange-400">
+                          <div className="text-xs font-bold mb-2 text-orange-500 flex items-center justify-between">
+                            <span>🔄 SUBSTITUIÇÃO {optNum}</span>
                           </div>
-                          <div className="text-sm text-zinc-600">
-                            {foods.map((food, idx) => (
-                              <span key={food.id}>
-                                {food.name} ({food.quantity} {food.unit})
-                                {idx < foods.length - 1 ? ', ' : ''}
-                              </span>
+                          <div className="space-y-1">
+                            {foods.map((food) => (
+                              <div key={food.id} className="flex items-center justify-between py-1 px-2 bg-orange-50 rounded group">
+                                <span className="text-sm text-zinc-700">
+                                  {food.name} ({food.quantity} {food.unit})
+                                </span>
+                                <button
+                                  onClick={() => handleDeleteFood(food.id)}
+                                  className="p-1 text-zinc-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
                             ))}
                           </div>
+                          <button
+                            onClick={() => openAddFood(meal.id, optNum)}
+                            className="mt-1 text-xs text-orange-500 hover:text-orange-600"
+                          >
+                            + Adicionar substituto
+                          </button>
                         </div>
                       );
                     })}
+
+                    {/* Botão para nova substituição */}
+                    <div className="ml-[76px]">
+                      <button
+                        onClick={() => openAddFood(meal.id, (Math.max(...availableOptions, 0) + 1))}
+                        className="text-xs text-zinc-500 hover:text-orange-500 flex items-center gap-1"
+                      >
+                        <Plus className="w-3 h-3" />
+                        Adicionar opção de substituição
+                      </button>
+                    </div>
                   </Card>
                 );
               })
@@ -1170,9 +1511,310 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
                 icon="nutrition"
                 title="Nenhuma refeição"
                 description="Este plano ainda não possui refeições cadastradas."
+                action={{
+                  label: 'Adicionar Primeira Refeição',
+                  onClick: openAddMeal
+                }}
               />
             )}
           </div>
+
+          {/* Modal de Editar Plano */}
+          {showEditModal && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+              <Card className="w-full max-w-lg p-0">
+                <div className="p-6 border-b border-zinc-200 flex items-center justify-between">
+                  <h3 className="text-xl font-bold">Editar Plano</h3>
+                  <button onClick={() => setShowEditModal(false)} className="p-2 hover:bg-zinc-100 rounded-lg">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="p-6 space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Nome do Plano</label>
+                    <input
+                      type="text"
+                      value={planForm.name}
+                      onChange={(e) => setPlanForm({ ...planForm, name: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Calorias</label>
+                      <input
+                        type="number"
+                        value={planForm.daily_calories}
+                        onChange={(e) => setPlanForm({ ...planForm, daily_calories: Number(e.target.value) })}
+                        className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Proteína (g)</label>
+                      <input
+                        type="number"
+                        value={planForm.protein_grams}
+                        onChange={(e) => setPlanForm({ ...planForm, protein_grams: Number(e.target.value) })}
+                        className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Carboidrato (g)</label>
+                      <input
+                        type="number"
+                        value={planForm.carbs_grams}
+                        onChange={(e) => setPlanForm({ ...planForm, carbs_grams: Number(e.target.value) })}
+                        className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Gordura (g)</label>
+                      <input
+                        type="number"
+                        value={planForm.fat_grams}
+                        onChange={(e) => setPlanForm({ ...planForm, fat_grams: Number(e.target.value) })}
+                        className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="p-6 border-t border-zinc-200 flex gap-3">
+                  <button onClick={() => setShowEditModal(false)} className="flex-1 py-2.5 border border-black font-bold hover:bg-black hover:text-white transition-colors rounded-lg">
+                    CANCELAR
+                  </button>
+                  <button onClick={handleEditPlan} disabled={saving} className="flex-1 py-2.5 bg-lime-500 text-black font-bold hover:bg-lime-400 transition-colors rounded-lg disabled:opacity-50">
+                    {saving ? 'SALVANDO...' : 'SALVAR'}
+                  </button>
+                </div>
+              </Card>
+            </div>
+          )}
+
+          {/* Modal de Adicionar/Editar Refeição */}
+          {showMealModal && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+              <Card className="w-full max-w-lg p-0">
+                <div className="p-6 border-b border-zinc-200 flex items-center justify-between">
+                  <h3 className="text-xl font-bold">{editingMealId ? 'Editar Refeição' : 'Nova Refeição'}</h3>
+                  <button onClick={() => setShowMealModal(false)} className="p-2 hover:bg-zinc-100 rounded-lg">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="p-6 space-y-4">
+                  {/* Templates de refeição */}
+                  {!editingMealId && (
+                    <div>
+                      <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Atalhos</label>
+                      <div className="flex flex-wrap gap-2">
+                        {mealTemplates.map(template => (
+                          <button
+                            key={template.name}
+                            onClick={() => setMealForm({ ...mealForm, name: template.name, time: template.time })}
+                            className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${
+                              mealForm.name === template.name
+                                ? 'bg-lime-500 text-black border-lime-500'
+                                : 'border-zinc-200 hover:border-lime-500'
+                            }`}
+                          >
+                            {template.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Nome da Refeição</label>
+                    <input
+                      type="text"
+                      value={mealForm.name}
+                      onChange={(e) => setMealForm({ ...mealForm, name: e.target.value })}
+                      placeholder="Ex: Café da manhã, Almoço..."
+                      className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Horário</label>
+                    <input
+                      type="time"
+                      value={mealForm.time}
+                      onChange={(e) => setMealForm({ ...mealForm, time: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                    />
+                  </div>
+                </div>
+                <div className="p-6 border-t border-zinc-200 flex gap-3">
+                  <button onClick={() => setShowMealModal(false)} className="flex-1 py-2.5 border border-black font-bold hover:bg-black hover:text-white transition-colors rounded-lg">
+                    CANCELAR
+                  </button>
+                  <button onClick={handleSaveMeal} disabled={saving || !mealForm.name} className="flex-1 py-2.5 bg-lime-500 text-black font-bold hover:bg-lime-400 transition-colors rounded-lg disabled:opacity-50">
+                    {saving ? 'SALVANDO...' : editingMealId ? 'SALVAR' : 'ADICIONAR'}
+                  </button>
+                </div>
+              </Card>
+            </div>
+          )}
+
+          {/* Modal de Adicionar Alimento */}
+          {showFoodModal && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+              <Card className="w-full max-w-xl p-0 max-h-[90vh] overflow-hidden flex flex-col">
+                <div className="p-6 border-b border-zinc-200 flex items-center justify-between">
+                  <h3 className="text-xl font-bold">
+                    {foodForm.option_group === 0 ? 'Adicionar Alimento' : `Adicionar Substituto (Opção ${foodForm.option_group})`}
+                  </h3>
+                  <button onClick={() => setShowFoodModal(false)} className="p-2 hover:bg-zinc-100 rounded-lg">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="p-6 space-y-4 overflow-y-auto flex-1">
+                  {/* Busca na biblioteca */}
+                  <div>
+                    <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Buscar na Biblioteca</label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+                      <input
+                        type="text"
+                        value={foodSearch}
+                        onChange={(e) => setFoodSearch(e.target.value)}
+                        placeholder="Digite para buscar..."
+                        className="w-full pl-10 pr-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                      />
+                    </div>
+                    
+                    {/* Resultados da busca */}
+                    {foodSearch && filteredFoods.length > 0 && (
+                      <div className="mt-2 border border-zinc-200 rounded-lg max-h-48 overflow-y-auto">
+                        {filteredFoods.map(food => (
+                          <button
+                            key={food.id}
+                            onClick={() => selectFoodFromLibrary(food)}
+                            className={`w-full text-left px-4 py-2 hover:bg-lime-50 border-b border-zinc-100 last:border-b-0 ${
+                              foodForm.food_id === food.id ? 'bg-lime-50' : ''
+                            }`}
+                          >
+                            <div className="font-medium">{food.name}</div>
+                            <div className="text-xs text-zinc-500">
+                              {food.calories}kcal | P:{food.protein}g | C:{food.carbs}g | G:{food.fat}g
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Nome do alimento */}
+                  <div>
+                    <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Nome do Alimento</label>
+                    <input
+                      type="text"
+                      value={foodForm.name}
+                      onChange={(e) => setFoodForm({ ...foodForm, name: e.target.value })}
+                      placeholder="Ex: Frango grelhado"
+                      className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                    />
+                  </div>
+
+                  {/* Quantidade e unidade */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Quantidade</label>
+                      <input
+                        type="number"
+                        step="0.5"
+                        value={foodForm.quantity}
+                        onChange={(e) => setFoodForm({ ...foodForm, quantity: Number(e.target.value) })}
+                        className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Unidade</label>
+                      <select
+                        value={foodForm.unit}
+                        onChange={(e) => setFoodForm({ ...foodForm, unit: e.target.value })}
+                        className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                      >
+                        <option value="porção">porção</option>
+                        <option value="g">gramas (g)</option>
+                        <option value="ml">mililitros (ml)</option>
+                        <option value="unidade">unidade</option>
+                        <option value="fatia">fatia</option>
+                        <option value="colher de sopa">colher de sopa</option>
+                        <option value="colher de chá">colher de chá</option>
+                        <option value="xícara">xícara</option>
+                        <option value="copo">copo</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Macros */}
+                  <div className="grid grid-cols-4 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold mb-2 text-zinc-500">KCAL</label>
+                      <input
+                        type="number"
+                        value={foodForm.calories}
+                        onChange={(e) => setFoodForm({ ...foodForm, calories: Number(e.target.value) })}
+                        className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold mb-2 text-zinc-500">PROT (g)</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={foodForm.protein}
+                        onChange={(e) => setFoodForm({ ...foodForm, protein: Number(e.target.value) })}
+                        className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold mb-2 text-zinc-500">CARB (g)</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={foodForm.carbs}
+                        onChange={(e) => setFoodForm({ ...foodForm, carbs: Number(e.target.value) })}
+                        className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold mb-2 text-zinc-500">GORD (g)</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={foodForm.fat}
+                        onChange={(e) => setFoodForm({ ...foodForm, fat: Number(e.target.value) })}
+                        className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Preview dos valores totais */}
+                  {foodForm.quantity > 0 && foodForm.calories > 0 && (
+                    <div className="bg-lime-50 p-4 rounded-lg">
+                      <p className="text-xs font-bold text-zinc-500 mb-2 uppercase">Total para {foodForm.quantity} {foodForm.unit}(s)</p>
+                      <div className="flex gap-4 text-sm">
+                        <span><strong>{Math.round(foodForm.calories * foodForm.quantity)}</strong> kcal</span>
+                        <span><strong>{(foodForm.protein * foodForm.quantity).toFixed(1)}</strong>g prot</span>
+                        <span><strong>{(foodForm.carbs * foodForm.quantity).toFixed(1)}</strong>g carb</span>
+                        <span><strong>{(foodForm.fat * foodForm.quantity).toFixed(1)}</strong>g gord</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="p-6 border-t border-zinc-200 flex gap-3">
+                  <button onClick={() => setShowFoodModal(false)} className="flex-1 py-2.5 border border-black font-bold hover:bg-black hover:text-white transition-colors rounded-lg">
+                    CANCELAR
+                  </button>
+                  <button onClick={handleSaveFood} disabled={saving || !foodForm.name} className="flex-1 py-2.5 bg-lime-500 text-black font-bold hover:bg-lime-400 transition-colors rounded-lg disabled:opacity-50">
+                    {saving ? 'SALVANDO...' : 'ADICIONAR'}
+                  </button>
+                </div>
+              </Card>
+            </div>
+          )}
         </>
       )}
     </div>
