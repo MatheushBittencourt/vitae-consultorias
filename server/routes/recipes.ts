@@ -7,6 +7,29 @@
 import { Router, Request, Response } from 'express';
 import { Pool, RowDataPacket, ResultSetHeader } from 'mysql2/promise';
 
+// ===========================================
+// SECURITY: Whitelist de campos permitidos para queries dinâmicas
+// ===========================================
+const ALLOWED_RECIPE_FIELDS = [
+  'consultancy_id', 'created_by', 'name', 'description', 'category', 'preparation_time',
+  'cooking_time', 'difficulty', 'servings', 'serving_size', 'instructions', 'tips',
+  'is_gluten_free', 'is_lactose_free', 'is_vegan', 'is_vegetarian', 'is_low_carb',
+  'is_high_protein', 'image_url', 'is_global', 'is_public', 'total_calories',
+  'total_protein', 'total_carbs', 'total_fat', 'total_fiber', 'calories_per_serving',
+  'protein_per_serving', 'carbs_per_serving', 'fat_per_serving', 'fiber_per_serving'
+];
+
+// Função para filtrar apenas campos permitidos
+const filterAllowedFields = (data: Record<string, any>, allowedFields: string[]): Record<string, any> => {
+  const filtered: Record<string, any> = {};
+  for (const key of Object.keys(data)) {
+    if (allowedFields.includes(key)) {
+      filtered[key] = data[key];
+    }
+  }
+  return filtered;
+};
+
 interface Recipe {
   id?: number;
   consultancy_id: number;
@@ -183,8 +206,15 @@ export function createRecipeRoutes(pool: Pool): Router {
       recipeData.fiber_per_serving = Math.round((totalFiber / servings) * 10) / 10;
       
       // Inserir receita
-      const fields = Object.keys(recipeData);
-      const values = Object.values(recipeData);
+      // SECURITY: Filtrar apenas campos permitidos
+      const filteredData = filterAllowedFields(recipeData, ALLOWED_RECIPE_FIELDS);
+      const fields = Object.keys(filteredData);
+      const values = Object.values(filteredData);
+      
+      if (fields.length === 0) {
+        return res.status(400).json({ error: 'Nenhum campo válido para inserir' });
+      }
+      
       const placeholders = fields.map(() => '?').join(', ');
       
       const [result] = await pool.query<ResultSetHeader>(
@@ -261,8 +291,15 @@ export function createRecipeRoutes(pool: Pool): Router {
       }
       
       // Atualizar receita
-      const fields = Object.keys(recipeData);
-      const values = Object.values(recipeData);
+      // SECURITY: Filtrar apenas campos permitidos
+      const filteredData = filterAllowedFields(recipeData, ALLOWED_RECIPE_FIELDS);
+      const fields = Object.keys(filteredData);
+      const values = Object.values(filteredData);
+      
+      if (fields.length === 0) {
+        return res.status(400).json({ error: 'Nenhum campo válido para atualizar' });
+      }
+      
       const setClause = fields.map(f => `${f} = ?`).join(', ');
       
       await pool.query(

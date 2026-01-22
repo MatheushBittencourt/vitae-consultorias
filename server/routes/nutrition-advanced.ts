@@ -15,6 +15,46 @@
 import { Router, Request, Response } from 'express';
 import { Pool, RowDataPacket, ResultSetHeader } from 'mysql2/promise';
 
+// ===========================================
+// SECURITY: Whitelist de campos permitidos para queries dinâmicas
+// ===========================================
+const ALLOWED_ANAMNESIS_FIELDS = [
+  'athlete_id', 'nutritionist_id', 'evaluation_date', 'main_complaint', 'clinical_history',
+  'family_history', 'current_medications', 'supplements', 'allergies', 'food_intolerances',
+  'dietary_restrictions', 'eating_habits', 'meal_frequency', 'water_intake', 'alcohol_consumption',
+  'smoking', 'physical_activity', 'sleep_quality', 'stress_level', 'bowel_function',
+  'appetite', 'food_preferences', 'food_aversions', 'goals', 'observations'
+];
+
+const ALLOWED_ANTHROPOMETRIC_FIELDS = [
+  'athlete_id', 'nutritionist_id', 'assessment_date', 'weight', 'height', 'bmi', 'bmi_classification',
+  'body_fat_percentage', 'muscle_mass', 'bone_mass', 'body_water', 'visceral_fat',
+  'waist_circumference', 'hip_circumference', 'chest_circumference', 'arm_circumference',
+  'thigh_circumference', 'calf_circumference', 'neck_circumference', 'subscapular_skinfold',
+  'triceps_skinfold', 'biceps_skinfold', 'suprailiac_skinfold', 'abdominal_skinfold',
+  'thigh_skinfold', 'calf_skinfold', 'observations'
+];
+
+const ALLOWED_ENERGY_FIELDS = [
+  'athlete_id', 'nutritionist_id', 'calculation_date', 'weight', 'height', 'age', 'sex',
+  'activity_level', 'bmr_formula', 'bmr', 'tdee', 'goal', 'caloric_adjustment',
+  'target_calories', 'protein_ratio', 'carb_ratio', 'fat_ratio', 'protein_grams',
+  'carb_grams', 'fat_grams', 'observations', 'is_active', 'protein_per_kg', 'protein_percentage',
+  'protein_calories', 'carbs_per_kg', 'carbs_percentage', 'carbs_calories', 'fat_per_kg',
+  'fat_percentage', 'fat_calories', 'fiber_grams', 'water_liters'
+];
+
+// Função para filtrar apenas campos permitidos
+const filterAllowedFields = (data: Record<string, any>, allowedFields: string[]): Record<string, any> => {
+  const filtered: Record<string, any> = {};
+  for (const key of Object.keys(data)) {
+    if (allowedFields.includes(key)) {
+      filtered[key] = data[key];
+    }
+  }
+  return filtered;
+};
+
 // Interfaces
 interface NutritionAnamnesis {
   id?: number;
@@ -380,8 +420,15 @@ export function createNutritionAdvancedRoutes(pool: Pool): Router {
         const id = existing[0].id;
         delete data.athlete_id; // Don't update athlete_id
         
-        const fields = Object.keys(data);
-        const values = Object.values(data);
+        // SECURITY: Filtrar apenas campos permitidos
+        const filteredData = filterAllowedFields(data, ALLOWED_ANAMNESIS_FIELDS);
+        const fields = Object.keys(filteredData);
+        const values = Object.values(filteredData);
+        
+        if (fields.length === 0) {
+          return res.status(400).json({ error: 'Nenhum campo válido para atualizar' });
+        }
+        
         const setClause = fields.map(f => `${f} = ?`).join(', ');
         
         await pool.query(
@@ -392,8 +439,15 @@ export function createNutritionAdvancedRoutes(pool: Pool): Router {
         res.json({ id, message: 'Anamnese atualizada com sucesso' });
       } else {
         // Insert
-        const fields = Object.keys(data);
-        const values = Object.values(data);
+        // SECURITY: Filtrar apenas campos permitidos
+        const filteredData = filterAllowedFields(data, ALLOWED_ANAMNESIS_FIELDS);
+        const fields = Object.keys(filteredData);
+        const values = Object.values(filteredData);
+        
+        if (fields.length === 0) {
+          return res.status(400).json({ error: 'Nenhum campo válido para inserir' });
+        }
+        
         const placeholders = fields.map(() => '?').join(', ');
         
         const [result] = await pool.query<ResultSetHeader>(
@@ -537,8 +591,15 @@ export function createNutritionAdvancedRoutes(pool: Pool): Router {
         }
       }
       
-      const fields = Object.keys(data);
-      const values = Object.values(data);
+      // SECURITY: Filtrar apenas campos permitidos
+      const filteredData = filterAllowedFields(data, ALLOWED_ANTHROPOMETRIC_FIELDS);
+      const fields = Object.keys(filteredData);
+      const values = Object.values(filteredData);
+      
+      if (fields.length === 0) {
+        return res.status(400).json({ error: 'Nenhum campo válido para inserir' });
+      }
+      
       const placeholders = fields.map(() => '?').join(', ');
       
       const [result] = await pool.query<ResultSetHeader>(
@@ -579,8 +640,15 @@ export function createNutritionAdvancedRoutes(pool: Pool): Router {
         data.bmi_classification = bmi.classification;
       }
       
-      const fields = Object.keys(data);
-      const values = Object.values(data);
+      // SECURITY: Filtrar apenas campos permitidos
+      const filteredData = filterAllowedFields(data, ALLOWED_ANTHROPOMETRIC_FIELDS);
+      const fields = Object.keys(filteredData);
+      const values = Object.values(filteredData);
+      
+      if (fields.length === 0) {
+        return res.status(400).json({ error: 'Nenhum campo válido para atualizar' });
+      }
+      
       const setClause = fields.map(f => `${f} = ?`).join(', ');
       
       await pool.query(
@@ -718,8 +786,15 @@ export function createNutritionAdvancedRoutes(pool: Pool): Router {
         is_active: true
       };
       
-      const fields = Object.keys(data);
-      const values = Object.values(data);
+      // SECURITY: Filtrar apenas campos permitidos
+      const filteredData = filterAllowedFields(data, ALLOWED_ENERGY_FIELDS);
+      const fields = Object.keys(filteredData);
+      const values = Object.values(filteredData);
+      
+      if (fields.length === 0) {
+        return res.status(400).json({ error: 'Nenhum campo válido para inserir' });
+      }
+      
       const placeholders = fields.map(() => '?').join(', ');
       
       const [result] = await pool.query<ResultSetHeader>(

@@ -89,7 +89,7 @@ export function Avatar({
               const parent = e.currentTarget.parentElement;
               if (parent) {
                 parent.classList.add(bgColor, 'text-white');
-                parent.innerHTML = initials;
+                parent.textContent = initials;
               }
             }}
           />

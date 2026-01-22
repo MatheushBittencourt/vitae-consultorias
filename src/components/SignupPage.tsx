@@ -253,7 +253,8 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
           identificationNumber: docNumber,
         });
       } catch (tokenError: any) {
-        console.error('Erro ao criar token:', tokenError);
+        // Log sanitizado - não expõe dados sensíveis
+        console.error('Erro ao criar token do cartão');
         if (tokenError?.cause) {
           const causes = tokenError.cause;
           if (Array.isArray(causes) && causes.length > 0) {
@@ -280,7 +281,8 @@ export function SignupPage({ onBack, onSuccess, initialPlanId }: SignupPageProps
       }
 
       if (!cardTokenResponse?.id) {
-        console.error('Token response:', cardTokenResponse);
+        // Não logar dados sensíveis do token
+        console.error('Falha ao obter token do cartão');
         throw new Error('Não foi possível processar o cartão. Verifique os dados.');
       }
 
