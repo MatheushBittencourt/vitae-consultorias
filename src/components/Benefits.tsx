@@ -157,7 +157,7 @@ export function Benefits() {
               <div className="text-sm sm:text-base text-zinc-600">Módulos integrados</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl sm:text-4xl lg:text-5xl font-bold text-lime-500 mb-2">♾️</div>
+              <div className="text-3xl sm:text-4xl lg:text-5xl font-bold text-lime-500 mb-2">∞</div>
               <div className="text-sm sm:text-base text-zinc-600">Pacientes ilimitados</div>
             </div>
             <div className="text-center">
