@@ -1,14 +1,106 @@
 import 'dotenv/config'
-import express from 'express'
+import express, { Request, Response, NextFunction } from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
 import rateLimit from 'express-rate-limit'
 import bcrypt from 'bcryptjs'
 import crypto from 'crypto'
+import jwt from 'jsonwebtoken'
 import { createPool, RowDataPacket } from 'mysql2/promise'
 import { MercadoPagoConfig, PreApproval, Payment } from 'mercadopago'
 import { createNutritionAdvancedRoutes } from './routes/nutrition-advanced'
 import { createRecipeRoutes } from './routes/recipes'
+
+// ===========================================
+// CONFIGURAÇÃO DE SEGURANÇA - JWT
+// ===========================================
+const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex')
+const JWT_EXPIRES_IN = '24h'
+const BCRYPT_ROUNDS = 12 // Aumentado de 10 para 12 (recomendação OWASP)
+
+// Interface para payload do JWT
+interface JWTPayload {
+  userId: number;
+  email: string;
+  role: 'superadmin' | 'admin' | 'coach' | 'nutritionist' | 'physio' | 'athlete';
+  consultancyId?: number;
+}
+
+// Extender Request para incluir user
+declare global {
+  namespace Express {
+    interface Request {
+      user?: JWTPayload;
+    }
+  }
+}
+
+// Middleware de autenticação JWT
+const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
+  const authHeader = req.headers['authorization']
+  const token = authHeader && authHeader.split(' ')[1] // Bearer TOKEN
+
+  if (!token) {
+    return res.status(401).json({ error: 'Token de autenticação não fornecido' })
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload
+    req.user = decoded
+    next()
+  } catch (error) {
+    return res.status(403).json({ error: 'Token inválido ou expirado' })
+  }
+}
+
+// Middleware para verificar role específico
+const requireRole = (...allowedRoles: string[]) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Não autenticado' })
+    }
+    if (!allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({ error: 'Acesso negado. Permissão insuficiente.' })
+    }
+    next()
+  }
+}
+
+// Middleware para verificar se usuário pertence à consultoria
+const requireConsultancy = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Não autenticado' })
+  }
+  
+  const consultancyId = req.params.consultancy_id || req.query.consultancy_id || req.body.consultancy_id
+  
+  // Super admin pode acessar qualquer consultoria
+  if (req.user.role === 'superadmin') {
+    return next()
+  }
+  
+  // Verificar se usuário pertence à consultoria requisitada
+  if (consultancyId && req.user.consultancyId !== Number(consultancyId)) {
+    return res.status(403).json({ error: 'Acesso negado. Você não pertence a esta consultoria.' })
+  }
+  
+  next()
+}
+
+// Função para gerar token JWT
+const generateToken = (payload: JWTPayload): string => {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN })
+}
+
+// Função para sanitizar erros em produção
+const sanitizeError = (error: unknown, isProduction: boolean): string => {
+  if (!isProduction) {
+    return String(error)
+  }
+  // Em produção, não expõe detalhes do erro
+  console.error('Error:', error)
+  return 'Erro interno do servidor'
+}
 
 // ===========================================
 // CONFIGURAÇÃO DO AMBIENTE
@@ -302,8 +394,18 @@ const isValidEmail = (email: string): boolean => {
   return emailRegex.test(email)
 }
 
-// Validar senha forte (mínimo 6 caracteres)
+// Validar senha forte (mínimo 8 caracteres, com complexidade)
 const isValidPassword = (password: string): boolean => {
+  if (!password || password.length < 8) return false
+  // Requer pelo menos: 1 maiúscula, 1 minúscula, 1 número
+  const hasUpper = /[A-Z]/.test(password)
+  const hasLower = /[a-z]/.test(password)
+  const hasNumber = /[0-9]/.test(password)
+  return hasUpper && hasLower && hasNumber
+}
+
+// Validar senha básica (para login - aceita senhas antigas)
+const isValidPasswordBasic = (password: string): boolean => {
   return password && password.length >= 6
 }
 
@@ -354,17 +456,28 @@ app.post('/api/superadmin/login', authLimiter, async (req, res) => {
 
     const user = rows[0]
     
-    // Verificar senha com bcrypt (ou comparação direta para senhas antigas)
-    const isValidPassword = user.password_hash?.startsWith('$2') 
-      ? await bcrypt.compare(password, user.password_hash)
-      : password === user.password_hash // Fallback para senhas antigas não hasheadas
+    // Verificar senha com bcrypt - NÃO aceitar mais senhas em texto plano
+    if (!user.password_hash?.startsWith('$2')) {
+      console.error('SECURITY: Super admin account has unhashed password. Must reset.')
+      return res.status(401).json({ error: 'Conta requer reset de senha. Contate o suporte.' })
+    }
     
-    if (!isValidPassword) {
+    const passwordValid = await bcrypt.compare(password, user.password_hash)
+    
+    if (!passwordValid) {
       return res.status(401).json({ error: 'Credenciais inválidas' })
     }
 
+    // Gerar token JWT
+    const token = generateToken({
+      userId: user.id,
+      email: user.email,
+      role: 'superadmin'
+    })
+
     res.json({
       success: true,
+      token,
       user: {
         id: user.id,
         email: user.email,
@@ -446,7 +559,7 @@ app.put('/api/superadmin/:id/password', async (req, res) => {
     }
 
     // Hash da nova senha
-    const hashedPassword = await bcrypt.hash(newPassword, 10)
+    const hashedPassword = await bcrypt.hash(newPassword, BCRYPT_ROUNDS)
 
     await pool.query(
       'UPDATE super_admins SET password_hash = ? WHERE id = ?',
@@ -592,7 +705,7 @@ app.post('/api/superadmin/consultancies/:id/users', async (req, res) => {
     }
 
     // Hash da senha antes de salvar
-    const hashedPassword = await bcrypt.hash(password, 10)
+    const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS)
     
     const [result] = await pool.query(
       `INSERT INTO users (consultancy_id, email, password_hash, name, role, phone)
@@ -863,17 +976,29 @@ app.post('/api/auth/admin/login', authLimiter, async (req, res) => {
 
     const user = rows[0]
     
-    // Verificar senha com bcrypt (ou comparação direta para senhas antigas)
-    const isValidPassword = user.password_hash?.startsWith('$2') 
-      ? await bcrypt.compare(password, user.password_hash)
-      : password === user.password_hash
+    // Verificar senha com bcrypt - NÃO aceitar mais senhas em texto plano
+    if (!user.password_hash?.startsWith('$2')) {
+      console.error('SECURITY: User account has unhashed password:', user.email)
+      return res.status(401).json({ error: 'Conta requer reset de senha. Contate o administrador.' })
+    }
     
-    if (!isValidPassword) {
+    const passwordValid = await bcrypt.compare(password, user.password_hash)
+    
+    if (!passwordValid) {
       return res.status(401).json({ error: 'Email ou senha incorretos' })
     }
 
+    // Gerar token JWT
+    const token = generateToken({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      consultancyId: user.consultancy_id
+    })
+
     res.json({
       success: true,
+      token,
       user: {
         id: user.id,
         email: user.email,
@@ -894,7 +1019,7 @@ app.post('/api/auth/admin/login', authLimiter, async (req, res) => {
     })
   } catch (error) {
     console.error('Admin login error:', error)
-    res.status(500).json({ error: 'Erro interno do servidor' })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -928,12 +1053,15 @@ app.post('/api/auth/patient/login', authLimiter, async (req, res) => {
 
     const user = rows[0]
     
-    // Verificar senha com bcrypt (ou comparação direta para senhas antigas)
-    const isValidPassword = user.password_hash?.startsWith('$2') 
-      ? await bcrypt.compare(password, user.password_hash)
-      : password === user.password_hash
+    // Verificar senha com bcrypt - NÃO aceitar mais senhas em texto plano
+    if (!user.password_hash?.startsWith('$2')) {
+      console.error('SECURITY: Patient account has unhashed password:', user.email)
+      return res.status(401).json({ error: 'Conta requer reset de senha. Contate o profissional.' })
+    }
     
-    if (!isValidPassword) {
+    const passwordValid = await bcrypt.compare(password, user.password_hash)
+    
+    if (!passwordValid) {
       return res.status(401).json({ error: 'Email ou senha incorretos' })
     }
     const athleteId = user.athlete_id
@@ -971,8 +1099,17 @@ app.post('/api/auth/patient/login', authLimiter, async (req, res) => {
       if (rehabSessions[0].count > 0) activeModules.push('rehab')
     }
 
+    // Gerar token JWT
+    const token = generateToken({
+      userId: user.id,
+      email: user.email,
+      role: 'athlete',
+      consultancyId: user.consultancy_id
+    })
+
     res.json({
       success: true,
+      token,
       user: {
         id: user.id,
         athleteId: user.athlete_id,
@@ -991,7 +1128,7 @@ app.post('/api/auth/patient/login', authLimiter, async (req, res) => {
     })
   } catch (error) {
     console.error('Patient login error:', error)
-    res.status(500).json({ error: 'Erro interno do servidor' })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -1151,7 +1288,7 @@ app.post('/api/consultancy/:id/professionals', async (req, res) => {
     }
     
     // Hash da senha antes de salvar
-    const hashedPassword = await bcrypt.hash(password, 10)
+    const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS)
     
     // Criar usuário
     const [result] = await pool.query(
@@ -1571,7 +1708,7 @@ app.post('/api/signup/consultancy', async (req, res) => {
       const consultancyId = (consultancyResult as { insertId: number }).insertId
 
       // Hash da senha antes de salvar
-      const hashedPassword = await bcrypt.hash(adminPassword, 10)
+      const hashedPassword = await bcrypt.hash(adminPassword, BCRYPT_ROUNDS)
       
       const [userResult] = await pool.query(
         `INSERT INTO users (consultancy_id, email, password_hash, name, role, phone, is_active)
@@ -1720,7 +1857,7 @@ app.post('/api/signup/consultancy', async (req, res) => {
     const consultancyId = (consultancyResult as { insertId: number }).insertId
 
     // Hash da senha antes de salvar
-    const hashedAdminPassword = await bcrypt.hash(adminPassword, 10)
+    const hashedAdminPassword = await bcrypt.hash(adminPassword, BCRYPT_ROUNDS)
 
     // Criar o usuário admin
     const [userResult] = await pool.query(
@@ -2040,7 +2177,7 @@ app.get('/api/signup/pix/status/:paymentId', async (req, res) => {
           const consultancyId = (consultancyResult as { insertId: number }).insertId
 
           // Hash da senha
-          const hashedPassword = await bcrypt.hash(pendingData.adminPassword, 10)
+          const hashedPassword = await bcrypt.hash(pendingData.adminPassword, BCRYPT_ROUNDS)
 
           // Criar usuário admin
           await pool.query(
@@ -2244,7 +2381,7 @@ app.post('/api/webhooks/mercadopago', async (req, res) => {
             )
 
             const consultancyId = (consultancyResult as { insertId: number }).insertId
-            const hashedPassword = await bcrypt.hash(pendingData.adminPassword, 10)
+            const hashedPassword = await bcrypt.hash(pendingData.adminPassword, BCRYPT_ROUNDS)
 
             await pool.query(
               `INSERT INTO users (consultancy_id, email, password_hash, name, role, phone, is_active)
@@ -2333,61 +2470,60 @@ app.get('/api/signup/check-email/:email', async (req, res) => {
   }
 })
 
-// Listar profissionais disponíveis (para tela de login)
-app.get('/api/auth/admin/available', async (_req, res) => {
+// REMOVIDO: Endpoints de listagem pública de usuários
+// Estes endpoints expunham dados sensíveis sem autenticação
+// GET /api/auth/admin/available - REMOVIDO (exposição de credenciais)
+// GET /api/auth/patients/available - REMOVIDO (exposição de credenciais)
+
+// Users routes - PROTEGIDO: requer autenticação
+app.get('/api/users', authenticateToken, requireRole('superadmin', 'admin'), async (req, res) => {
+  try {
+    // Limitar a usuários da mesma consultoria (exceto superadmin)
+    let query = 'SELECT id, email, name, role, avatar_url, phone, created_at, consultancy_id FROM users'
+    const params: unknown[] = []
+    
+    if (req.user?.role !== 'superadmin' && req.user?.consultancyId) {
+      query += ' WHERE consultancy_id = ?'
+      params.push(req.user.consultancyId)
+    }
+    
+    const [rows] = await pool.query(query, params)
+    res.json(rows)
+  } catch (error) {
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
+  }
+})
+
+// PROTEGIDO: requer autenticação
+app.get('/api/users/:id', authenticateToken, async (req, res) => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT email, name, role FROM users WHERE role IN ('admin', 'coach', 'nutritionist', 'physio')`
-    )
-    res.json(rows)
-  } catch (error) {
-    res.status(500).json({ error: String(error) })
-  }
-})
-
-// Listar pacientes disponíveis (para tela de login)
-app.get('/api/auth/patients/available', async (_req, res) => {
-  try {
-    const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT u.email, u.name, u.avatar_url, a.sport, a.club
-       FROM users u
-       LEFT JOIN athletes a ON u.id = a.user_id
-       WHERE u.role = 'athlete'`
-    )
-    res.json(rows)
-  } catch (error) {
-    res.status(500).json({ error: String(error) })
-  }
-})
-
-// Users routes
-app.get('/api/users', async (_req, res) => {
-  try {
-    const [rows] = await pool.query('SELECT id, email, name, role, avatar_url, phone, created_at FROM users')
-    res.json(rows)
-  } catch (error) {
-    res.status(500).json({ error: String(error) })
-  }
-})
-
-app.get('/api/users/:id', async (req, res) => {
-  try {
-    const [rows] = await pool.query(
-      'SELECT id, email, name, role, avatar_url, phone, created_at FROM users WHERE id = ?',
+      'SELECT id, email, name, role, avatar_url, phone, created_at, consultancy_id FROM users WHERE id = ?',
       [req.params.id]
     )
-    const users = rows as Array<Record<string, unknown>>
-    if (users.length === 0) {
+    
+    if (rows.length === 0) {
       return res.status(404).json({ error: 'User not found' })
     }
-    res.json(users[0])
+    
+    const user = rows[0]
+    
+    // Verificar se usuário pode acessar este recurso
+    if (req.user?.role !== 'superadmin' && 
+        req.user?.consultancyId !== user.consultancy_id &&
+        req.user?.userId !== user.id) {
+      return res.status(403).json({ error: 'Acesso negado' })
+    }
+    
+    res.json(user)
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
 // Alterar senha do usuário (pelo profissional)
-app.put('/api/users/:id/password', async (req, res) => {
+// Alterar senha - PROTEGIDO: requer autenticação e autorização
+app.put('/api/users/:id/password', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params
     const { newPassword } = req.body
@@ -2396,13 +2532,13 @@ app.put('/api/users/:id/password', async (req, res) => {
       return res.status(400).json({ error: 'Nova senha é obrigatória' })
     }
 
-    if (newPassword.length < 6) {
-      return res.status(400).json({ error: 'A senha deve ter pelo menos 6 caracteres' })
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: 'A senha deve ter pelo menos 8 caracteres' })
     }
 
-    // Verificar se usuário existe
+    // Verificar se usuário existe e pertence à mesma consultoria
     const [rows] = await pool.query<RowDataPacket[]>(
-      'SELECT id FROM users WHERE id = ?',
+      'SELECT id, consultancy_id FROM users WHERE id = ?',
       [id]
     )
 
@@ -2410,8 +2546,23 @@ app.put('/api/users/:id/password', async (req, res) => {
       return res.status(404).json({ error: 'Usuário não encontrado' })
     }
 
-    // Hash da nova senha
-    const hashedPassword = await bcrypt.hash(newPassword, 10)
+    const targetUser = rows[0]
+
+    // Verificar autorização:
+    // - Super admin pode alterar qualquer senha
+    // - Admin pode alterar senhas de usuários da sua consultoria
+    // - Usuário não pode alterar senha de outros usuários (exceto admin)
+    if (req.user?.role !== 'superadmin') {
+      if (req.user?.role !== 'admin') {
+        return res.status(403).json({ error: 'Apenas administradores podem alterar senhas de outros usuários' })
+      }
+      if (req.user?.consultancyId !== targetUser.consultancy_id) {
+        return res.status(403).json({ error: 'Você não pode alterar senhas de usuários de outras consultorias' })
+      }
+    }
+
+    // Hash da nova senha com rounds seguros
+    const hashedPassword = await bcrypt.hash(newPassword, BCRYPT_ROUNDS)
 
     // Atualizar senha
     await pool.query(
@@ -2422,7 +2573,7 @@ app.put('/api/users/:id/password', async (req, res) => {
     res.json({ success: true, message: 'Senha alterada com sucesso' })
   } catch (error) {
     console.error('Erro ao alterar senha:', error)
-    res.status(500).json({ error: 'Erro ao alterar senha' })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 

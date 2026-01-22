@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { ArrowLeft, User, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import { Logo } from '../ui/Logo';
+import { setAuthToken } from '../../services/api';
 
 const API_URL = '/api';
 
@@ -46,6 +47,10 @@ export function LoginPage({ onLoginSuccess, onBack }: LoginPageProps) {
       const data = await response.json();
 
       if (response.ok && data.success) {
+        // Salvar token JWT para requisições autenticadas
+        if (data.token) {
+          setAuthToken(data.token);
+        }
         onLoginSuccess({
           id: data.user.id,
           athleteId: data.user.athleteId,

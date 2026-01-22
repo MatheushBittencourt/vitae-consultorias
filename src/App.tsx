@@ -17,6 +17,7 @@ import { SuperAdminLoginPage, SuperAdminUser } from './components/superadmin/Sup
 import { SuperAdminDashboard } from './components/superadmin/SuperAdminDashboard';
 import { SignupPage } from './components/SignupPage';
 import { ToastProvider } from './components/ui/Toast';
+import { removeAuthToken } from './services/api';
 
 type AppView = 'site' | 'login' | 'dashboard' | 'admin-login' | 'admin-dashboard' | 'superadmin-login' | 'superadmin-dashboard' | 'signup';
 
@@ -118,8 +119,9 @@ export default function App() {
   const handleLogout = () => {
     setPatientUser(null);
     setCurrentView('site');
-    // Limpar sessão do localStorage
+    // Limpar sessão e token do localStorage
     localStorage.removeItem(STORAGE_KEYS.PATIENT);
+    removeAuthToken();
   };
 
   // Admin login handlers
@@ -137,8 +139,9 @@ export default function App() {
   const handleAdminLogout = () => {
     setAdminUser(null);
     setCurrentView('site');
-    // Limpar sessão do localStorage
+    // Limpar sessão e token do localStorage
     localStorage.removeItem(STORAGE_KEYS.ADMIN);
+    removeAuthToken();
   };
 
   // Super Admin handlers
@@ -154,8 +157,9 @@ export default function App() {
   const handleSuperAdminLogout = () => {
     setSuperAdminUser(null);
     setCurrentView('site');
-    // Limpar sessão do localStorage
+    // Limpar sessão e token do localStorage
     localStorage.removeItem(STORAGE_KEYS.SUPERADMIN);
+    removeAuthToken();
   };
 
   // Signup handlers

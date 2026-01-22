@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ArrowLeft, Crown, Loader2 } from 'lucide-react';
 import { Logo } from '../ui/Logo';
+import { setAuthToken } from '../../services/api';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
@@ -37,6 +38,10 @@ export function SuperAdminLoginPage({ onLoginSuccess, onBack }: SuperAdminLoginP
       const data = await response.json();
 
       if (response.ok && data.success) {
+        // Salvar token JWT para requisições autenticadas
+        if (data.token) {
+          setAuthToken(data.token);
+        }
         onLoginSuccess(data.user);
       } else {
         setError(data.error || 'Credenciais inválidas');

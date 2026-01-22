@@ -1,14 +1,79 @@
 // Usa variável de ambiente ou fallback para localhost
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
-// API client com métodos HTTP
+// ===============================
+// GERENCIAMENTO DE TOKEN JWT
+// ===============================
+const TOKEN_KEY = 'vitae_auth_token';
+
+// Obter token armazenado
+export const getAuthToken = (): string | null => {
+  return localStorage.getItem(TOKEN_KEY);
+};
+
+// Salvar token
+export const setAuthToken = (token: string): void => {
+  localStorage.setItem(TOKEN_KEY, token);
+};
+
+// Remover token (logout)
+export const removeAuthToken = (): void => {
+  localStorage.removeItem(TOKEN_KEY);
+};
+
+// Verificar se está autenticado
+export const isAuthenticated = (): boolean => {
+  const token = getAuthToken();
+  if (!token) return false;
+  
+  // Verificar se token não expirou (decodifica sem validar assinatura)
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.exp * 1000 > Date.now();
+  } catch {
+    return false;
+  }
+};
+
+// Obter headers com autenticação
+const getAuthHeaders = (): HeadersInit => {
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+  };
+  
+  const token = getAuthToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  
+  return headers;
+};
+
+// Handler para respostas 401/403
+const handleAuthError = (status: number): void => {
+  if (status === 401 || status === 403) {
+    // Token inválido ou expirado - limpar e redirecionar
+    removeAuthToken();
+    // Limpar sessões antigas
+    localStorage.removeItem('vitae_patient_session');
+    localStorage.removeItem('vitae_admin_session');
+    localStorage.removeItem('vitae_superadmin_session');
+    // Recarregar para forçar novo login
+    if (typeof window !== 'undefined') {
+      window.location.reload();
+    }
+  }
+};
+
+// API client com métodos HTTP e autenticação
 const api = {
   get: async <T>(endpoint: string): Promise<{ data: T }> => {
     const response = await fetch(`${API_URL}${endpoint}`, {
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
     });
     const data = await response.json();
     if (!response.ok) {
+      handleAuthError(response.status);
       const error = new Error(data.error || `HTTP ${response.status}`) as Error & { response?: { data?: { error?: string } } };
       error.response = { data };
       throw error;
@@ -19,11 +84,12 @@ const api = {
   post: async <T>(endpoint: string, body: unknown): Promise<{ data: T }> => {
     const response = await fetch(`${API_URL}${endpoint}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify(body),
     });
     const data = await response.json();
     if (!response.ok) {
+      handleAuthError(response.status);
       const error = new Error(data.error || `HTTP ${response.status}`) as Error & { response?: { data?: { error?: string } } };
       error.response = { data };
       throw error;
@@ -34,11 +100,12 @@ const api = {
   put: async <T>(endpoint: string, body: unknown): Promise<{ data: T }> => {
     const response = await fetch(`${API_URL}${endpoint}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify(body),
     });
     const data = await response.json();
     if (!response.ok) {
+      handleAuthError(response.status);
       const error = new Error(data.error || `HTTP ${response.status}`) as Error & { response?: { data?: { error?: string } } };
       error.response = { data };
       throw error;
@@ -49,10 +116,11 @@ const api = {
   delete: async <T>(endpoint: string): Promise<{ data: T }> => {
     const response = await fetch(`${API_URL}${endpoint}`, {
       method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
     });
     const data = await response.json();
     if (!response.ok) {
+      handleAuthError(response.status);
       const error = new Error(data.error || `HTTP ${response.status}`) as Error & { response?: { data?: { error?: string } } };
       error.response = { data };
       throw error;
@@ -63,17 +131,18 @@ const api = {
 
 export default api;
 
-// Helper para fazer requisições (legado)
+// Helper para fazer requisições (legado) - com suporte a autenticação
 async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`${API_URL}${endpoint}`, {
     ...options,
     headers: {
-      'Content-Type': 'application/json',
+      ...getAuthHeaders(),
       ...options?.headers,
     },
   });
   
   if (!response.ok) {
+    handleAuthError(response.status);
     const error = await response.json().catch(() => ({ error: 'Erro desconhecido' }));
     throw new Error(error.error || `HTTP ${response.status}`);
   }
