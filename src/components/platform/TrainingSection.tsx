@@ -122,8 +122,6 @@ const hexToRgb = (hex: string): [number, number, number] => {
 };
 
 export function TrainingSection({ athleteId, primaryColor = '#84CC16' }: TrainingSectionProps) {
-  // Convert primary color to RGB for jsPDF
-  const brandColor = hexToRgb(primaryColor);
   const [plans, setPlans] = useState<TrainingPlan[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<TrainingPlan | null>(null);
   const [trainingDays, setTrainingDays] = useState<TrainingDay[]>([]);
@@ -203,6 +201,20 @@ export function TrainingSection({ athleteId, primaryColor = '#84CC16' }: Trainin
     setGeneratingPdf(true);
     
     try {
+      // Fetch current branding from consultancy
+      let brandColor: [number, number, number] = hexToRgb(primaryColor);
+      if (athleteId) {
+        try {
+          const brandingRes = await fetch(`${API_URL}/consultancy/branding/athlete/${athleteId}`);
+          const branding = await brandingRes.json();
+          if (branding.primary_color) {
+            brandColor = hexToRgb(branding.primary_color);
+          }
+        } catch (e) {
+          console.error('Error fetching branding:', e);
+        }
+      }
+      
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();

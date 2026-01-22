@@ -69,8 +69,6 @@ interface MealOption {
 }
 
 export function NutritionSection({ athleteId, primaryColor = '#84CC16' }: NutritionSectionProps) {
-  // Convert primary color to RGB for jsPDF
-  const brandColor = hexToRgb(primaryColor);
   const [loading, setLoading] = useState(true);
   const [plan, setPlan] = useState<NutritionPlan | null>(null);
   const [expandedMeals, setExpandedMeals] = useState<Set<number>>(new Set());
@@ -153,8 +151,22 @@ export function NutritionSection({ athleteId, primaryColor = '#84CC16' }: Nutrit
     return parseFloat(num.toFixed(2)).toString();
   };
 
-  const downloadPDF = () => {
+  const downloadPDF = async () => {
     if (!plan) return;
+
+    // Fetch current branding from consultancy
+    let brandColor: [number, number, number] = hexToRgb(primaryColor);
+    if (athleteId) {
+      try {
+        const brandingRes = await fetch(`${API_URL}/consultancy/branding/athlete/${athleteId}`);
+        const branding = await brandingRes.json();
+        if (branding.primary_color) {
+          brandColor = hexToRgb(branding.primary_color);
+        }
+      } catch (e) {
+        console.error('Error fetching branding:', e);
+      }
+    }
 
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();

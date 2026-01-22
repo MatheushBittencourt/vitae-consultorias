@@ -1040,6 +1040,31 @@ app.get('/api/consultancy/:id', async (req, res) => {
   }
 })
 
+// Obter branding da consultoria pelo athlete_id (para PDFs do paciente)
+app.get('/api/consultancy/branding/athlete/:athleteId', async (req, res) => {
+  try {
+    const athleteId = req.params.athleteId
+    
+    const [rows] = await pool.query<RowDataPacket[]>(
+      `SELECT c.primary_color, c.logo_url, c.name
+       FROM consultancies c
+       JOIN users u ON u.consultancy_id = c.id
+       JOIN athletes a ON a.user_id = u.id
+       WHERE a.id = ?`,
+      [athleteId]
+    )
+    
+    if (rows.length === 0) {
+      return res.json({ primary_color: '#84CC16', logo_url: null, name: null })
+    }
+    
+    res.json(rows[0])
+  } catch (error) {
+    console.error('Error fetching consultancy branding:', error)
+    res.json({ primary_color: '#84CC16', logo_url: null, name: null })
+  }
+})
+
 // Listar profissionais da consultoria
 app.get('/api/consultancy/:id/professionals', async (req, res) => {
   try {
