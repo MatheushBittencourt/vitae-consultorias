@@ -491,8 +491,8 @@ app.post('/api/superadmin/login', authLimiter, async (req, res) => {
   }
 })
 
-// Super Admin - Atualizar Perfil
-app.put('/api/superadmin/:id/profile', async (req, res) => {
+// Super Admin - Atualizar Perfil (PROTEGIDO)
+app.put('/api/superadmin/:id/profile', authenticateToken, requireRole('superadmin'), async (req, res) => {
   try {
     const { id } = req.params
     const { name, email } = req.body
@@ -523,8 +523,8 @@ app.put('/api/superadmin/:id/profile', async (req, res) => {
   }
 })
 
-// Super Admin - Alterar Senha
-app.put('/api/superadmin/:id/password', async (req, res) => {
+// Super Admin - Alterar Senha (PROTEGIDO)
+app.put('/api/superadmin/:id/password', authenticateToken, requireRole('superadmin'), async (req, res) => {
   try {
     const { id } = req.params
     const { currentPassword, newPassword } = req.body
@@ -577,7 +577,7 @@ app.put('/api/superadmin/:id/password', async (req, res) => {
 // SUPER ADMIN - Gerenciar Consultorias
 // ===============================
 
-app.get('/api/superadmin/consultancies', async (_req, res) => {
+app.get('/api/superadmin/consultancies', authenticateToken, requireRole('superadmin'), async (_req, res) => {
   try {
     const [consultancies] = await pool.query<RowDataPacket[]>(`
       SELECT c.*,
@@ -592,7 +592,7 @@ app.get('/api/superadmin/consultancies', async (_req, res) => {
   }
 })
 
-app.get('/api/superadmin/consultancies/:id', async (req, res) => {
+app.get('/api/superadmin/consultancies/:id', authenticateToken, requireRole('superadmin'), async (req, res) => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
       `SELECT * FROM consultancies WHERE id = ?`,
@@ -625,7 +625,7 @@ app.get('/api/superadmin/consultancies/:id', async (req, res) => {
   }
 })
 
-app.post('/api/superadmin/consultancies', async (req, res) => {
+app.post('/api/superadmin/consultancies', authenticateToken, requireRole('superadmin'), async (req, res) => {
   try {
     const { 
       name, slug, email, phone, plan, price_monthly,
@@ -656,7 +656,7 @@ app.post('/api/superadmin/consultancies', async (req, res) => {
   }
 })
 
-app.put('/api/superadmin/consultancies/:id', async (req, res) => {
+app.put('/api/superadmin/consultancies/:id', authenticateToken, requireRole('superadmin'), async (req, res) => {
   try {
     const { 
       name, email, phone, plan, price_monthly,
@@ -680,7 +680,7 @@ app.put('/api/superadmin/consultancies/:id', async (req, res) => {
   }
 })
 
-app.delete('/api/superadmin/consultancies/:id', async (req, res) => {
+app.delete('/api/superadmin/consultancies/:id', authenticateToken, requireRole('superadmin'), async (req, res) => {
   try {
     await pool.query('DELETE FROM consultancies WHERE id = ?', [req.params.id])
     res.json({ message: 'Consultoria excluída' })
@@ -690,7 +690,7 @@ app.delete('/api/superadmin/consultancies/:id', async (req, res) => {
 })
 
 // Criar usuário para uma consultoria
-app.post('/api/superadmin/consultancies/:id/users', async (req, res) => {
+app.post('/api/superadmin/consultancies/:id/users', authenticateToken, requireRole('superadmin'), async (req, res) => {
   try {
     const consultancyId = req.params.id
     const { email, password, name, role, phone } = req.body
@@ -729,7 +729,7 @@ app.post('/api/superadmin/consultancies/:id/users', async (req, res) => {
 })
 
 // Deletar usuário de uma consultoria (usado pelo admin para remover pacientes)
-app.delete('/api/superadmin/consultancies/:consultancyId/users/:userId', async (req, res) => {
+app.delete('/api/superadmin/consultancies/:consultancyId/users/:userId', authenticateToken, requireRole('superadmin'), async (req, res) => {
   try {
     const { consultancyId, userId } = req.params
     
@@ -759,7 +759,7 @@ app.delete('/api/superadmin/consultancies/:consultancyId/users/:userId', async (
 })
 
 // Estatísticas gerais do SaaS (expandidas)
-app.get('/api/superadmin/stats', async (_req, res) => {
+app.get('/api/superadmin/stats', authenticateToken, requireRole('superadmin'), async (_req, res) => {
   try {
     // Contadores básicos
     const [totalConsultancies] = await pool.query<RowDataPacket[]>(
@@ -855,7 +855,7 @@ app.get('/api/superadmin/stats', async (_req, res) => {
 })
 
 // Detalhes completos de uma consultoria
-app.get('/api/superadmin/consultancies/:id/details', async (req, res) => {
+app.get('/api/superadmin/consultancies/:id/details', authenticateToken, requireRole('superadmin'), async (req, res) => {
   try {
     const consultancyId = req.params.id
     
@@ -1137,7 +1137,7 @@ app.post('/api/auth/patient/login', authLimiter, async (req, res) => {
 // ===============================
 
 // Obter detalhes da consultoria (plano, limites, etc)
-app.get('/api/consultancy/:id', async (req, res) => {
+app.get('/api/consultancy/:id', authenticateToken, async (req, res) => {
   try {
     const consultancyId = req.params.id
     
@@ -1178,7 +1178,7 @@ app.get('/api/consultancy/:id', async (req, res) => {
 })
 
 // Obter branding da consultoria pelo athlete_id (para PDFs do paciente)
-app.get('/api/consultancy/branding/athlete/:athleteId', async (req, res) => {
+app.get('/api/consultancy/branding/athlete/:athleteId', authenticateToken, async (req, res) => {
   try {
     const athleteId = req.params.athleteId
     
@@ -1203,7 +1203,7 @@ app.get('/api/consultancy/branding/athlete/:athleteId', async (req, res) => {
 })
 
 // Listar profissionais da consultoria
-app.get('/api/consultancy/:id/professionals', async (req, res) => {
+app.get('/api/consultancy/:id/professionals', authenticateToken, requireRole('superadmin', 'admin'), async (req, res) => {
   try {
     const consultancyId = req.params.id
     
@@ -1222,7 +1222,7 @@ app.get('/api/consultancy/:id/professionals', async (req, res) => {
 })
 
 // Adicionar novo profissional
-app.post('/api/consultancy/:id/professionals', async (req, res) => {
+app.post('/api/consultancy/:id/professionals', authenticateToken, requireRole('superadmin', 'admin'), async (req, res) => {
   try {
     const consultancyId = req.params.id
     const { email, password, name, role, phone } = req.body
@@ -1315,7 +1315,7 @@ app.post('/api/consultancy/:id/professionals', async (req, res) => {
 })
 
 // Atualizar profissional
-app.put('/api/consultancy/:consultancyId/professionals/:userId', async (req, res) => {
+app.put('/api/consultancy/:consultancyId/professionals/:userId', authenticateToken, requireRole('superadmin', 'admin'), async (req, res) => {
   try {
     const { consultancyId, userId } = req.params
     const { name, role, phone, is_active } = req.body
@@ -1342,7 +1342,7 @@ app.put('/api/consultancy/:consultancyId/professionals/:userId', async (req, res
 })
 
 // Remover profissional (soft delete - desativa)
-app.delete('/api/consultancy/:consultancyId/professionals/:userId', async (req, res) => {
+app.delete('/api/consultancy/:consultancyId/professionals/:userId', authenticateToken, requireRole('superadmin', 'admin'), async (req, res) => {
   try {
     const { consultancyId, userId } = req.params
     
@@ -1378,7 +1378,7 @@ app.delete('/api/consultancy/:consultancyId/professionals/:userId', async (req, 
 })
 
 // Atualizar plano da consultoria
-app.put('/api/consultancy/:id/plan', async (req, res) => {
+app.put('/api/consultancy/:id/plan', authenticateToken, requireRole('superadmin', 'admin'), async (req, res) => {
   try {
     const consultancyId = req.params.id
     const { modules, maxProfessionals, maxPatients, priceMonthly } = req.body
@@ -1449,7 +1449,7 @@ app.put('/api/consultancy/:id/plan', async (req, res) => {
 })
 
 // Atualizar branding da consultoria (cor e logo)
-app.put('/api/consultancy/:id/branding', async (req, res) => {
+app.put('/api/consultancy/:id/branding', authenticateToken, requireRole('superadmin', 'admin'), async (req, res) => {
   try {
     const consultancyId = req.params.id
     const { primary_color, logo_url } = req.body
@@ -2578,7 +2578,7 @@ app.put('/api/users/:id/password', authenticateToken, async (req, res) => {
 })
 
 // Athletes routes
-app.get('/api/athletes', async (req, res) => {
+app.get('/api/athletes', authenticateToken, async (req, res) => {
   try {
     const consultancyId = req.query.consultancy_id
     const userId = req.query.user_id
@@ -2607,7 +2607,7 @@ app.get('/api/athletes', async (req, res) => {
   }
 })
 
-app.get('/api/athletes/:id', async (req, res) => {
+app.get('/api/athletes/:id', authenticateToken, async (req, res) => {
   try {
     const consultancyId = req.query.consultancy_id
     
@@ -2635,7 +2635,7 @@ app.get('/api/athletes/:id', async (req, res) => {
 })
 
 // Appointments routes
-app.get('/api/appointments', async (req, res) => {
+app.get('/api/appointments', authenticateToken, async (req, res) => {
   try {
     const athleteId = req.query.athlete_id
     const consultancyId = req.query.consultancy_id
@@ -2676,7 +2676,7 @@ app.get('/api/appointments', async (req, res) => {
   }
 })
 
-app.post('/api/appointments', async (req, res) => {
+app.post('/api/appointments', authenticateToken, async (req, res) => {
   try {
     const { athlete_id, professional_id, type, title, description, scheduled_at, duration_minutes, location } = req.body
     const [result] = await pool.query(
@@ -2691,7 +2691,7 @@ app.post('/api/appointments', async (req, res) => {
 })
 
 // Training plans routes
-app.get('/api/training-plans', async (req, res) => {
+app.get('/api/training-plans', authenticateToken, async (req, res) => {
   try {
     const athleteId = req.query.athlete_id
     const consultancyId = req.query.consultancy_id
@@ -2727,7 +2727,7 @@ app.get('/api/training-plans', async (req, res) => {
 })
 
 // Nutrition plans routes
-app.get('/api/nutrition-plans', async (req, res) => {
+app.get('/api/nutrition-plans', authenticateToken, async (req, res) => {
   try {
     const athleteId = req.query.athlete_id
     const consultancyId = req.query.consultancy_id
@@ -2762,7 +2762,7 @@ app.get('/api/nutrition-plans', async (req, res) => {
 })
 
 // Progress routes
-app.get('/api/progress', async (req, res) => {
+app.get('/api/progress', authenticateToken, async (req, res) => {
   try {
     const athleteId = req.query.athlete_id
     if (!athleteId) {
@@ -2779,7 +2779,7 @@ app.get('/api/progress', async (req, res) => {
   }
 })
 
-app.post('/api/progress', async (req, res) => {
+app.post('/api/progress', authenticateToken, async (req, res) => {
   try {
     const { athlete_id, record_date, weight, body_fat_percentage, muscle_mass, notes, metrics } = req.body
     const [result] = await pool.query(
@@ -2798,7 +2798,7 @@ app.post('/api/progress', async (req, res) => {
 // ===============================
 
 // Listar todos os exercícios (globais + da consultoria)
-app.get('/api/exercise-library', async (req, res) => {
+app.get('/api/exercise-library', authenticateToken, async (req, res) => {
   try {
     const consultancyId = req.query.consultancy_id
     const muscleGroup = req.query.muscle_group
@@ -2836,7 +2836,7 @@ app.get('/api/exercise-library', async (req, res) => {
 })
 
 // Buscar exercício por ID
-app.get('/api/exercise-library/:id', async (req, res) => {
+app.get('/api/exercise-library/:id', authenticateToken, async (req, res) => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
       'SELECT * FROM exercise_library WHERE id = ?',
@@ -2852,7 +2852,7 @@ app.get('/api/exercise-library/:id', async (req, res) => {
 })
 
 // Criar exercício na biblioteca
-app.post('/api/exercise-library', async (req, res) => {
+app.post('/api/exercise-library', authenticateToken, async (req, res) => {
   try {
     const { 
       consultancy_id, name, description, muscle_group, secondary_muscle,
@@ -2879,7 +2879,7 @@ app.post('/api/exercise-library', async (req, res) => {
 })
 
 // Atualizar exercício na biblioteca
-app.put('/api/exercise-library/:id', async (req, res) => {
+app.put('/api/exercise-library/:id', authenticateToken, async (req, res) => {
   try {
     const { 
       consultancy_id, name, description, muscle_group, secondary_muscle,
@@ -2915,7 +2915,7 @@ app.put('/api/exercise-library/:id', async (req, res) => {
 })
 
 // Excluir exercício da biblioteca
-app.delete('/api/exercise-library/:id', async (req, res) => {
+app.delete('/api/exercise-library/:id', authenticateToken, async (req, res) => {
   try {
     const consultancy_id = req.query.consultancy_id
     
@@ -2945,7 +2945,7 @@ app.delete('/api/exercise-library/:id', async (req, res) => {
 })
 
 // Listar grupos musculares disponíveis
-app.get('/api/muscle-groups', async (_req, res) => {
+app.get('/api/muscle-groups', authenticateToken, async (_req, res) => {
   const muscleGroups = [
     { id: 'peito', name: 'Peito', icon: '🫁' },
     { id: 'costas', name: 'Costas', icon: '🔙' },
@@ -2968,7 +2968,7 @@ app.get('/api/muscle-groups', async (_req, res) => {
 // TRAINING PLANS - CRUD Completo (campos atualizados)
 // ===============================
 
-app.post('/api/training-plans', async (req, res) => {
+app.post('/api/training-plans', authenticateToken, async (req, res) => {
   try {
     const { 
       athlete_id, coach_id, name, description, objective, duration_weeks,
@@ -2989,7 +2989,7 @@ app.post('/api/training-plans', async (req, res) => {
   }
 })
 
-app.put('/api/training-plans/:id', async (req, res) => {
+app.put('/api/training-plans/:id', authenticateToken, async (req, res) => {
   try {
     const { 
       name, description, objective, duration_weeks, frequency_per_week,
@@ -3010,7 +3010,7 @@ app.put('/api/training-plans/:id', async (req, res) => {
   }
 })
 
-app.delete('/api/training-plans/:id', async (req, res) => {
+app.delete('/api/training-plans/:id', authenticateToken, async (req, res) => {
   try {
     await pool.query('DELETE FROM training_plans WHERE id = ?', [req.params.id])
     res.json({ message: 'Plano excluído' })
@@ -3023,7 +3023,7 @@ app.delete('/api/training-plans/:id', async (req, res) => {
 // TRAINING DAYS - CRUD
 // ===============================
 
-app.get('/api/training-days', async (req, res) => {
+app.get('/api/training-days', authenticateToken, async (req, res) => {
   try {
     const planId = req.query.plan_id
     if (!planId) {
@@ -3039,7 +3039,7 @@ app.get('/api/training-days', async (req, res) => {
   }
 })
 
-app.post('/api/training-days', async (req, res) => {
+app.post('/api/training-days', authenticateToken, async (req, res) => {
   try {
     const { plan_id, day_letter, day_name, day_of_week, focus_muscles, estimated_duration, order_index } = req.body
     const [result] = await pool.query(
@@ -3053,7 +3053,7 @@ app.post('/api/training-days', async (req, res) => {
   }
 })
 
-app.put('/api/training-days/:id', async (req, res) => {
+app.put('/api/training-days/:id', authenticateToken, async (req, res) => {
   try {
     const { day_letter, day_name, day_of_week, focus_muscles, estimated_duration, order_index } = req.body
     await pool.query(
@@ -3066,7 +3066,7 @@ app.put('/api/training-days/:id', async (req, res) => {
   }
 })
 
-app.delete('/api/training-days/:id', async (req, res) => {
+app.delete('/api/training-days/:id', authenticateToken, async (req, res) => {
   try {
     await pool.query('DELETE FROM training_days WHERE id = ?', [req.params.id])
     res.json({ message: 'Dia excluído' })
@@ -3079,7 +3079,7 @@ app.delete('/api/training-days/:id', async (req, res) => {
 // TRAINING EXERCISES - CRUD (campos atualizados)
 // ===============================
 
-app.get('/api/training-exercises', async (req, res) => {
+app.get('/api/training-exercises', authenticateToken, async (req, res) => {
   try {
     const planId = req.query.plan_id
     const dayId = req.query.day_id
@@ -3114,7 +3114,7 @@ app.get('/api/training-exercises', async (req, res) => {
   }
 })
 
-app.post('/api/training-exercises', async (req, res) => {
+app.post('/api/training-exercises', authenticateToken, async (req, res) => {
   try {
     const { 
       plan_id, training_day_id, exercise_library_id, name, muscle_group, equipment,
@@ -3138,7 +3138,7 @@ app.post('/api/training-exercises', async (req, res) => {
   }
 })
 
-app.put('/api/training-exercises/:id', async (req, res) => {
+app.put('/api/training-exercises/:id', authenticateToken, async (req, res) => {
   try {
     const { 
       training_day_id, exercise_library_id, name, muscle_group, equipment,
@@ -3162,7 +3162,7 @@ app.put('/api/training-exercises/:id', async (req, res) => {
   }
 })
 
-app.delete('/api/training-exercises/:id', async (req, res) => {
+app.delete('/api/training-exercises/:id', authenticateToken, async (req, res) => {
   try {
     await pool.query('DELETE FROM training_exercises WHERE id = ?', [req.params.id])
     res.json({ message: 'Exercício excluído' })
@@ -3175,7 +3175,7 @@ app.delete('/api/training-exercises/:id', async (req, res) => {
 // NUTRITION PLANS - CRUD Completo
 // ===============================
 
-app.post('/api/nutrition-plans', async (req, res) => {
+app.post('/api/nutrition-plans', authenticateToken, async (req, res) => {
   try {
     const { athlete_id, nutritionist_id, name, description, daily_calories, protein_grams, carbs_grams, fat_grams, start_date, end_date, status } = req.body
     const [result] = await pool.query(
@@ -3189,7 +3189,7 @@ app.post('/api/nutrition-plans', async (req, res) => {
   }
 })
 
-app.put('/api/nutrition-plans/:id', async (req, res) => {
+app.put('/api/nutrition-plans/:id', authenticateToken, async (req, res) => {
   try {
     const { name, description, daily_calories, protein_grams, carbs_grams, fat_grams, start_date, end_date, status } = req.body
     await pool.query(
@@ -3202,7 +3202,7 @@ app.put('/api/nutrition-plans/:id', async (req, res) => {
   }
 })
 
-app.delete('/api/nutrition-plans/:id', async (req, res) => {
+app.delete('/api/nutrition-plans/:id', authenticateToken, async (req, res) => {
   try {
     await pool.query('DELETE FROM nutrition_plans WHERE id = ?', [req.params.id])
     res.json({ message: 'Plano excluído' })
@@ -3212,7 +3212,7 @@ app.delete('/api/nutrition-plans/:id', async (req, res) => {
 })
 
 // Meals
-app.get('/api/meals', async (req, res) => {
+app.get('/api/meals', authenticateToken, async (req, res) => {
   try {
     const planId = req.query.plan_id
     if (!planId) {
@@ -3225,7 +3225,7 @@ app.get('/api/meals', async (req, res) => {
   }
 })
 
-app.post('/api/meals', async (req, res) => {
+app.post('/api/meals', authenticateToken, async (req, res) => {
   try {
     const { plan_id, name, time, description, order_index } = req.body
     const [result] = await pool.query(
@@ -3238,7 +3238,7 @@ app.post('/api/meals', async (req, res) => {
   }
 })
 
-app.put('/api/meals/:id', async (req, res) => {
+app.put('/api/meals/:id', authenticateToken, async (req, res) => {
   try {
     const { name, time, description, order_index } = req.body
     await pool.query(
@@ -3251,7 +3251,7 @@ app.put('/api/meals/:id', async (req, res) => {
   }
 })
 
-app.delete('/api/meals/:id', async (req, res) => {
+app.delete('/api/meals/:id', authenticateToken, async (req, res) => {
   try {
     await pool.query('DELETE FROM meals WHERE id = ?', [req.params.id])
     res.json({ message: 'Refeição excluída' })
@@ -3265,7 +3265,7 @@ app.delete('/api/meals/:id', async (req, res) => {
 // ===============================
 
 // Listar alimentos da consultoria (igual exercícios)
-app.get('/api/food-library', async (req, res) => {
+app.get('/api/food-library', authenticateToken, async (req, res) => {
   try {
     const consultancyId = req.query.consultancy_id
     const category = req.query.category
@@ -3299,7 +3299,7 @@ app.get('/api/food-library', async (req, res) => {
 })
 
 // Buscar alimento por ID
-app.get('/api/food-library/:id', async (req, res) => {
+app.get('/api/food-library/:id', authenticateToken, async (req, res) => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
       'SELECT * FROM food_library WHERE id = ?',
@@ -3315,7 +3315,7 @@ app.get('/api/food-library/:id', async (req, res) => {
 })
 
 // Criar alimento na biblioteca
-app.post('/api/food-library', async (req, res) => {
+app.post('/api/food-library', authenticateToken, async (req, res) => {
   try {
     const { consultancy_id, name, description, category, serving_size, calories, protein, carbs, fat, fiber, sodium, image_url } = req.body
     
@@ -3335,7 +3335,7 @@ app.post('/api/food-library', async (req, res) => {
 })
 
 // Importar alimentos da Tabela TACO para uma consultoria
-app.post('/api/food-library/import-taco', async (req, res) => {
+app.post('/api/food-library/import-taco', authenticateToken, async (req, res) => {
   try {
     const { consultancy_id } = req.body
     
@@ -3441,7 +3441,7 @@ app.post('/api/food-library/import-taco', async (req, res) => {
 })
 
 // Atualizar alimento na biblioteca
-app.put('/api/food-library/:id', async (req, res) => {
+app.put('/api/food-library/:id', authenticateToken, async (req, res) => {
   try {
     const { consultancy_id, name, description, category, serving_size, calories, protein, carbs, fat, fiber, sodium, image_url } = req.body
     
@@ -3469,7 +3469,7 @@ app.put('/api/food-library/:id', async (req, res) => {
 })
 
 // Excluir alimento da biblioteca
-app.delete('/api/food-library/:id', async (req, res) => {
+app.delete('/api/food-library/:id', authenticateToken, async (req, res) => {
   try {
     const consultancy_id = req.query.consultancy_id
     
@@ -3499,7 +3499,7 @@ app.delete('/api/food-library/:id', async (req, res) => {
 })
 
 // Listar categorias de alimentos disponíveis
-app.get('/api/food-categories', async (_req, res) => {
+app.get('/api/food-categories', authenticateToken, async (_req, res) => {
   const categories = [
     { value: 'proteina', label: 'Proteínas' },
     { value: 'carboidrato', label: 'Carboidratos' },
@@ -3518,7 +3518,7 @@ app.get('/api/food-categories', async (_req, res) => {
 // ALIMENTOS DA REFEIÇÃO (meal_foods)
 // ===============================
 
-app.get('/api/meal-foods', async (req, res) => {
+app.get('/api/meal-foods', authenticateToken, async (req, res) => {
   try {
     const mealId = req.query.meal_id
     if (!mealId) {
@@ -3538,7 +3538,7 @@ app.get('/api/meal-foods', async (req, res) => {
   }
 })
 
-app.post('/api/meal-foods', async (req, res) => {
+app.post('/api/meal-foods', authenticateToken, async (req, res) => {
   try {
     const { meal_id, food_id, name, quantity, unit, calories, protein, carbs, fat, notes, order_index, option_group } = req.body
     const [result] = await pool.query(
@@ -3552,7 +3552,7 @@ app.post('/api/meal-foods', async (req, res) => {
   }
 })
 
-app.put('/api/meal-foods/:id', async (req, res) => {
+app.put('/api/meal-foods/:id', authenticateToken, async (req, res) => {
   try {
     const { name, quantity, unit, calories, protein, carbs, fat, notes, order_index, option_group } = req.body
     await pool.query(
@@ -3565,7 +3565,7 @@ app.put('/api/meal-foods/:id', async (req, res) => {
   }
 })
 
-app.delete('/api/meal-foods/:id', async (req, res) => {
+app.delete('/api/meal-foods/:id', authenticateToken, async (req, res) => {
   try {
     await pool.query('DELETE FROM meal_foods WHERE id = ?', [req.params.id])
     res.json({ message: 'Alimento removido da refeição' })
@@ -3578,7 +3578,7 @@ app.delete('/api/meal-foods/:id', async (req, res) => {
 // SUBSTITUIÇÕES DE ALIMENTOS
 // ===============================
 
-app.get('/api/food-substitutions', async (req, res) => {
+app.get('/api/food-substitutions', authenticateToken, async (req, res) => {
   try {
     const mealFoodId = req.query.meal_food_id
     if (!mealFoodId) {
@@ -3598,7 +3598,7 @@ app.get('/api/food-substitutions', async (req, res) => {
   }
 })
 
-app.post('/api/food-substitutions', async (req, res) => {
+app.post('/api/food-substitutions', authenticateToken, async (req, res) => {
   try {
     const { meal_food_id, food_id, name, quantity, unit, calories, protein, carbs, fat, order_index } = req.body
     const [result] = await pool.query(
@@ -3612,7 +3612,7 @@ app.post('/api/food-substitutions', async (req, res) => {
   }
 })
 
-app.delete('/api/food-substitutions/:id', async (req, res) => {
+app.delete('/api/food-substitutions/:id', authenticateToken, async (req, res) => {
   try {
     await pool.query('DELETE FROM food_substitutions WHERE id = ?', [req.params.id])
     res.json({ message: 'Substituição removida' })
@@ -3622,7 +3622,7 @@ app.delete('/api/food-substitutions/:id', async (req, res) => {
 })
 
 // Buscar plano nutricional completo (com refeições e opções de alimentos)
-app.get('/api/nutrition-plans/:id/complete', async (req, res) => {
+app.get('/api/nutrition-plans/:id/complete', authenticateToken, async (req, res) => {
   try {
     const planId = req.params.id
     
@@ -3682,7 +3682,7 @@ app.get('/api/nutrition-plans/:id/complete', async (req, res) => {
 // MEDICAL RECORDS - CRUD Completo
 // ===============================
 
-app.get('/api/medical-records', async (req, res) => {
+app.get('/api/medical-records', authenticateToken, async (req, res) => {
   try {
     const athleteId = req.query.athlete_id
     const consultancyId = req.query.consultancy_id
@@ -3718,7 +3718,7 @@ app.get('/api/medical-records', async (req, res) => {
   }
 })
 
-app.post('/api/medical-records', async (req, res) => {
+app.post('/api/medical-records', authenticateToken, async (req, res) => {
   try {
     const { athlete_id, doctor_id, record_date, type, title, description, diagnosis, treatment, attachments } = req.body
     const [result] = await pool.query(
@@ -3732,7 +3732,7 @@ app.post('/api/medical-records', async (req, res) => {
   }
 })
 
-app.put('/api/medical-records/:id', async (req, res) => {
+app.put('/api/medical-records/:id', authenticateToken, async (req, res) => {
   try {
     const { record_date, type, title, description, diagnosis, treatment, attachments } = req.body
     await pool.query(
@@ -3745,7 +3745,7 @@ app.put('/api/medical-records/:id', async (req, res) => {
   }
 })
 
-app.delete('/api/medical-records/:id', async (req, res) => {
+app.delete('/api/medical-records/:id', authenticateToken, async (req, res) => {
   try {
     await pool.query('DELETE FROM medical_records WHERE id = ?', [req.params.id])
     res.json({ message: 'Registro excluído' })
@@ -3758,7 +3758,7 @@ app.delete('/api/medical-records/:id', async (req, res) => {
 // REHAB SESSIONS - CRUD Completo
 // ===============================
 
-app.get('/api/rehab-sessions', async (req, res) => {
+app.get('/api/rehab-sessions', authenticateToken, async (req, res) => {
   try {
     const athleteId = req.query.athlete_id
     const consultancyId = req.query.consultancy_id
@@ -3794,7 +3794,7 @@ app.get('/api/rehab-sessions', async (req, res) => {
   }
 })
 
-app.post('/api/rehab-sessions', async (req, res) => {
+app.post('/api/rehab-sessions', authenticateToken, async (req, res) => {
   try {
     const { athlete_id, physio_id, session_date, injury_description, treatment, exercises, progress_notes, next_session, status } = req.body
     const [result] = await pool.query(
@@ -3808,7 +3808,7 @@ app.post('/api/rehab-sessions', async (req, res) => {
   }
 })
 
-app.put('/api/rehab-sessions/:id', async (req, res) => {
+app.put('/api/rehab-sessions/:id', authenticateToken, async (req, res) => {
   try {
     const { session_date, injury_description, treatment, exercises, progress_notes, next_session, status } = req.body
     await pool.query(
@@ -3821,7 +3821,7 @@ app.put('/api/rehab-sessions/:id', async (req, res) => {
   }
 })
 
-app.delete('/api/rehab-sessions/:id', async (req, res) => {
+app.delete('/api/rehab-sessions/:id', authenticateToken, async (req, res) => {
   try {
     await pool.query('DELETE FROM rehab_sessions WHERE id = ?', [req.params.id])
     res.json({ message: 'Sessão excluída' })
@@ -3834,7 +3834,7 @@ app.delete('/api/rehab-sessions/:id', async (req, res) => {
 // POPULAR BIBLIOTECA DE CONSULTORIA
 // ===============================
 // Endpoint para popular biblioteca de consultorias existentes
-app.post('/api/consultancies/:id/populate-library', async (req, res) => {
+app.post('/api/consultancies/:id/populate-library', authenticateToken, async (req, res) => {
   try {
     const consultancyId = Number(req.params.id)
     
@@ -3933,7 +3933,7 @@ app.post('/api/consultancies/:id/populate-library', async (req, res) => {
 // APPOINTMENTS - CRUD Completo
 // ===============================
 
-app.put('/api/appointments/:id', async (req, res) => {
+app.put('/api/appointments/:id', authenticateToken, async (req, res) => {
   try {
     const { type, title, description, scheduled_at, duration_minutes, status, location, notes } = req.body
     await pool.query(
@@ -3946,7 +3946,7 @@ app.put('/api/appointments/:id', async (req, res) => {
   }
 })
 
-app.delete('/api/appointments/:id', async (req, res) => {
+app.delete('/api/appointments/:id', authenticateToken, async (req, res) => {
   try {
     await pool.query('DELETE FROM appointments WHERE id = ?', [req.params.id])
     res.json({ message: 'Agendamento excluído' })
@@ -3959,7 +3959,7 @@ app.delete('/api/appointments/:id', async (req, res) => {
 // PROGRESS - CRUD Completo
 // ===============================
 
-app.put('/api/progress/:id', async (req, res) => {
+app.put('/api/progress/:id', authenticateToken, async (req, res) => {
   try {
     const { record_date, weight, body_fat_percentage, muscle_mass, notes, metrics } = req.body
     await pool.query(
@@ -3972,7 +3972,7 @@ app.put('/api/progress/:id', async (req, res) => {
   }
 })
 
-app.delete('/api/progress/:id', async (req, res) => {
+app.delete('/api/progress/:id', authenticateToken, async (req, res) => {
   try {
     await pool.query('DELETE FROM athlete_progress WHERE id = ?', [req.params.id])
     res.json({ message: 'Registro excluído' })
@@ -3985,7 +3985,7 @@ app.delete('/api/progress/:id', async (req, res) => {
 // FILE UPLOAD (Base64 para simplicidade)
 // ===============================
 
-app.post('/api/upload', async (req, res) => {
+app.post('/api/upload', authenticateToken, async (req, res) => {
   try {
     const { filename, data, type } = req.body
     
@@ -4005,16 +4005,16 @@ app.post('/api/upload', async (req, res) => {
 })
 
 // ===============================
-// ROTAS AVANÇADAS DE NUTRIÇÃO
+// ROTAS AVANÇADAS DE NUTRIÇÃO (PROTEGIDAS)
 // ===============================
 const nutritionAdvancedRouter = createNutritionAdvancedRoutes(pool)
-app.use('/api/nutrition-advanced', nutritionAdvancedRouter)
+app.use('/api/nutrition-advanced', authenticateToken, nutritionAdvancedRouter)
 
 // ===============================
-// ROTAS DE RECEITAS
+// ROTAS DE RECEITAS (PROTEGIDAS)
 // ===============================
 const recipeRouter = createRecipeRoutes(pool)
-app.use('/api/recipes', recipeRouter)
+app.use('/api/recipes', authenticateToken, recipeRouter)
 
 // Start server
 app.listen(PORT, async () => {
