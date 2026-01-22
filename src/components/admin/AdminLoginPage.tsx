@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { ArrowLeft, Shield, Stethoscope, Apple, Dumbbell, Loader2 } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import { Logo } from '../ui/Logo';
 
 const API_URL = '/api';
@@ -22,12 +22,6 @@ export interface AdminUser {
   };
 }
 
-interface AvailableAdmin {
-  email: string;
-  name: string;
-  role: string;
-}
-
 interface AdminLoginPageProps {
   onLoginSuccess: (user: AdminUser) => void;
   onBack: () => void;
@@ -38,15 +32,6 @@ export function AdminLoginPage({ onLoginSuccess, onBack }: AdminLoginPageProps) 
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [availableAdmins, setAvailableAdmins] = useState<AvailableAdmin[]>([]);
-
-  // Carregar profissionais disponíveis do banco
-  useEffect(() => {
-    fetch(`${API_URL}/auth/admin/available`)
-      .then(res => res.json())
-      .then(data => setAvailableAdmins(data))
-      .catch(err => console.error('Erro ao carregar profissionais:', err));
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,41 +66,6 @@ export function AdminLoginPage({ onLoginSuccess, onBack }: AdminLoginPageProps) 
     } finally {
       setLoading(false);
     }
-  };
-
-  const getRoleIcon = (role: string) => {
-    switch (role) {
-      case 'admin':
-      case 'physio':
-      case 'medico': return <Stethoscope className="w-4 h-4" />;
-      case 'nutritionist':
-      case 'nutricionista': return <Apple className="w-4 h-4" />;
-      case 'coach':
-      case 'treinador': return <Dumbbell className="w-4 h-4" />;
-      default: return <Shield className="w-4 h-4" />;
-    }
-  };
-
-  const getRoleLabel = (role: string) => {
-    switch (role) {
-      case 'admin':
-      case 'physio': return 'Médico';
-      case 'nutritionist': return 'Nutricionista';
-      case 'coach': return 'Treinador';
-      case 'medico': return 'Médico';
-      case 'nutricionista': return 'Nutricionista';
-      case 'treinador': return 'Treinador';
-      default: return role;
-    }
-  };
-
-  // Senhas para exibição (apenas desenvolvimento)
-  const getPasswordHint = (email: string) => {
-    if (email.includes('medico')) return 'medico123';
-    if (email.includes('nutri')) return 'nutri123';
-    if (email.includes('treinador') || email.includes('coach')) return 'treinador123';
-    if (email.includes('fisio')) return 'fisio123';
-    return '***';
   };
 
   return (
@@ -198,29 +148,6 @@ export function AdminLoginPage({ onLoginSuccess, onBack }: AdminLoginPageProps) 
             Acesso exclusivo para profissionais credenciados.
           </p>
         </div>
-
-        {availableAdmins.length > 0 && (
-          <div className="mt-6 lg:mt-8 p-4 lg:p-6 bg-zinc-50 border border-zinc-200 rounded-lg">
-            <p className="text-xs lg:text-sm text-zinc-600 mb-3 lg:mb-4">
-              <strong className="text-black">Credenciais de acesso (do banco):</strong>
-            </p>
-            <div className="space-y-2 lg:space-y-3">
-              {availableAdmins.map((acc) => (
-                <div key={acc.email} className="flex items-center gap-2 lg:gap-3 text-xs lg:text-sm">
-                  <span className="w-7 lg:w-8 h-7 lg:h-8 bg-lime-500/20 rounded flex items-center justify-center text-lime-600 flex-shrink-0">
-                    {getRoleIcon(acc.role)}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <span className="text-zinc-800 font-medium truncate block">{acc.name}</span>
-                    <div className="text-zinc-500 text-xs truncate">
-                      {acc.email} / {getPasswordHint(acc.email)}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
