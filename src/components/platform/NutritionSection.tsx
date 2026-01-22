@@ -131,6 +131,15 @@ export function NutritionSection({ athleteId }: NutritionSectionProps) {
     }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
   };
 
+  // Helper to format quantity - remove unnecessary decimals
+  const formatQuantity = (qty: number): string => {
+    if (Number.isInteger(qty)) {
+      return qty.toString();
+    }
+    // Remove trailing zeros after decimal
+    return parseFloat(qty.toFixed(2)).toString();
+  };
+
   const downloadPDF = () => {
     if (!plan) return;
 
@@ -239,7 +248,7 @@ export function NutritionSection({ athleteId }: NutritionSectionProps) {
         // Simple table: just food name and quantity
         const tableData = foods.map(food => [
           food.name,
-          `${food.quantity} ${food.unit}`
+          `${formatQuantity(food.quantity)} ${food.unit}`
         ]);
         
         autoTable(doc, {
@@ -461,7 +470,7 @@ export function NutritionSection({ athleteId }: NutritionSectionProps) {
                                   <div className="flex-1">
                                     <div className="flex items-center gap-2">
                                       <span className="font-medium text-lg">{food.name}</span>
-                                      <span className="text-zinc-500">({food.quantity} {food.unit})</span>
+                                      <span className="text-zinc-500">({formatQuantity(food.quantity)} {food.unit})</span>
                                     </div>
                                     <div className="text-sm text-zinc-600 mt-1">
                                       <span className="font-semibold">{Math.round(Number(food.calories))}</span> kcal
