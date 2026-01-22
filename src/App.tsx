@@ -5,7 +5,7 @@ import { Impact } from './components/Impact';
 import { Team } from './components/Team';
 import { Method } from './components/Method';
 import { PlatformPreview } from './components/PlatformPreview';
-import { Testimonials } from './components/Testimonials';
+import { Benefits } from './components/Benefits';
 import { Stats } from './components/Stats';
 import { Contact } from './components/Contact';
 import { VideoModal } from './components/VideoModal';
@@ -243,7 +243,7 @@ export default function App() {
       <Team />
       <Method />
       <PlatformPreview />
-      <Testimonials />
+      <Benefits />
       <Stats onSignupClick={handleSignupClick} />
       <Contact />
       

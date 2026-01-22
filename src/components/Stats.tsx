@@ -273,13 +273,13 @@ export function Stats({ onSignupClick }: StatsProps) {
           ))}
         </div>
 
-        {/* Additional Stats */}
+        {/* Platform Capabilities */}
         <ScrollReveal animation="fadeUp" delay={0.3}>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-12 sm:mb-16 lg:mb-20">
             {[
-              { value: '500+', label: 'Consultorias ativas' },
+              { value: '4', label: 'Módulos integrados' },
               { value: '0%', label: 'Taxas escondidas' },
-              { value: '24h', label: 'Suporte resposta' },
+              { value: '24h', label: 'Suporte disponível' },
               { value: '99.9%', label: 'Uptime garantido' },
             ].map((stat, index) => (
               <div key={index} className="border-l-2 border-lime-500 pl-4 sm:pl-6">
