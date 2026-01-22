@@ -1000,7 +1000,7 @@ app.get('/api/consultancy/:id', async (req, res) => {
     const consultancyId = req.params.id
     
     const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT id, name, slug, email, phone, logo_url, plan, price_monthly, billing_day,
+      `SELECT id, name, slug, email, phone, logo_url, primary_color, plan, price_monthly, billing_day,
               has_training, has_nutrition, has_medical, has_rehab,
               max_professionals, max_patients, status, trial_ends_at, created_at
        FROM consultancies
@@ -1277,6 +1277,53 @@ app.put('/api/consultancy/:id/plan', async (req, res) => {
     })
   } catch (error) {
     console.error('Error updating plan:', error)
+    res.status(500).json({ error: String(error) })
+  }
+})
+
+// Atualizar branding da consultoria (cor e logo)
+app.put('/api/consultancy/:id/branding', async (req, res) => {
+  try {
+    const consultancyId = req.params.id
+    const { primary_color, logo_url } = req.body
+    
+    // Validar cor hex
+    if (primary_color && !/^#[0-9A-Fa-f]{6}$/.test(primary_color)) {
+      return res.status(400).json({ error: 'Cor inválida. Use formato hex (#RRGGBB)' })
+    }
+    
+    // Atualizar campos
+    const updates: string[] = []
+    const values: (string | number)[] = []
+    
+    if (primary_color !== undefined) {
+      updates.push('primary_color = ?')
+      values.push(primary_color)
+    }
+    
+    if (logo_url !== undefined) {
+      updates.push('logo_url = ?')
+      values.push(logo_url)
+    }
+    
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'Nenhum campo para atualizar' })
+    }
+    
+    values.push(Number(consultancyId))
+    
+    await pool.query(
+      `UPDATE consultancies SET ${updates.join(', ')} WHERE id = ?`,
+      values
+    )
+    
+    res.json({ 
+      message: 'Branding atualizado com sucesso',
+      primary_color,
+      logo_url
+    })
+  } catch (error) {
+    console.error('Error updating branding:', error)
     res.status(500).json({ error: String(error) })
   }
 })

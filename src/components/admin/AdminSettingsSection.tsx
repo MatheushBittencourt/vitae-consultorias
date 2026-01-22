@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { 
   User, Bell, Lock, Save, Users, CreditCard, 
   Plus, Trash2, Edit, X, Loader2, Check, AlertTriangle,
-  Dumbbell, Apple, Stethoscope, HeartPulse, Crown, Shield
+  Dumbbell, Apple, Stethoscope, HeartPulse, Crown, Shield,
+  Building2, Palette, Upload, Image
 } from 'lucide-react';
 import { AdminUser } from './AdminLoginPage';
 
@@ -29,6 +30,8 @@ interface ConsultancyDetails {
   slug: string;
   email: string;
   phone?: string;
+  logo_url?: string;
+  primary_color?: string;
   plan: string;
   price_monthly: number;
   has_training: boolean;
@@ -116,13 +119,21 @@ export function AdminSettingsSection({ adminUser }: AdminSettingsSectionProps) {
   
   // Confirmação de exclusão
   const [deleteConfirm, setDeleteConfirm] = useState<Professional | null>(null);
+  
+  // Branding
+  const [brandingForm, setBrandingForm] = useState({
+    primary_color: '#84CC16',
+    logo_url: '',
+  });
+  const [uploadingLogo, setUploadingLogo] = useState(false);
 
   const consultancyId = adminUser.consultancyId;
 
-  // Tabs disponíveis - Equipe e Plano só para admins
+  // Tabs disponíveis - Equipe, Plano e Consultoria só para admins
   const allTabs = [
     { id: 'team', label: 'Equipe', icon: Users, adminOnly: true },
     { id: 'plan', label: 'Plano', icon: CreditCard, adminOnly: true },
+    { id: 'branding', label: 'Consultoria', icon: Building2, adminOnly: true },
     { id: 'profile', label: 'Perfil', icon: User, adminOnly: false },
     { id: 'notifications', label: 'Notificações', icon: Bell, adminOnly: false },
     { id: 'security', label: 'Segurança', icon: Lock, adminOnly: false },
@@ -186,6 +197,12 @@ export function AdminSettingsSection({ adminUser }: AdminSettingsSectionProps) {
         },
         maxProfessionals: consultancyRes.max_professionals,
         maxPatients: consultancyRes.max_patients,
+      });
+      
+      // Inicializar formulário de branding
+      setBrandingForm({
+        primary_color: consultancyRes.primary_color || '#84CC16',
+        logo_url: consultancyRes.logo_url || '',
       });
     } catch (error) {
       console.error('Error loading settings data:', error);
@@ -369,6 +386,87 @@ export function AdminSettingsSection({ adminUser }: AdminSettingsSectionProps) {
       },
     });
   };
+
+  // ================== BRANDING ==================
+
+  const handleSaveBranding = async () => {
+    if (!consultancyId) return;
+    
+    setSaving(true);
+    try {
+      const response = await fetch(`${API_URL}/consultancy/${consultancyId}/branding`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          primary_color: brandingForm.primary_color,
+          logo_url: brandingForm.logo_url || null,
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao atualizar branding');
+      }
+      
+      loadData();
+      alert('Personalização salva com sucesso!');
+    } catch (error: any) {
+      alert(error.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Validar tipo
+    if (!file.type.startsWith('image/')) {
+      alert('Por favor, selecione uma imagem');
+      return;
+    }
+    
+    // Validar tamanho (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      alert('A imagem deve ter no máximo 2MB');
+      return;
+    }
+    
+    setUploadingLogo(true);
+    
+    try {
+      // Converter para base64 (para demo - em produção usar upload para S3/CloudStorage)
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = reader.result as string;
+        setBrandingForm({ ...brandingForm, logo_url: base64 });
+        setUploadingLogo(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Error uploading logo:', error);
+      alert('Erro ao fazer upload da logo');
+      setUploadingLogo(false);
+    }
+  };
+
+  // Cores predefinidas
+  const presetColors = [
+    '#84CC16', // lime-500 (padrão)
+    '#22C55E', // green-500
+    '#14B8A6', // teal-500
+    '#06B6D4', // cyan-500
+    '#3B82F6', // blue-500
+    '#6366F1', // indigo-500
+    '#8B5CF6', // violet-500
+    '#A855F7', // purple-500
+    '#EC4899', // pink-500
+    '#EF4444', // red-500
+    '#F97316', // orange-500
+    '#EAB308', // yellow-500
+  ];
 
   const activeProfessionals = professionals.filter(p => p.is_active);
   const canAddProfessional = consultancy ? activeProfessionals.length < consultancy.max_professionals : false;
@@ -703,6 +801,183 @@ export function AdminSettingsSection({ adminUser }: AdminSettingsSectionProps) {
               >
                 {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
                 SALVAR ALTERAÇÕES
+              </button>
+            </div>
+          )}
+
+          {/* ================== ABA CONSULTORIA (BRANDING) ================== */}
+          {activeTab === 'branding' && (
+            <div className="space-y-8">
+              <div>
+                <h2 className="text-2xl font-bold">Personalização da Consultoria</h2>
+                <p className="text-zinc-600">
+                  Personalize a identidade visual da sua consultoria
+                </p>
+              </div>
+
+              {/* Logo */}
+              <div className="space-y-4">
+                <h3 className="font-bold flex items-center gap-2">
+                  <Image className="w-5 h-5" />
+                  Logo da Consultoria
+                </h3>
+                
+                <div className="flex items-start gap-6">
+                  {/* Preview */}
+                  <div className="w-32 h-32 border-2 border-dashed border-zinc-300 rounded-lg flex items-center justify-center bg-zinc-50 overflow-hidden">
+                    {brandingForm.logo_url ? (
+                      <img 
+                        src={brandingForm.logo_url} 
+                        alt="Logo" 
+                        className="w-full h-full object-contain"
+                      />
+                    ) : (
+                      <div className="text-center text-zinc-400">
+                        <Building2 className="w-10 h-10 mx-auto mb-2" />
+                        <span className="text-xs">Sem logo</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Upload */}
+                  <div className="flex-1">
+                    <label className="block">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoUpload}
+                        className="hidden"
+                        disabled={uploadingLogo}
+                      />
+                      <div className="flex items-center gap-3">
+                        <span className="px-4 py-2 bg-black text-white font-bold cursor-pointer hover:bg-zinc-800 transition-colors flex items-center gap-2">
+                          {uploadingLogo ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Upload className="w-4 h-4" />
+                          )}
+                          {uploadingLogo ? 'ENVIANDO...' : 'ENVIAR LOGO'}
+                        </span>
+                        {brandingForm.logo_url && (
+                          <button
+                            onClick={() => setBrandingForm({ ...brandingForm, logo_url: '' })}
+                            className="px-3 py-2 text-red-600 hover:bg-red-50 transition-colors"
+                          >
+                            Remover
+                          </button>
+                        )}
+                      </div>
+                    </label>
+                    <p className="text-sm text-zinc-500 mt-2">
+                      Recomendado: PNG ou SVG com fundo transparente. Máximo 2MB.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Cor Principal */}
+              <div className="space-y-4">
+                <h3 className="font-bold flex items-center gap-2">
+                  <Palette className="w-5 h-5" />
+                  Cor Principal
+                </h3>
+                <p className="text-sm text-zinc-600">
+                  Esta cor será usada como destaque em toda a plataforma
+                </p>
+                
+                {/* Cores predefinidas */}
+                <div className="flex flex-wrap gap-3">
+                  {presetColors.map((color) => (
+                    <button
+                      key={color}
+                      onClick={() => setBrandingForm({ ...brandingForm, primary_color: color })}
+                      className={`w-12 h-12 rounded-lg border-2 transition-all ${
+                        brandingForm.primary_color === color 
+                          ? 'border-black scale-110 shadow-lg' 
+                          : 'border-transparent hover:scale-105'
+                      }`}
+                      style={{ backgroundColor: color }}
+                      title={color}
+                    >
+                      {brandingForm.primary_color === color && (
+                        <Check className="w-6 h-6 text-white mx-auto drop-shadow" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+                
+                {/* Cor personalizada */}
+                <div className="flex items-center gap-4 mt-4">
+                  <label className="flex items-center gap-3">
+                    <span className="text-sm font-bold">Cor personalizada:</span>
+                    <div className="relative">
+                      <input
+                        type="color"
+                        value={brandingForm.primary_color}
+                        onChange={(e) => setBrandingForm({ ...brandingForm, primary_color: e.target.value })}
+                        className="w-12 h-12 rounded-lg border-2 border-zinc-200 cursor-pointer"
+                      />
+                    </div>
+                    <input
+                      type="text"
+                      value={brandingForm.primary_color}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (/^#[0-9A-Fa-f]{0,6}$/.test(val)) {
+                          setBrandingForm({ ...brandingForm, primary_color: val });
+                        }
+                      }}
+                      className="w-28 px-3 py-2 border-2 border-zinc-200 focus:border-lime-500 outline-none font-mono uppercase"
+                      placeholder="#84CC16"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              {/* Preview */}
+              <div className="space-y-4">
+                <h3 className="font-bold">Prévia</h3>
+                <div className="p-6 bg-zinc-100 rounded-lg">
+                  <div className="flex items-center gap-4 mb-4">
+                    {brandingForm.logo_url ? (
+                      <img src={brandingForm.logo_url} alt="Logo" className="w-12 h-12 object-contain" />
+                    ) : (
+                      <div 
+                        className="w-12 h-12 rounded-lg flex items-center justify-center text-white font-bold text-xl"
+                        style={{ backgroundColor: brandingForm.primary_color }}
+                      >
+                        {consultancy?.name.charAt(0) || 'V'}
+                      </div>
+                    )}
+                    <div>
+                      <div className="font-bold text-lg">{consultancy?.name || 'Sua Consultoria'}</div>
+                      <div className="text-sm text-zinc-500">Painel Profissional</div>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button 
+                      className="px-4 py-2 text-white font-bold"
+                      style={{ backgroundColor: brandingForm.primary_color }}
+                    >
+                      Botão Primário
+                    </button>
+                    <button 
+                      className="px-4 py-2 border-2 font-bold"
+                      style={{ borderColor: brandingForm.primary_color, color: brandingForm.primary_color }}
+                    >
+                      Botão Secundário
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={handleSaveBranding}
+                disabled={saving}
+                className="flex items-center gap-2 px-6 py-3 bg-lime-500 text-black font-bold hover:bg-lime-400 transition-colors disabled:opacity-50"
+              >
+                {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                SALVAR PERSONALIZAÇÃO
               </button>
             </div>
           )}
