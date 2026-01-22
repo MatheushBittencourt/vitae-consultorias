@@ -14,7 +14,14 @@ import { createRecipeRoutes } from './routes/recipes'
 // ===========================================
 // CONFIGURAÇÃO DE SEGURANÇA - JWT
 // ===========================================
-const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex')
+// SEGURANÇA: JWT_SECRET deve ser configurado em produção
+const JWT_SECRET = process.env.JWT_SECRET || (() => {
+  if (process.env.NODE_ENV === 'production') {
+    console.error('🚨 SECURITY WARNING: JWT_SECRET não está configurado! Usando chave temporária.')
+    console.error('   Configure JWT_SECRET no arquivo .env para persistir sessões entre restarts.')
+  }
+  return crypto.randomBytes(64).toString('hex')
+})()
 const JWT_EXPIRES_IN = '24h'
 const BCRYPT_ROUNDS = 12 // Aumentado de 10 para 12 (recomendação OWASP)
 
@@ -588,7 +595,7 @@ app.get('/api/superadmin/consultancies', authenticateToken, requireRole('superad
     `)
     res.json(consultancies)
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -621,7 +628,7 @@ app.get('/api/superadmin/consultancies/:id', authenticateToken, requireRole('sup
       patients
     })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -652,7 +659,7 @@ app.post('/api/superadmin/consultancies', authenticateToken, requireRole('supera
     )
     res.status(201).json({ id: (result as { insertId: number }).insertId, message: 'Consultoria criada' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -676,7 +683,7 @@ app.put('/api/superadmin/consultancies/:id', authenticateToken, requireRole('sup
     )
     res.json({ message: 'Consultoria atualizada' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -685,7 +692,7 @@ app.delete('/api/superadmin/consultancies/:id', authenticateToken, requireRole('
     await pool.query('DELETE FROM consultancies WHERE id = ?', [req.params.id])
     res.json({ message: 'Consultoria excluída' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -724,7 +731,7 @@ app.post('/api/superadmin/consultancies/:id/users', authenticateToken, requireRo
 
     res.status(201).json({ id: (result as { insertId: number }).insertId, message: 'Usuário criado' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -754,7 +761,7 @@ app.delete('/api/superadmin/consultancies/:consultancyId/users/:userId', authent
     res.json({ message: 'Usuário removido com sucesso' })
   } catch (error) {
     console.error('Error deleting user:', error)
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -850,7 +857,7 @@ app.get('/api/superadmin/stats', authenticateToken, requireRole('superadmin'), a
       planDistribution
     })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -939,7 +946,7 @@ app.get('/api/superadmin/consultancies/:id/details', authenticateToken, requireR
     })
   } catch (error) {
     console.error('Error fetching consultancy details:', error)
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -978,7 +985,7 @@ app.post('/api/auth/admin/login', authLimiter, async (req, res) => {
     
     // Verificar senha com bcrypt - NÃO aceitar mais senhas em texto plano
     if (!user.password_hash?.startsWith('$2')) {
-      console.error('SECURITY: User account has unhashed password:', user.email)
+      console.error('SECURITY: User account has unhashed password. User ID:', user.id)
       return res.status(401).json({ error: 'Conta requer reset de senha. Contate o administrador.' })
     }
     
@@ -1055,7 +1062,7 @@ app.post('/api/auth/patient/login', authLimiter, async (req, res) => {
     
     // Verificar senha com bcrypt - NÃO aceitar mais senhas em texto plano
     if (!user.password_hash?.startsWith('$2')) {
-      console.error('SECURITY: Patient account has unhashed password:', user.email)
+      console.error('SECURITY: Patient account has unhashed password. User ID:', user.id)
       return res.status(401).json({ error: 'Conta requer reset de senha. Contate o profissional.' })
     }
     
@@ -1173,7 +1180,7 @@ app.get('/api/consultancy/:id', authenticateToken, async (req, res) => {
     })
   } catch (error) {
     console.error('Error fetching consultancy:', error)
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -1217,7 +1224,7 @@ app.get('/api/consultancy/:id/professionals', authenticateToken, requireRole('su
     
     res.json(rows)
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -1310,7 +1317,7 @@ app.post('/api/consultancy/:id/professionals', authenticateToken, requireRole('s
     })
   } catch (error) {
     console.error('Error adding professional:', error)
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -1337,7 +1344,7 @@ app.put('/api/consultancy/:consultancyId/professionals/:userId', authenticateTok
     
     res.json({ message: 'Profissional atualizado com sucesso' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -1373,7 +1380,7 @@ app.delete('/api/consultancy/:consultancyId/professionals/:userId', authenticate
     
     res.json({ message: 'Profissional removido com sucesso' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -1444,7 +1451,7 @@ app.put('/api/consultancy/:id/plan', authenticateToken, requireRole('superadmin'
     })
   } catch (error) {
     console.error('Error updating plan:', error)
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -1491,7 +1498,7 @@ app.put('/api/consultancy/:id/branding', authenticateToken, requireRole('superad
     })
   } catch (error) {
     console.error('Error updating branding:', error)
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -1790,15 +1797,18 @@ app.post('/api/signup/consultancy', async (req, res) => {
       }
     }
 
-    console.log('Processing payment with data:', JSON.stringify(paymentData, null, 2))
+    // SECURITY: Não logar dados de pagamento em produção
+    if (!IS_PRODUCTION) console.log('Processing payment...')
 
     let paymentResult
     try {
       paymentResult = await payment.create({ body: paymentData })
-      console.log('Payment result:', JSON.stringify(paymentResult, null, 2))
+      // SECURITY: Não logar resultado de pagamento em produção
+      if (!IS_PRODUCTION) console.log('Payment processed successfully')
     } catch (paymentError: any) {
-      console.error('Payment processing error:', paymentError)
-      console.error('Error details:', JSON.stringify(paymentError, null, 2))
+      // SECURITY: Logar apenas mensagem genérica em produção
+      console.error('Payment processing error:', paymentError?.message || 'Unknown error')
+      if (!IS_PRODUCTION) console.error('Error details:', JSON.stringify(paymentError, null, 2))
       
       // Extrair mensagem de erro mais útil
       let errorMessage = 'Erro ao processar pagamento. Verifique os dados do cartão.'
@@ -2049,14 +2059,17 @@ app.post('/api/signup/consultancy/pix', async (req, res) => {
       date_of_expiration: expirationDate.toISOString()
     }
 
-    console.log('Creating PIX payment with data:', JSON.stringify(paymentData, null, 2))
+    // SECURITY: Não logar dados de pagamento em produção
+    if (!IS_PRODUCTION) console.log('Creating PIX payment...')
 
     let paymentResult
     try {
       paymentResult = await payment.create({ body: paymentData })
-      console.log('PIX payment created:', JSON.stringify(paymentResult, null, 2))
+      // SECURITY: Não logar resultado de pagamento em produção
+      if (!IS_PRODUCTION) console.log('PIX payment created successfully')
     } catch (paymentError: any) {
-      console.error('PIX payment error:', paymentError)
+      // SECURITY: Logar apenas mensagem genérica
+      console.error('PIX payment error:', paymentError?.message || 'Unknown error')
       return res.status(400).json({ 
         error: 'Erro ao gerar PIX. Tente novamente.',
         details: paymentError.message 
@@ -2320,8 +2333,11 @@ const validateWebhookSignature = (req: express.Request): boolean => {
 // Webhook do Mercado Pago para receber notificações de pagamento
 app.post('/api/webhooks/mercadopago', async (req, res) => {
   try {
-    console.log('Webhook received:', JSON.stringify(req.body, null, 2))
-    console.log('Headers:', JSON.stringify(req.headers, null, 2))
+    // SECURITY: Não logar dados de webhook em produção (contém dados sensíveis)
+    if (!IS_PRODUCTION) {
+      console.log('Webhook received')
+      // console.log('Headers:', JSON.stringify(req.headers, null, 2)) // NUNCA logar headers
+    }
     
     // Verificar se é requisição de teste do MP (id fictício)
     const isTestRequest = req.body?.data?.id === '123456' || req.body?.id === '123456'
@@ -2452,7 +2468,7 @@ app.get('/api/signup/check-slug/:slug', async (req, res) => {
     )
     res.json({ available: existing.length === 0 })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -2466,7 +2482,7 @@ app.get('/api/signup/check-email/:email', async (req, res) => {
     )
     res.json({ available: existing.length === 0 })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -2603,7 +2619,7 @@ app.get('/api/athletes', authenticateToken, async (req, res) => {
     const [rows] = await pool.query(query, params)
     res.json(rows)
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -2630,7 +2646,7 @@ app.get('/api/athletes/:id', authenticateToken, async (req, res) => {
     }
     res.json(athletes[0])
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -2672,7 +2688,7 @@ app.get('/api/appointments', authenticateToken, async (req, res) => {
     const [rows] = await pool.query(query, params)
     res.json(rows)
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -2686,7 +2702,7 @@ app.post('/api/appointments', authenticateToken, async (req, res) => {
     )
     res.status(201).json({ id: (result as { insertId: number }).insertId, message: 'Appointment created' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -2722,7 +2738,7 @@ app.get('/api/training-plans', authenticateToken, async (req, res) => {
     const [rows] = await pool.query(query, params)
     res.json(rows)
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -2757,7 +2773,7 @@ app.get('/api/nutrition-plans', authenticateToken, async (req, res) => {
     const [rows] = await pool.query(query, params)
     res.json(rows)
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -2775,7 +2791,7 @@ app.get('/api/progress', authenticateToken, async (req, res) => {
     )
     res.json(rows)
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -2789,7 +2805,7 @@ app.post('/api/progress', authenticateToken, async (req, res) => {
     )
     res.status(201).json({ id: (result as { insertId: number }).insertId, message: 'Progress recorded' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -2831,7 +2847,7 @@ app.get('/api/exercise-library', authenticateToken, async (req, res) => {
     const [rows] = await pool.query(query, params)
     res.json(rows)
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -2847,7 +2863,7 @@ app.get('/api/exercise-library/:id', authenticateToken, async (req, res) => {
     }
     res.json(rows[0])
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -2874,7 +2890,7 @@ app.post('/api/exercise-library', authenticateToken, async (req, res) => {
     )
     res.status(201).json({ id: (result as { insertId: number }).insertId, message: 'Exercício criado' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -2910,7 +2926,7 @@ app.put('/api/exercise-library/:id', authenticateToken, async (req, res) => {
     )
     res.json({ message: 'Exercício atualizado' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -2940,7 +2956,7 @@ app.delete('/api/exercise-library/:id', authenticateToken, async (req, res) => {
     await pool.query('DELETE FROM exercise_library WHERE id = ? AND consultancy_id = ?', [req.params.id, consultancy_id])
     res.json({ message: 'Exercício excluído' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -2985,7 +3001,7 @@ app.post('/api/training-plans', authenticateToken, async (req, res) => {
     )
     res.status(201).json({ id: (result as { insertId: number }).insertId, message: 'Plano criado' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3006,7 +3022,7 @@ app.put('/api/training-plans/:id', authenticateToken, async (req, res) => {
     )
     res.json({ message: 'Plano atualizado' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3015,7 +3031,7 @@ app.delete('/api/training-plans/:id', authenticateToken, async (req, res) => {
     await pool.query('DELETE FROM training_plans WHERE id = ?', [req.params.id])
     res.json({ message: 'Plano excluído' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3035,7 +3051,7 @@ app.get('/api/training-days', authenticateToken, async (req, res) => {
     )
     res.json(rows)
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3049,7 +3065,7 @@ app.post('/api/training-days', authenticateToken, async (req, res) => {
     )
     res.status(201).json({ id: (result as { insertId: number }).insertId, message: 'Dia criado' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3062,7 +3078,7 @@ app.put('/api/training-days/:id', authenticateToken, async (req, res) => {
     )
     res.json({ message: 'Dia atualizado' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3071,7 +3087,7 @@ app.delete('/api/training-days/:id', authenticateToken, async (req, res) => {
     await pool.query('DELETE FROM training_days WHERE id = ?', [req.params.id])
     res.json({ message: 'Dia excluído' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3110,7 +3126,7 @@ app.get('/api/training-exercises', authenticateToken, async (req, res) => {
     const [rows] = await pool.query(query, params)
     res.json(rows)
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3134,7 +3150,7 @@ app.post('/api/training-exercises', authenticateToken, async (req, res) => {
     )
     res.status(201).json({ id: (result as { insertId: number }).insertId, message: 'Exercício adicionado' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3158,7 +3174,7 @@ app.put('/api/training-exercises/:id', authenticateToken, async (req, res) => {
     )
     res.json({ message: 'Exercício atualizado' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3167,7 +3183,7 @@ app.delete('/api/training-exercises/:id', authenticateToken, async (req, res) =>
     await pool.query('DELETE FROM training_exercises WHERE id = ?', [req.params.id])
     res.json({ message: 'Exercício excluído' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3185,7 +3201,7 @@ app.post('/api/nutrition-plans', authenticateToken, async (req, res) => {
     )
     res.status(201).json({ id: (result as { insertId: number }).insertId, message: 'Plano nutricional criado' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3198,7 +3214,7 @@ app.put('/api/nutrition-plans/:id', authenticateToken, async (req, res) => {
     )
     res.json({ message: 'Plano atualizado' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3207,7 +3223,7 @@ app.delete('/api/nutrition-plans/:id', authenticateToken, async (req, res) => {
     await pool.query('DELETE FROM nutrition_plans WHERE id = ?', [req.params.id])
     res.json({ message: 'Plano excluído' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3221,7 +3237,7 @@ app.get('/api/meals', authenticateToken, async (req, res) => {
     const [rows] = await pool.query('SELECT * FROM meals WHERE plan_id = ? ORDER BY time', [planId])
     res.json(rows)
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3234,7 +3250,7 @@ app.post('/api/meals', authenticateToken, async (req, res) => {
     )
     res.status(201).json({ id: (result as { insertId: number }).insertId, message: 'Refeição adicionada' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3247,7 +3263,7 @@ app.put('/api/meals/:id', authenticateToken, async (req, res) => {
     )
     res.json({ message: 'Refeição atualizada' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3256,7 +3272,7 @@ app.delete('/api/meals/:id', authenticateToken, async (req, res) => {
     await pool.query('DELETE FROM meals WHERE id = ?', [req.params.id])
     res.json({ message: 'Refeição excluída' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3294,7 +3310,7 @@ app.get('/api/food-library', authenticateToken, async (req, res) => {
     const [rows] = await pool.query(query, params)
     res.json(rows)
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3310,7 +3326,7 @@ app.get('/api/food-library/:id', authenticateToken, async (req, res) => {
     }
     res.json(rows[0])
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3330,7 +3346,7 @@ app.post('/api/food-library', authenticateToken, async (req, res) => {
     )
     res.status(201).json({ id: (result as { insertId: number }).insertId, message: 'Alimento adicionado' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3436,7 +3452,7 @@ app.post('/api/food-library/import-taco', authenticateToken, async (req, res) =>
     res.json({ imported, message: `${imported} alimentos da tabela TACO importados com sucesso` })
   } catch (error) {
     console.error('Erro ao importar TACO:', error)
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3464,7 +3480,7 @@ app.put('/api/food-library/:id', authenticateToken, async (req, res) => {
     )
     res.json({ message: 'Alimento atualizado' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3494,7 +3510,7 @@ app.delete('/api/food-library/:id', authenticateToken, async (req, res) => {
     await pool.query('DELETE FROM food_library WHERE id = ? AND consultancy_id = ?', [req.params.id, consultancy_id])
     res.json({ message: 'Alimento excluído' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3534,7 +3550,7 @@ app.get('/api/meal-foods', authenticateToken, async (req, res) => {
     )
     res.json(rows)
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3548,7 +3564,7 @@ app.post('/api/meal-foods', authenticateToken, async (req, res) => {
     )
     res.status(201).json({ id: (result as { insertId: number }).insertId, message: 'Alimento adicionado à refeição' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3561,7 +3577,7 @@ app.put('/api/meal-foods/:id', authenticateToken, async (req, res) => {
     )
     res.json({ message: 'Alimento atualizado' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3570,7 +3586,7 @@ app.delete('/api/meal-foods/:id', authenticateToken, async (req, res) => {
     await pool.query('DELETE FROM meal_foods WHERE id = ?', [req.params.id])
     res.json({ message: 'Alimento removido da refeição' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3594,7 +3610,7 @@ app.get('/api/food-substitutions', authenticateToken, async (req, res) => {
     )
     res.json(rows)
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3608,7 +3624,7 @@ app.post('/api/food-substitutions', authenticateToken, async (req, res) => {
     )
     res.status(201).json({ id: (result as { insertId: number }).insertId, message: 'Substituição adicionada' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3617,7 +3633,7 @@ app.delete('/api/food-substitutions/:id', authenticateToken, async (req, res) =>
     await pool.query('DELETE FROM food_substitutions WHERE id = ?', [req.params.id])
     res.json({ message: 'Substituição removida' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3674,7 +3690,7 @@ app.get('/api/nutrition-plans/:id/complete', authenticateToken, async (req, res)
     
     res.json({ ...plan, meals: mealsWithFoods })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3714,7 +3730,7 @@ app.get('/api/medical-records', authenticateToken, async (req, res) => {
     const [rows] = await pool.query(query, params)
     res.json(rows)
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3728,7 +3744,7 @@ app.post('/api/medical-records', authenticateToken, async (req, res) => {
     )
     res.status(201).json({ id: (result as { insertId: number }).insertId, message: 'Registro criado' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3741,7 +3757,7 @@ app.put('/api/medical-records/:id', authenticateToken, async (req, res) => {
     )
     res.json({ message: 'Registro atualizado' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3750,7 +3766,7 @@ app.delete('/api/medical-records/:id', authenticateToken, async (req, res) => {
     await pool.query('DELETE FROM medical_records WHERE id = ?', [req.params.id])
     res.json({ message: 'Registro excluído' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3790,7 +3806,7 @@ app.get('/api/rehab-sessions', authenticateToken, async (req, res) => {
     const [rows] = await pool.query(query, params)
     res.json(rows)
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3804,7 +3820,7 @@ app.post('/api/rehab-sessions', authenticateToken, async (req, res) => {
     )
     res.status(201).json({ id: (result as { insertId: number }).insertId, message: 'Sessão criada' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3817,7 +3833,7 @@ app.put('/api/rehab-sessions/:id', authenticateToken, async (req, res) => {
     )
     res.json({ message: 'Sessão atualizada' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3826,7 +3842,7 @@ app.delete('/api/rehab-sessions/:id', authenticateToken, async (req, res) => {
     await pool.query('DELETE FROM rehab_sessions WHERE id = ?', [req.params.id])
     res.json({ message: 'Sessão excluída' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3925,7 +3941,7 @@ app.post('/api/consultancies/:id/populate-library', authenticateToken, async (re
     })
   } catch (error) {
     console.error('Erro ao popular biblioteca:', error)
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3942,7 +3958,7 @@ app.put('/api/appointments/:id', authenticateToken, async (req, res) => {
     )
     res.json({ message: 'Agendamento atualizado' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3951,7 +3967,7 @@ app.delete('/api/appointments/:id', authenticateToken, async (req, res) => {
     await pool.query('DELETE FROM appointments WHERE id = ?', [req.params.id])
     res.json({ message: 'Agendamento excluído' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3968,7 +3984,7 @@ app.put('/api/progress/:id', authenticateToken, async (req, res) => {
     )
     res.json({ message: 'Progresso atualizado' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -3977,7 +3993,7 @@ app.delete('/api/progress/:id', authenticateToken, async (req, res) => {
     await pool.query('DELETE FROM athlete_progress WHERE id = ?', [req.params.id])
     res.json({ message: 'Registro excluído' })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
@@ -4000,7 +4016,7 @@ app.post('/api/upload', authenticateToken, async (req, res) => {
       message: 'Arquivo salvo (simulado)'
     })
   } catch (error) {
-    res.status(500).json({ error: String(error) })
+    res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) })
   }
 })
 
