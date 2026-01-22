@@ -9,8 +9,8 @@ import { AdminSettingsSection } from './AdminSettingsSection';
 import { AdminUser } from './AdminLoginPage';
 import { RecipeManager } from '../nutrition';
 import { FoodLibrary } from './FoodLibrary';
+import { ExerciseLibrary } from './ExerciseLibrary';
 import { Card } from '../ui/Card';
-import { EmptyState } from '../ui/EmptyState';
 
 type LibrarySubView = 'main' | 'exercises' | 'foods';
 
@@ -43,13 +43,7 @@ function LibrarySection({ consultancyId }: { consultancyId: number }) {
           <ArrowLeft className="w-4 h-4" />
           Voltar para Biblioteca
         </button>
-        <Card className="p-8">
-          <EmptyState
-            icon="training"
-            title="Biblioteca de Exercícios"
-            description="Em breve você poderá gerenciar exercícios com vídeos, descrições e categorias."
-          />
-        </Card>
+        <ExerciseLibrary consultancyId={consultancyId} />
       </div>
     );
   }
