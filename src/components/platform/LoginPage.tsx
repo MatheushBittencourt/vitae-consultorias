@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { ArrowLeft, User, Loader2 } from 'lucide-react';
 import { Logo } from '../ui/Logo';
 
@@ -20,14 +20,6 @@ export interface PatientUser {
   consultancyName?: string;
 }
 
-interface AvailablePatient {
-  email: string;
-  name: string;
-  avatar_url: string;
-  sport: string;
-  club: string;
-}
-
 interface LoginPageProps {
   onLoginSuccess: (patient: PatientUser) => void;
   onBack: () => void;
@@ -38,15 +30,6 @@ export function LoginPage({ onLoginSuccess, onBack }: LoginPageProps) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [availablePatients, setAvailablePatients] = useState<AvailablePatient[]>([]);
-
-  // Carregar pacientes disponíveis do banco
-  useEffect(() => {
-    fetch(`${API_URL}/auth/patients/available`)
-      .then(res => res.json())
-      .then(data => setAvailablePatients(data))
-      .catch(err => console.error('Erro ao carregar pacientes:', err));
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,12 +64,6 @@ export function LoginPage({ onLoginSuccess, onBack }: LoginPageProps) {
     } finally {
       setLoading(false);
     }
-  };
-
-  // Senhas para exibição (apenas desenvolvimento)
-  const getPasswordHint = (email: string) => {
-    const name = email.split('@')[0];
-    return `${name}123`;
   };
 
   return (
@@ -183,32 +160,6 @@ export function LoginPage({ onLoginSuccess, onBack }: LoginPageProps) {
           </p>
         </div>
 
-        {availablePatients.length > 0 && (
-          <div className="mt-6 lg:mt-8 p-4 lg:p-6 bg-zinc-50 border border-zinc-200">
-            <p className="text-xs lg:text-sm text-zinc-600 mb-3 lg:mb-4">
-              <strong>Pacientes cadastrados (do banco):</strong>
-            </p>
-            <div className="space-y-2 lg:space-y-3">
-              {availablePatients.map((patient) => (
-                <div key={patient.email} className="flex items-center gap-2 lg:gap-3 text-xs lg:text-sm">
-                  <div className="w-7 lg:w-8 h-7 lg:h-8 bg-lime-500 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
-                    {patient.avatar_url ? (
-                      <img src={patient.avatar_url} alt={patient.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <User className="w-3.5 lg:w-4 h-3.5 lg:h-4 text-white" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <span className="text-zinc-800 font-medium truncate block">{patient.name}</span>
-                    <div className="text-zinc-500 text-xs truncate">
-                      {patient.email} / {getPasswordHint(patient.email)}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
