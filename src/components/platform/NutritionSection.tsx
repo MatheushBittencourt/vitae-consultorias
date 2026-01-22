@@ -156,12 +156,16 @@ export function NutritionSection({ athleteId, primaryColor = '#84CC16' }: Nutrit
 
     // Fetch current branding from consultancy
     let brandColor: [number, number, number] = hexToRgb(primaryColor);
+    let logoUrl: string | null = null;
     if (athleteId) {
       try {
         const brandingRes = await fetch(`${API_URL}/consultancy/branding/athlete/${athleteId}`);
         const branding = await brandingRes.json();
         if (branding.primary_color) {
           brandColor = hexToRgb(branding.primary_color);
+        }
+        if (branding.logo_url) {
+          logoUrl = branding.logo_url;
         }
       } catch (e) {
         console.error('Error fetching branding:', e);
@@ -182,6 +186,32 @@ export function NutritionSection({ athleteId, primaryColor = '#84CC16' }: Nutrit
       }
       return currentY;
     };
+
+    // Helper to load image as base64
+    const loadImageAsBase64 = (url: string): Promise<string | null> => {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              ctx.drawImage(img, 0, 0);
+              resolve(canvas.toDataURL('image/png'));
+            } else {
+              resolve(null);
+            }
+          } catch {
+            resolve(null);
+          }
+        };
+        img.onerror = () => resolve(null);
+        img.src = url;
+      });
+    };
     
     // === HEADER ===
     let yPos = 15;
@@ -189,6 +219,21 @@ export function NutritionSection({ athleteId, primaryColor = '#84CC16' }: Nutrit
     // Top accent bar
     doc.setFillColor(brandColor[0], brandColor[1], brandColor[2]);
     doc.rect(0, 0, pageWidth, 6, 'F');
+
+    // Add logo if available
+    if (logoUrl) {
+      try {
+        // If it's already base64, use directly; otherwise load it
+        const logoData = logoUrl.startsWith('data:') ? logoUrl : await loadImageAsBase64(logoUrl);
+        if (logoData) {
+          const logoHeight = 18;
+          const logoWidth = 18; // Square logo, adjust as needed
+          doc.addImage(logoData, 'PNG', pageWidth - margin - logoWidth, yPos - 2, logoWidth, logoHeight);
+        }
+      } catch (e) {
+        console.error('Error adding logo to PDF:', e);
+      }
+    }
     
     // Plan name
     doc.setTextColor(0, 0, 0);

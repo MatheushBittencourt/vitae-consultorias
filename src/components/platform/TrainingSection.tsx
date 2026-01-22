@@ -203,12 +203,16 @@ export function TrainingSection({ athleteId, primaryColor = '#84CC16' }: Trainin
     try {
       // Fetch current branding from consultancy
       let brandColor: [number, number, number] = hexToRgb(primaryColor);
+      let logoUrl: string | null = null;
       if (athleteId) {
         try {
           const brandingRes = await fetch(`${API_URL}/consultancy/branding/athlete/${athleteId}`);
           const branding = await brandingRes.json();
           if (branding.primary_color) {
             brandColor = hexToRgb(branding.primary_color);
+          }
+          if (branding.logo_url) {
+            logoUrl = branding.logo_url;
           }
         } catch (e) {
           console.error('Error fetching branding:', e);
@@ -229,6 +233,32 @@ export function TrainingSection({ athleteId, primaryColor = '#84CC16' }: Trainin
         }
         return currentY;
       };
+
+      // Helper to load image as base64
+      const loadImageAsBase64 = (url: string): Promise<string | null> => {
+        return new Promise((resolve) => {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => {
+            try {
+              const canvas = document.createElement('canvas');
+              canvas.width = img.width;
+              canvas.height = img.height;
+              const ctx = canvas.getContext('2d');
+              if (ctx) {
+                ctx.drawImage(img, 0, 0);
+                resolve(canvas.toDataURL('image/png'));
+              } else {
+                resolve(null);
+              }
+            } catch {
+              resolve(null);
+            }
+          };
+          img.onerror = () => resolve(null);
+          img.src = url;
+        });
+      };
       
       // === HEADER (compact) ===
       let yPos = 12;
@@ -236,6 +266,21 @@ export function TrainingSection({ athleteId, primaryColor = '#84CC16' }: Trainin
       // Top accent bar
       doc.setFillColor(brandColor[0], brandColor[1], brandColor[2]);
       doc.rect(0, 0, pageWidth, 4, 'F');
+
+      // Add logo if available (positioned in the top-right corner)
+      const logoSize = 14;
+      let logoSpace = 0;
+      if (logoUrl) {
+        try {
+          const logoData = logoUrl.startsWith('data:') ? logoUrl : await loadImageAsBase64(logoUrl);
+          if (logoData) {
+            doc.addImage(logoData, 'PNG', pageWidth - margin - logoSize, yPos - 4, logoSize, logoSize);
+            logoSpace = logoSize + 4; // Space for the logo
+          }
+        } catch (e) {
+          console.error('Error adding logo to PDF:', e);
+        }
+      }
       
       // Plan name + info on same line
       doc.setTextColor(0, 0, 0);
@@ -243,12 +288,12 @@ export function TrainingSection({ athleteId, primaryColor = '#84CC16' }: Trainin
       doc.setFont('helvetica', 'bold');
       doc.text(selectedPlan.name.toUpperCase(), margin, yPos + 8);
       
-      // Info inline
+      // Info inline (adjust position if logo exists)
       doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(100, 100, 100);
       const infoText = `${OBJECTIVES[selectedPlan.objective] || selectedPlan.objective} • ${selectedPlan.duration_weeks} sem • ${selectedPlan.frequency_per_week}x/sem • ${selectedPlan.split_type || '-'}`;
-      doc.text(infoText, pageWidth - margin, yPos + 8, { align: 'right' });
+      doc.text(infoText, pageWidth - margin - logoSpace, yPos + 8, { align: 'right' });
       
       yPos += 16;
       
