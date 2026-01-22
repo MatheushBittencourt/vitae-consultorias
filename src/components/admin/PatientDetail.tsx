@@ -1,3 +1,4 @@
+import { getAuthHeaders } from '../../services/api';
 import { useState, useRef, useEffect } from 'react';
 import { 
   ArrowLeft, 
@@ -266,7 +267,7 @@ function PatientInfoTab({
       setSavingPassword(true);
       const response = await fetch(`/api/users/${patient.id}/password`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ newPassword })
       });
 
@@ -807,7 +808,7 @@ function TrainingTab({ patient, consultancyId, adminUser }: { patient: Patient; 
 
   const loadExerciseLibrary = async () => {
     try {
-      const res = await fetch(`${API_URL}/exercise-library?consultancy_id=${consultancyId}`);
+      const res = await fetch(`${API_URL}/exercise-library?consultancy_id=${consultancyId}`, { headers: getAuthHeaders() });
       const data = await res.json();
       setExerciseLibrary(data as ExerciseLibraryItem[]);
     } catch (error) {
@@ -818,13 +819,13 @@ function TrainingTab({ patient, consultancyId, adminUser }: { patient: Patient; 
   const loadPlans = async () => {
     try {
       setLoading(true);
-      const athleteRes = await fetch(`${API_URL}/athletes?user_id=${patient.id}&consultancy_id=${consultancyId}`);
+      const athleteRes = await fetch(`${API_URL}/athletes?user_id=${patient.id}&consultancy_id=${consultancyId}`, { headers: getAuthHeaders() });
       const athletes = await athleteRes.json();
       const athlete = athletes[0];
       
       if (athlete) {
         setAthleteId(athlete.id);
-        const response = await fetch(`${API_URL}/training-plans?athlete_id=${athlete.id}`);
+        const response = await fetch(`${API_URL}/training-plans?athlete_id=${athlete.id}`, { headers: getAuthHeaders() });
         const data = await response.json();
         setPlans(data);
         
@@ -852,13 +853,13 @@ function TrainingTab({ patient, consultancyId, adminUser }: { patient: Patient; 
 
   const loadPlanDetails = async (planId: number) => {
     try {
-      const daysRes = await fetch(`${API_URL}/training-days?plan_id=${planId}`);
+      const daysRes = await fetch(`${API_URL}/training-days?plan_id=${planId}`, { headers: getAuthHeaders() });
       const daysData: TrainingDay[] = await daysRes.json();
       setTrainingDays(daysData);
       
       const exercisesMap: Record<number, TrainingExercise[]> = {};
       for (const day of daysData) {
-        const exRes = await fetch(`${API_URL}/training-exercises?day_id=${day.id}`);
+        const exRes = await fetch(`${API_URL}/training-exercises?day_id=${day.id}`, { headers: getAuthHeaders() });
         exercisesMap[day.id] = await exRes.json();
       }
       setExercisesByDay(exercisesMap);
@@ -884,7 +885,7 @@ function TrainingTab({ patient, consultancyId, adminUser }: { patient: Patient; 
     try {
       await fetch(`${API_URL}/training-plans`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           athlete_id: athleteId,
           trainer_id: adminUser.id,
@@ -911,7 +912,7 @@ function TrainingTab({ patient, consultancyId, adminUser }: { patient: Patient; 
     try {
       await fetch(`${API_URL}/training-plans/${selectedPlanId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           name: planForm.name,
           objective: planForm.objective,
@@ -963,13 +964,13 @@ function TrainingTab({ patient, consultancyId, adminUser }: { patient: Patient; 
       if (editingDayId) {
         await fetch(`${API_URL}/training-days/${editingDayId}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders(),
           body: JSON.stringify(dayForm),
         });
       } else {
         await fetch(`${API_URL}/training-days`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders(),
           body: JSON.stringify({
             plan_id: selectedPlanId,
             ...dayForm,
@@ -994,7 +995,7 @@ function TrainingTab({ patient, consultancyId, adminUser }: { patient: Patient; 
   const handleDeleteDay = async () => {
     if (!deletingDayId) return;
     try {
-      await fetch(`${API_URL}/training-days/${deletingDayId}`, { method: 'DELETE' });
+      await fetch(`${API_URL}/training-days/${deletingDayId}`, { method: 'DELETE', headers: getAuthHeaders() });
       if (selectedPlanId) loadPlanDetails(selectedPlanId);
     } catch (error) {
       console.error('Erro ao excluir dia:', error);
@@ -1066,7 +1067,7 @@ function TrainingTab({ patient, consultancyId, adminUser }: { patient: Patient; 
       if (editingExerciseId) {
         await fetch(`${API_URL}/training-exercises/${editingExerciseId}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders(),
           body: JSON.stringify({
             training_day_id: selectedDayId,
             ...exerciseForm,
@@ -1075,7 +1076,7 @@ function TrainingTab({ patient, consultancyId, adminUser }: { patient: Patient; 
       } else {
         await fetch(`${API_URL}/training-exercises`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders(),
           body: JSON.stringify({
             plan_id: selectedPlanId,
             training_day_id: selectedDayId,
@@ -1101,7 +1102,7 @@ function TrainingTab({ patient, consultancyId, adminUser }: { patient: Patient; 
   const handleDeleteExercise = async () => {
     if (!deletingExerciseId) return;
     try {
-      await fetch(`${API_URL}/training-exercises/${deletingExerciseId}`, { method: 'DELETE' });
+      await fetch(`${API_URL}/training-exercises/${deletingExerciseId}`, { method: 'DELETE', headers: getAuthHeaders() });
       if (selectedPlanId) loadPlanDetails(selectedPlanId);
     } catch (error) {
       console.error('Erro ao excluir exercício:', error);
@@ -2079,7 +2080,7 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
       setCreating(true);
       const response = await fetch('/api/nutrition-plans', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           athlete_id: athleteId,
           nutritionist_id: adminUser.id,
@@ -2113,7 +2114,7 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
       setSaving(true);
       const response = await fetch(`/api/nutrition-plans/${plan.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           name: planForm.name,
           daily_calories: planForm.daily_calories,
@@ -2166,7 +2167,7 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
         // Editar refeição existente
         await fetch(`/api/meals/${editingMealId}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders(),
           body: JSON.stringify({
             name: mealForm.name,
             time: mealForm.time,
@@ -2177,7 +2178,7 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
         // Criar nova refeição
         await fetch('/api/meals', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders(),
           body: JSON.stringify({
             plan_id: plan.id,
             name: mealForm.name,
@@ -2265,7 +2266,7 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
       setSaving(true);
       await fetch('/api/meal-foods', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           meal_id: editingMealId,
           food_id: foodForm.food_id,

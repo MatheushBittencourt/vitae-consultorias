@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getAuthHeaders } from '../../services/api';
 import { Download, Loader2, Utensils, ChevronDown, ChevronRight, Apple, Droplets, Target, Flame, Beef, Wheat, CircleDot } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -83,7 +84,7 @@ export function NutritionSection({ athleteId, primaryColor = '#84CC16' }: Nutrit
   const loadNutritionPlan = async () => {
     try {
       // Buscar planos do atleta
-      const plansRes = await fetch(`${API_URL}/nutrition-plans?athlete_id=${athleteId}`);
+      const plansRes = await fetch(`${API_URL}/nutrition-plans?athlete_id=${athleteId}`, { headers: getAuthHeaders() });
       const plans = await plansRes.json();
       
       // Pegar o plano ativo
@@ -91,7 +92,7 @@ export function NutritionSection({ athleteId, primaryColor = '#84CC16' }: Nutrit
       
       if (activePlan) {
         // Buscar plano completo com refeições e alimentos
-        const completeRes = await fetch(`${API_URL}/nutrition-plans/${activePlan.id}/complete`);
+        const completeRes = await fetch(`${API_URL}/nutrition-plans/${activePlan.id}/complete`, { headers: getAuthHeaders() });
         const completeData = await completeRes.json();
         setPlan(completeData);
         
@@ -159,7 +160,7 @@ export function NutritionSection({ athleteId, primaryColor = '#84CC16' }: Nutrit
     let logoUrl: string | null = null;
     if (athleteId) {
       try {
-        const brandingRes = await fetch(`${API_URL}/consultancy/branding/athlete/${athleteId}`);
+        const brandingRes = await fetch(`${API_URL}/consultancy/branding/athlete/${athleteId}`, { headers: getAuthHeaders() });
         const branding = await brandingRes.json();
         if (branding.primary_color) {
           brandColor = hexToRgb(branding.primary_color);

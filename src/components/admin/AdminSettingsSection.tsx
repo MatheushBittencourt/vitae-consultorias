@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getAuthHeaders } from '../../services/api';
 import { 
   User, Bell, Lock, Save, Users, CreditCard, 
   Plus, Trash2, Edit, X, Loader2, Check, AlertTriangle,
@@ -255,7 +256,7 @@ export function AdminSettingsSection({ adminUser }: AdminSettingsSectionProps) {
           `${API_URL}/consultancy/${consultancyId}/professionals/${editingProfessional.id}`,
           {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify({
               name: professionalForm.name,
               role: professionalForm.role,
@@ -281,7 +282,7 @@ export function AdminSettingsSection({ adminUser }: AdminSettingsSectionProps) {
           `${API_URL}/consultancy/${consultancyId}/professionals`,
           {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify({
               email: professionalForm.email,
               password: professionalForm.password,
@@ -355,7 +356,7 @@ export function AdminSettingsSection({ adminUser }: AdminSettingsSectionProps) {
     try {
       const response = await fetch(`${API_URL}/consultancy/${consultancyId}/plan`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           modules: planForm.modules,
           maxProfessionals: planForm.maxProfessionals,
@@ -398,7 +399,7 @@ export function AdminSettingsSection({ adminUser }: AdminSettingsSectionProps) {
     try {
       const response = await fetch(`${API_URL}/consultancy/${consultancyId}/branding`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           primary_color: brandingForm.primary_color,
           logo_url: brandingForm.logo_url || null,

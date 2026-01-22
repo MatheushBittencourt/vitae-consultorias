@@ -35,8 +35,8 @@ export const isAuthenticated = (): boolean => {
   }
 };
 
-// Obter headers com autenticação
-const getAuthHeaders = (): HeadersInit => {
+// Obter headers com autenticação (exportado para uso em componentes)
+export const getAuthHeaders = (): HeadersInit => {
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
   };

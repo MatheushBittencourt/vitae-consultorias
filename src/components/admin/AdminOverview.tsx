@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getAuthHeaders } from '../../services/api';
 import { 
   Users, 
   Calendar, 
@@ -102,8 +103,8 @@ export function AdminOverview({ onNavigate, onSelectPatient, consultancyId }: Ad
     }
     try {
       const [athletesRes, appointmentsRes] = await Promise.all([
-        fetch(`${API_URL}/athletes?consultancy_id=${consultancyId}`),
-        fetch(`${API_URL}/appointments?consultancy_id=${consultancyId}`)
+        fetch(`${API_URL}/athletes?consultancy_id=${consultancyId}`, { headers: getAuthHeaders() }),
+        fetch(`${API_URL}/appointments?consultancy_id=${consultancyId}`, { headers: getAuthHeaders() })
       ]);
       
       const athletesData = await athletesRes.json();

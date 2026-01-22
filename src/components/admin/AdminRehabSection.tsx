@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getAuthHeaders } from '../../services/api';
 import { Plus, Search, Edit, Eye, Loader2, Activity, HeartPulse, Calendar, CheckCircle } from 'lucide-react';
 import { Patient } from './AdminDashboard';
 import { Card, StatCard } from '../ui/Card';
@@ -53,8 +54,8 @@ export function AdminRehabSection({ onSelectPatient, consultancyId }: AdminRehab
     }
     try {
       const [sessionsRes, athletesRes] = await Promise.all([
-        fetch(`${API_URL}/rehab-sessions?consultancy_id=${consultancyId}`),
-        fetch(`${API_URL}/athletes?consultancy_id=${consultancyId}`)
+        fetch(`${API_URL}/rehab-sessions?consultancy_id=${consultancyId}`, { headers: getAuthHeaders() }),
+        fetch(`${API_URL}/athletes?consultancy_id=${consultancyId}`, { headers: getAuthHeaders() })
       ]);
       const sessionsData = await sessionsRes.json();
       const athletesData = await athletesRes.json();

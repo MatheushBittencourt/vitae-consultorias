@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getAuthHeaders } from '../../services/api';
 import { 
   Search, 
   Plus, 
@@ -77,7 +78,7 @@ export function PatientsList({ onSelectPatient, consultancyId }: PatientsListPro
         setLoading(false);
         return;
       }
-      const response = await fetch(`${API_URL}/athletes?consultancy_id=${consultancyId}`);
+      const response = await fetch(`${API_URL}/athletes?consultancy_id=${consultancyId}`, { headers: getAuthHeaders() });
       const data: AthleteData[] = await response.json();
       
       // Transform API data to Patient interface
@@ -120,7 +121,7 @@ export function PatientsList({ onSelectPatient, consultancyId }: PatientsListPro
     try {
       const userResponse = await fetch(`${API_URL}/superadmin/consultancies/${consultancyId}/users`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           email: newPatient.email,
           password: newPatient.password || 'senha123',

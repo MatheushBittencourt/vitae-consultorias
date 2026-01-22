@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getAuthHeaders } from '../../services/api';
 import { 
   Play, CheckCircle, Clock, Loader2, User, Download, 
   ChevronDown, ChevronUp, Dumbbell, Target, Calendar,
@@ -142,7 +143,7 @@ export function TrainingSection({ athleteId, primaryColor = '#84CC16' }: Trainin
 
   const loadPlans = async () => {
     try {
-      const response = await fetch(`${API_URL}/training-plans?athlete_id=${athleteId}`);
+      const response = await fetch(`${API_URL}/training-plans?athlete_id=${athleteId}`, { headers: getAuthHeaders() });
       const data = await response.json();
       setPlans(data);
       
@@ -160,14 +161,14 @@ export function TrainingSection({ athleteId, primaryColor = '#84CC16' }: Trainin
 
   const loadTrainingDays = async (planId: number) => {
     try {
-      const response = await fetch(`${API_URL}/training-days?plan_id=${planId}`);
+      const response = await fetch(`${API_URL}/training-days?plan_id=${planId}`, { headers: getAuthHeaders() });
       const data: TrainingDay[] = await response.json();
       setTrainingDays(data);
       
       // Load all exercises for all days
       const exercisesMap: Record<number, TrainingExercise[]> = {};
       for (const day of data) {
-        const exRes = await fetch(`${API_URL}/training-exercises?day_id=${day.id}`);
+        const exRes = await fetch(`${API_URL}/training-exercises?day_id=${day.id}`, { headers: getAuthHeaders() });
         exercisesMap[day.id] = await exRes.json();
       }
       setExercises(exercisesMap);
@@ -208,7 +209,7 @@ export function TrainingSection({ athleteId, primaryColor = '#84CC16' }: Trainin
       let logoUrl: string | null = null;
       if (athleteId) {
         try {
-          const brandingRes = await fetch(`${API_URL}/consultancy/branding/athlete/${athleteId}`);
+          const brandingRes = await fetch(`${API_URL}/consultancy/branding/athlete/${athleteId}`, { headers: getAuthHeaders() });
           const branding = await brandingRes.json();
           if (branding.primary_color) {
             brandColor = hexToRgb(branding.primary_color);

@@ -1,3 +1,4 @@
+import { getAuthHeaders } from '../../services/api';
 import { useState, useEffect } from 'react';
 import { Plus, Search, Edit, Eye, Loader2, Apple, Trash2, X, ChevronDown, ChevronRight, ArrowLeftRight, Utensils, Book, ArrowLeft, Users, Target, Library, FileText, Ruler, Calculator, ClipboardList } from 'lucide-react';
 import { Patient } from './AdminDashboard';
@@ -167,9 +168,9 @@ export function AdminNutritionSection({ onSelectPatient, consultancyId, adminUse
     }
     try {
       const [plansRes, athletesRes, foodRes] = await Promise.all([
-        fetch(`${API_URL}/nutrition-plans?consultancy_id=${consultancyId}`),
-        fetch(`${API_URL}/athletes?consultancy_id=${consultancyId}`),
-        fetch(`${API_URL}/food-library?consultancy_id=${consultancyId}`)
+        fetch(`${API_URL}/nutrition-plans?consultancy_id=${consultancyId}`, { headers: getAuthHeaders() }),
+        fetch(`${API_URL}/athletes?consultancy_id=${consultancyId}`, { headers: getAuthHeaders() }),
+        fetch(`${API_URL}/food-library?consultancy_id=${consultancyId}`, { headers: getAuthHeaders() })
       ]);
       const plansData = await plansRes.json();
       const athletesData = await athletesRes.json();
@@ -186,7 +187,7 @@ export function AdminNutritionSection({ onSelectPatient, consultancyId, adminUse
 
   const loadMeals = async (planId: number) => {
     try {
-      const response = await fetch(`${API_URL}/nutrition-plans/${planId}/complete`);
+      const response = await fetch(`${API_URL}/nutrition-plans/${planId}/complete`, { headers: getAuthHeaders() });
       const data = await response.json();
       setMeals(data.meals || []);
     } catch (error) {
@@ -206,7 +207,7 @@ export function AdminNutritionSection({ onSelectPatient, consultancyId, adminUse
     try {
       await fetch(`${API_URL}/nutrition-plans`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           ...planForm,
           nutritionist_id: adminUserId || 1,
@@ -228,7 +229,7 @@ export function AdminNutritionSection({ onSelectPatient, consultancyId, adminUse
     try {
       await fetch(`${API_URL}/meals`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           plan_id: selectedPlan.id,
           ...mealForm,
@@ -250,7 +251,7 @@ export function AdminNutritionSection({ onSelectPatient, consultancyId, adminUse
     try {
       await fetch(`${API_URL}/meal-foods`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           meal_id: selectedMealId,
           ...foodForm,
@@ -272,7 +273,7 @@ export function AdminNutritionSection({ onSelectPatient, consultancyId, adminUse
     try {
       await fetch(`${API_URL}/meal-foods`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           meal_id: selectedMealId,
           food_id: food.id,
@@ -298,7 +299,7 @@ export function AdminNutritionSection({ onSelectPatient, consultancyId, adminUse
   const handleDeleteMeal = async (mealId: number) => {
     if (!confirm('Excluir esta refeição?')) return;
     try {
-      await fetch(`${API_URL}/meals/${mealId}`, { method: 'DELETE' });
+      await fetch(`${API_URL}/meals/${mealId}`, { method: 'DELETE', headers: getAuthHeaders() });
       if (selectedPlan) loadMeals(selectedPlan.id);
     } catch (error) {
       console.error('Error deleting meal:', error);
@@ -307,7 +308,7 @@ export function AdminNutritionSection({ onSelectPatient, consultancyId, adminUse
 
   const handleDeleteFood = async (foodId: number) => {
     try {
-      await fetch(`${API_URL}/meal-foods/${foodId}`, { method: 'DELETE' });
+      await fetch(`${API_URL}/meal-foods/${foodId}`, { method: 'DELETE', headers: getAuthHeaders() });
       if (selectedPlan) loadMeals(selectedPlan.id);
     } catch (error) {
       console.error('Error deleting food:', error);
@@ -321,7 +322,7 @@ export function AdminNutritionSection({ onSelectPatient, consultancyId, adminUse
     try {
       await fetch(`${API_URL}/food-library`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           consultancy_id: consultancyId,
           ...libraryFoodForm,
@@ -338,7 +339,7 @@ export function AdminNutritionSection({ onSelectPatient, consultancyId, adminUse
   const handleDeleteLibraryFood = async (foodId: number) => {
     if (!confirm('Excluir este alimento da biblioteca?')) return;
     try {
-      await fetch(`${API_URL}/food-library/${foodId}?consultancy_id=${consultancyId}`, { method: 'DELETE' });
+      await fetch(`${API_URL}/food-library/${foodId}?consultancy_id=${consultancyId}`, { method: 'DELETE', headers: getAuthHeaders() });
       loadData();
     } catch (error) {
       console.error('Error deleting food:', error);
@@ -367,7 +368,7 @@ export function AdminNutritionSection({ onSelectPatient, consultancyId, adminUse
     try {
       await fetch(`${API_URL}/food-library/${editingFood.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           consultancy_id: consultancyId,
           ...libraryFoodForm,

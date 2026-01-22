@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getAuthHeaders } from '../../services/api';
 import { 
   Plus, 
   Calendar, 
@@ -77,8 +78,8 @@ export function AdminAppointmentsSection({ consultancyId }: AdminAppointmentsSec
     }
     try {
       const [aptsRes, athletesRes] = await Promise.all([
-        fetch(`${API_URL}/appointments?consultancy_id=${consultancyId}`),
-        fetch(`${API_URL}/athletes?consultancy_id=${consultancyId}`)
+        fetch(`${API_URL}/appointments?consultancy_id=${consultancyId}`, { headers: getAuthHeaders() }),
+        fetch(`${API_URL}/athletes?consultancy_id=${consultancyId}`, { headers: getAuthHeaders() })
       ]);
       const aptsData = await aptsRes.json();
       const athletesData = await athletesRes.json();

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getAuthHeaders } from '../../services/api';
 import { 
   Crown, 
   Building2, 
@@ -202,8 +203,8 @@ export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps
     setLoading(true);
     try {
       const [consultanciesRes, statsRes] = await Promise.all([
-        fetch(`${API_URL}/superadmin/consultancies`),
-        fetch(`${API_URL}/superadmin/stats`)
+        fetch(`${API_URL}/superadmin/consultancies`, { headers: getAuthHeaders() }),
+        fetch(`${API_URL}/superadmin/stats`, { headers: getAuthHeaders() })
       ]);
       
       const consultanciesData = await consultanciesRes.json();
@@ -221,7 +222,7 @@ export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps
   const loadConsultancyDetails = async (id: number) => {
     setLoadingDetails(true);
     try {
-      const response = await fetch(`${API_URL}/superadmin/consultancies/${id}/details`);
+      const response = await fetch(`${API_URL}/superadmin/consultancies/${id}/details`, { headers: getAuthHeaders() });
       const data = await response.json();
       setSelectedConsultancy(data);
       setCurrentView('consultancy-details');
@@ -287,7 +288,7 @@ export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps
       
       const response = await fetch(url, {
         method: editingConsultancy ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(form)
       });
 
@@ -310,7 +311,8 @@ export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps
 
     try {
       await fetch(`${API_URL}/superadmin/consultancies/${deletingId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: getAuthHeaders()
       });
       setShowDeleteConfirm(false);
       setDeletingId(null);
@@ -1194,7 +1196,7 @@ export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps
       try {
         const response = await fetch(`${API_URL}/superadmin/${user.id}/profile`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders(),
           body: JSON.stringify(profileForm)
         });
 
@@ -1230,7 +1232,7 @@ export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps
       try {
         const response = await fetch(`${API_URL}/superadmin/${user.id}/password`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders(),
           body: JSON.stringify({
             currentPassword: passwordForm.currentPassword,
             newPassword: passwordForm.newPassword

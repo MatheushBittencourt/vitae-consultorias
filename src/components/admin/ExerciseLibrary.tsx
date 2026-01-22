@@ -1,3 +1,4 @@
+import { getAuthHeaders } from '../../services/api';
 /**
  * Biblioteca de Exercícios
  * 
@@ -107,7 +108,7 @@ export function ExerciseLibrary({ consultancyId }: ExerciseLibraryProps) {
   const loadExercises = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/exercise-library?consultancy_id=${consultancyId}`);
+      const response = await fetch(`${API_URL}/exercise-library?consultancy_id=${consultancyId}`, { headers: getAuthHeaders() });
       const data = await response.json();
       setExercises(data || []);
     } catch (error) {
@@ -487,13 +488,13 @@ function ExerciseModal({
       if (exercise) {
         await fetch(`/api/exercise-library/${exercise.id}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders(),
           body: JSON.stringify(payload)
         });
       } else {
         await fetch('/api/exercise-library', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders(),
           body: JSON.stringify(payload)
         });
       }

@@ -1,3 +1,4 @@
+import { getAuthHeaders } from '../../services/api';
 import { useState, useEffect } from 'react';
 import { 
   Plus, Search, Edit, Dumbbell, Trash2, X, 
@@ -247,9 +248,9 @@ export function AdminTrainingSection({ consultancyId, adminUser }: AdminTraining
     }
     try {
       const [plansRes, libraryRes, athletesRes] = await Promise.all([
-        fetch(`${API_URL}/training-plans?consultancy_id=${consultancyId}`),
-        fetch(`${API_URL}/exercise-library?consultancy_id=${consultancyId}`),
-        fetch(`${API_URL}/athletes?consultancy_id=${consultancyId}`)
+        fetch(`${API_URL}/training-plans?consultancy_id=${consultancyId}`, { headers: getAuthHeaders() }),
+        fetch(`${API_URL}/exercise-library?consultancy_id=${consultancyId}`, { headers: getAuthHeaders() }),
+        fetch(`${API_URL}/athletes?consultancy_id=${consultancyId}`, { headers: getAuthHeaders() })
       ]);
       
       const plansData = await plansRes.json();
@@ -275,14 +276,14 @@ export function AdminTrainingSection({ consultancyId, adminUser }: AdminTraining
   const loadPlanDetails = async (plan: TrainingPlan) => {
     try {
       // Carregar dias do plano
-      const daysRes = await fetch(`${API_URL}/training-days?plan_id=${plan.id}`);
+      const daysRes = await fetch(`${API_URL}/training-days?plan_id=${plan.id}`, { headers: getAuthHeaders() });
       const daysData: TrainingDay[] = await daysRes.json();
       setTrainingDays(daysData);
       
       // Carregar exercícios de cada dia
       const exercisesMap: Record<number, TrainingExercise[]> = {};
       for (const day of daysData) {
-        const exRes = await fetch(`${API_URL}/training-exercises?day_id=${day.id}`);
+        const exRes = await fetch(`${API_URL}/training-exercises?day_id=${day.id}`, { headers: getAuthHeaders() });
         exercisesMap[day.id] = await exRes.json();
       }
       setExercisesByDay(exercisesMap);
@@ -295,7 +296,7 @@ export function AdminTrainingSection({ consultancyId, adminUser }: AdminTraining
   };
 
   const refreshExercises = async (dayId: number) => {
-    const exRes = await fetch(`${API_URL}/training-exercises?day_id=${dayId}`);
+    const exRes = await fetch(`${API_URL}/training-exercises?day_id=${dayId}`, { headers: getAuthHeaders() });
     const exercises = await exRes.json();
     setExercisesByDay(prev => ({ ...prev, [dayId]: exercises }));
   };
@@ -350,7 +351,7 @@ export function AdminTrainingSection({ consultancyId, adminUser }: AdminTraining
       
       const response = await fetch(url, {
         method: editingPlan ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(planForm)
       });
 
@@ -374,7 +375,7 @@ export function AdminTrainingSection({ consultancyId, adminUser }: AdminTraining
     if (!showDeleteConfirm || showDeleteConfirm.type !== 'plan') return;
     
     try {
-      await fetch(`${API_URL}/training-plans/${showDeleteConfirm.id}`, { method: 'DELETE' });
+      await fetch(`${API_URL}/training-plans/${showDeleteConfirm.id}`, { method: 'DELETE', headers: getAuthHeaders() });
       setShowDeleteConfirm(null);
       await loadInitialData();
       if (selectedPlan?.id === showDeleteConfirm.id) {
@@ -424,7 +425,7 @@ export function AdminTrainingSection({ consultancyId, adminUser }: AdminTraining
       
       await fetch(url, {
         method: editingDay ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           ...dayForm,
           plan_id: selectedPlan.id,
@@ -443,7 +444,7 @@ export function AdminTrainingSection({ consultancyId, adminUser }: AdminTraining
     if (!showDeleteConfirm || showDeleteConfirm.type !== 'day' || !selectedPlan) return;
     
     try {
-      await fetch(`${API_URL}/training-days/${showDeleteConfirm.id}`, { method: 'DELETE' });
+      await fetch(`${API_URL}/training-days/${showDeleteConfirm.id}`, { method: 'DELETE', headers: getAuthHeaders() });
       setShowDeleteConfirm(null);
       await loadPlanDetails(selectedPlan);
     } catch (error) {
@@ -506,7 +507,7 @@ export function AdminTrainingSection({ consultancyId, adminUser }: AdminTraining
       
       await fetch(url, {
         method: editingExercise ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           ...exerciseForm,
           plan_id: selectedPlan.id,
@@ -525,7 +526,7 @@ export function AdminTrainingSection({ consultancyId, adminUser }: AdminTraining
     if (!showDeleteConfirm || showDeleteConfirm.type !== 'exercise') return;
     
     try {
-      await fetch(`${API_URL}/training-exercises/${showDeleteConfirm.id}`, { method: 'DELETE' });
+      await fetch(`${API_URL}/training-exercises/${showDeleteConfirm.id}`, { method: 'DELETE', headers: getAuthHeaders() });
       setShowDeleteConfirm(null);
       if (selectedDay) await refreshExercises(selectedDay.id);
     } catch (error) {
@@ -605,14 +606,14 @@ export function AdminTrainingSection({ consultancyId, adminUser }: AdminTraining
         // Atualizar
         await fetch(`${API_URL}/exercise-library/${editingLibraryExercise.id}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders(),
           body: JSON.stringify({ ...libraryForm, consultancy_id: consultancyId })
         });
       } else {
         // Criar
         await fetch(`${API_URL}/exercise-library`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders(),
           body: JSON.stringify({ ...libraryForm, consultancy_id: consultancyId })
         });
       }
