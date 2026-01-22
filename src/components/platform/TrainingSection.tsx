@@ -253,10 +253,10 @@ export function TrainingSection({ athleteId }: TrainingSectionProps) {
         // Day header (compact)
         doc.setFillColor(0, 0, 0);
         doc.roundedRect(margin, yPos, 14, 14, 2, 2, 'F');
-        doc.setFontSize(10);
+        doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(132, 204, 22);
-        doc.text(day.day_letter, margin + 4.5, yPos + 10);
+        doc.text(day.day_letter, margin + 4, yPos + 10);
         
         // Day name
         doc.setFontSize(12);
@@ -310,16 +310,17 @@ export function TrainingSection({ athleteId }: TrainingSectionProps) {
               fillColor: [252, 252, 252]
             },
             columnStyles: {
-              0: { cellWidth: 8, halign: 'center', fontStyle: 'bold' },
-              1: { cellWidth: 45, fontStyle: 'bold' },
-              2: { cellWidth: 24 },
-              3: { cellWidth: 16, halign: 'center', fontStyle: 'bold' },
-              4: { cellWidth: 16, halign: 'center' },
-              5: { cellWidth: 12, halign: 'center' },
-              6: { cellWidth: 16, halign: 'center' },
-              7: { cellWidth: 20 }
+              0: { cellWidth: 10, halign: 'center', fontStyle: 'bold' },
+              1: { cellWidth: 58, fontStyle: 'bold' },
+              2: { cellWidth: 28 },
+              3: { cellWidth: 18, halign: 'center', fontStyle: 'bold' },
+              4: { cellWidth: 18, halign: 'center' },
+              5: { cellWidth: 14, halign: 'center' },
+              6: { cellWidth: 18, halign: 'center' },
+              7: { cellWidth: 22 }
             },
             margin: { left: margin, right: margin },
+            tableWidth: contentWidth,
             didParseCell: (data) => {
               if (data.column.index === 7 && data.cell.raw !== '-' && data.section === 'body') {
                 data.cell.styles.textColor = [132, 204, 22];
