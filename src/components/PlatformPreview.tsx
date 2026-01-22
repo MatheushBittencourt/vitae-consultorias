@@ -6,7 +6,7 @@ interface Screenshot {
   id: string;
   title: string;
   description: string;
-  category: 'dashboard' | 'training' | 'nutrition' | 'patient';
+  category: 'dashboard' | 'training' | 'nutrition';
   device: 'desktop' | 'mobile';
   imagePath?: string; // Caminho da imagem real (quando disponível)
 }
@@ -17,6 +17,7 @@ const screenshots: Screenshot[] = [
   { id: '1', title: 'Dashboard Principal', description: 'Visão geral com métricas e resumos', category: 'dashboard', device: 'desktop', imagePath: '/screenshots/1.png' },
   { id: '2', title: 'Lista de Pacientes', description: 'Gerencie todos os seus pacientes', category: 'dashboard', device: 'desktop', imagePath: '/screenshots/2.png' },
   { id: '3', title: 'Perfil do Paciente', description: 'Histórico completo de cada paciente', category: 'dashboard', device: 'desktop', imagePath: '/screenshots/3.png' },
+  { id: '10', title: 'Progresso do Paciente', description: 'Gráficos de evolução e acompanhamento', category: 'dashboard', device: 'desktop', imagePath: '/screenshots/10.png' },
   
   // Treinamento
   { id: '4', title: 'Criação de Treinos', description: 'Monte treinos personalizados', category: 'training', device: 'desktop', imagePath: '/screenshots/4.png' },
@@ -25,11 +26,6 @@ const screenshots: Screenshot[] = [
   // Nutrição
   { id: '6', title: 'Plano Alimentar', description: 'Dietas com cálculo automático de macros', category: 'nutrition', device: 'desktop', imagePath: '/screenshots/6.png' },
   { id: '7', title: 'Lista de Alimentos', description: 'Biblioteca nutricional completa', category: 'nutrition', device: 'desktop', imagePath: '/screenshots/7.png' },
-  
-  // App do Paciente (faltando todas)
-  { id: '8', title: 'App do Paciente', description: 'Seus pacientes acompanham pelo celular', category: 'patient', device: 'mobile' },
-  { id: '9', title: 'Treino do Dia', description: 'Visualização clara dos exercícios', category: 'patient', device: 'mobile' },
-  { id: '10', title: 'Progresso', description: 'Gráficos de evolução pessoal', category: 'patient', device: 'mobile', imagePath: '/screenshots/10.png' },
 ];
 
 const categories = [
@@ -37,7 +33,6 @@ const categories = [
   { id: 'dashboard', label: 'Dashboard' },
   { id: 'training', label: 'Treinamento' },
   { id: 'nutrition', label: 'Nutrição' },
-  { id: 'patient', label: 'App Paciente' },
 ];
 
 export function PlatformPreview() {
@@ -74,7 +69,6 @@ export function PlatformPreview() {
       dashboard: 'from-blue-600 to-blue-800',
       training: 'from-orange-500 to-orange-700',
       nutrition: 'from-green-500 to-green-700',
-      patient: 'from-purple-500 to-purple-700',
     };
     return colors[category] || 'from-zinc-600 to-zinc-800';
   };
