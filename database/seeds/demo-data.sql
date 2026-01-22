@@ -123,16 +123,21 @@ INSERT INTO training_plans (athlete_id, coach_id, name, description, objective, 
 VALUES (@athlete1_id, @professional_id, 'Hipertrofia ABCD', 'Plano focado em ganho de massa muscular com divisão em 4 dias', 'hipertrofia', 8, 4, 'intermediario', 'ABCD', CURDATE(), DATE_ADD(CURDATE(), INTERVAL 8 WEEK), 'active');
 SET @plan1_id = LAST_INSERT_ID();
 
--- Dias do treino Lucas
+-- Dias do treino Lucas (inserir um por um para pegar os IDs corretos)
 INSERT INTO training_days (plan_id, day_letter, day_name, focus_muscles, estimated_duration, order_index) VALUES
-(@plan1_id, 'A', 'Peito e Tríceps', 'Peitoral maior, peitoral menor, tríceps', 60, 1),
-(@plan1_id, 'B', 'Costas e Bíceps', 'Latíssimo dorsal, trapézio, bíceps', 60, 2),
-(@plan1_id, 'C', 'Ombros e Abdômen', 'Deltóides, core', 50, 3),
-(@plan1_id, 'D', 'Pernas Completo', 'Quadríceps, posterior, glúteos, panturrilha', 70, 4);
+(@plan1_id, 'A', 'Peito e Tríceps', 'Peitoral maior, peitoral menor, tríceps', 60, 1);
+SET @day_a = LAST_INSERT_ID();
 
-SET @day_a = LAST_INSERT_ID() - 3;
-SET @day_b = LAST_INSERT_ID() - 2;
-SET @day_c = LAST_INSERT_ID() - 1;
+INSERT INTO training_days (plan_id, day_letter, day_name, focus_muscles, estimated_duration, order_index) VALUES
+(@plan1_id, 'B', 'Costas e Bíceps', 'Latíssimo dorsal, trapézio, bíceps', 60, 2);
+SET @day_b = LAST_INSERT_ID();
+
+INSERT INTO training_days (plan_id, day_letter, day_name, focus_muscles, estimated_duration, order_index) VALUES
+(@plan1_id, 'C', 'Ombros e Abdômen', 'Deltóides, core', 50, 3);
+SET @day_c = LAST_INSERT_ID();
+
+INSERT INTO training_days (plan_id, day_letter, day_name, focus_muscles, estimated_duration, order_index) VALUES
+(@plan1_id, 'D', 'Pernas Completo', 'Quadríceps, posterior, glúteos, panturrilha', 70, 4);
 SET @day_d = LAST_INSERT_ID();
 
 -- Exercícios Dia A (Peito e Tríceps)
@@ -202,20 +207,29 @@ INSERT INTO nutrition_plans (athlete_id, nutritionist_id, name, description, dai
 VALUES (@athlete1_id, @professional_id, 'Dieta Hipertrofia 3000kcal', 'Plano hipercalórico para ganho de massa', 3000, 180, 375, 83, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 8 WEEK), 'active');
 SET @nutri_plan1_id = LAST_INSERT_ID();
 
--- Refeições do Lucas
+-- Refeições do Lucas (inserir uma por uma para pegar os IDs corretos)
 INSERT INTO meals (plan_id, name, time, description, order_index) VALUES
-(@nutri_plan1_id, 'Café da Manhã', '07:00:00', 'Primeira refeição do dia', 1),
-(@nutri_plan1_id, 'Lanche da Manhã', '10:00:00', 'Lanche pré-treino', 2),
-(@nutri_plan1_id, 'Almoço', '12:30:00', 'Refeição principal', 3),
-(@nutri_plan1_id, 'Lanche da Tarde', '15:30:00', 'Lanche pós-treino', 4),
-(@nutri_plan1_id, 'Jantar', '19:00:00', 'Segunda refeição principal', 5),
-(@nutri_plan1_id, 'Ceia', '21:30:00', 'Última refeição', 6);
+(@nutri_plan1_id, 'Café da Manhã', '07:00:00', 'Primeira refeição do dia', 1);
+SET @meal1 = LAST_INSERT_ID();
 
-SET @meal1 = LAST_INSERT_ID() - 5;
-SET @meal2 = LAST_INSERT_ID() - 4;
-SET @meal3 = LAST_INSERT_ID() - 3;
-SET @meal4 = LAST_INSERT_ID() - 2;
-SET @meal5 = LAST_INSERT_ID() - 1;
+INSERT INTO meals (plan_id, name, time, description, order_index) VALUES
+(@nutri_plan1_id, 'Lanche da Manhã', '10:00:00', 'Lanche pré-treino', 2);
+SET @meal2 = LAST_INSERT_ID();
+
+INSERT INTO meals (plan_id, name, time, description, order_index) VALUES
+(@nutri_plan1_id, 'Almoço', '12:30:00', 'Refeição principal', 3);
+SET @meal3 = LAST_INSERT_ID();
+
+INSERT INTO meals (plan_id, name, time, description, order_index) VALUES
+(@nutri_plan1_id, 'Lanche da Tarde', '15:30:00', 'Lanche pós-treino', 4);
+SET @meal4 = LAST_INSERT_ID();
+
+INSERT INTO meals (plan_id, name, time, description, order_index) VALUES
+(@nutri_plan1_id, 'Jantar', '19:00:00', 'Segunda refeição principal', 5);
+SET @meal5 = LAST_INSERT_ID();
+
+INSERT INTO meals (plan_id, name, time, description, order_index) VALUES
+(@nutri_plan1_id, 'Ceia', '21:30:00', 'Última refeição', 6);
 SET @meal6 = LAST_INSERT_ID();
 
 -- Alimentos Café da Manhã
