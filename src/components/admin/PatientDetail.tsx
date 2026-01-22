@@ -24,6 +24,7 @@ import {
   ChevronDown,
   ChevronUp,
   Loader2,
+  Lock,
   Ruler,
   Weight,
   Cake,
@@ -233,6 +234,60 @@ function PatientInfoTab({
   onChange: (p: Patient) => void;
   onSave: () => void;
 }) {
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [savingPassword, setSavingPassword] = useState(false);
+
+  const handleChangePassword = async () => {
+    setPasswordError('');
+    setPasswordSuccess('');
+
+    if (!newPassword) {
+      setPasswordError('Digite a nova senha');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setPasswordError('A senha deve ter pelo menos 6 caracteres');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError('As senhas não conferem');
+      return;
+    }
+
+    try {
+      setSavingPassword(true);
+      const response = await fetch(`/api/users/${patient.id}/password`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newPassword })
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Erro ao alterar senha');
+      }
+
+      setPasswordSuccess('Senha alterada com sucesso!');
+      setNewPassword('');
+      setConfirmPassword('');
+      
+      setTimeout(() => {
+        setShowPasswordModal(false);
+        setPasswordSuccess('');
+      }, 2000);
+    } catch (error) {
+      setPasswordError(error instanceof Error ? error.message : 'Erro ao alterar senha');
+    } finally {
+      setSavingPassword(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -400,6 +455,103 @@ function PatientInfoTab({
           </div>
         )}
       </div>
+
+      {/* Seção de Segurança */}
+      <div className="pt-6 mt-6 border-t border-zinc-200">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-bold text-zinc-900">Segurança</h3>
+            <p className="text-sm text-zinc-500">Gerenciar acesso do paciente</p>
+          </div>
+          <button
+            onClick={() => {
+              setShowPasswordModal(true);
+              setNewPassword('');
+              setConfirmPassword('');
+              setPasswordError('');
+              setPasswordSuccess('');
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white font-medium hover:bg-zinc-800 transition-colors text-sm rounded-md"
+          >
+            <Lock className="w-4 h-4" />
+            Alterar Senha
+          </button>
+        </div>
+      </div>
+
+      {/* Modal Alterar Senha */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md p-0">
+            <div className="p-6 border-b border-zinc-200 flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-bold">Alterar Senha</h3>
+                <p className="text-sm text-zinc-500 mt-1">{patient.name}</p>
+              </div>
+              <button 
+                onClick={() => setShowPasswordModal(false)} 
+                className="p-2 hover:bg-zinc-100 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              {passwordError && (
+                <div className="p-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg">
+                  {passwordError}
+                </div>
+              )}
+              {passwordSuccess && (
+                <div className="p-3 bg-green-50 border border-green-200 text-green-600 text-sm rounded-lg">
+                  {passwordSuccess}
+                </div>
+              )}
+              <div>
+                <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Nova Senha</label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Mínimo 6 caracteres"
+                  className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Confirmar Senha</label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Digite novamente"
+                  className="w-full px-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
+                />
+              </div>
+            </div>
+            <div className="p-6 border-t border-zinc-200 flex gap-3">
+              <button
+                onClick={() => setShowPasswordModal(false)}
+                className="flex-1 py-2.5 border border-zinc-300 font-medium hover:bg-zinc-50 transition-colors rounded-lg"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleChangePassword}
+                disabled={savingPassword}
+                className="flex-1 py-2.5 bg-lime-500 text-black font-bold hover:bg-lime-400 transition-colors rounded-lg disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {savingPassword ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  'Salvar Nova Senha'
+                )}
+              </button>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

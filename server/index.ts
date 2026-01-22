@@ -2309,6 +2309,46 @@ app.get('/api/users/:id', async (req, res) => {
   }
 })
 
+// Alterar senha do usuário (pelo profissional)
+app.put('/api/users/:id/password', async (req, res) => {
+  try {
+    const { id } = req.params
+    const { newPassword } = req.body
+
+    if (!newPassword) {
+      return res.status(400).json({ error: 'Nova senha é obrigatória' })
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'A senha deve ter pelo menos 6 caracteres' })
+    }
+
+    // Verificar se usuário existe
+    const [rows] = await pool.query<RowDataPacket[]>(
+      'SELECT id FROM users WHERE id = ?',
+      [id]
+    )
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Usuário não encontrado' })
+    }
+
+    // Hash da nova senha
+    const hashedPassword = await bcrypt.hash(newPassword, 10)
+
+    // Atualizar senha
+    await pool.query(
+      'UPDATE users SET password_hash = ? WHERE id = ?',
+      [hashedPassword, id]
+    )
+
+    res.json({ success: true, message: 'Senha alterada com sucesso' })
+  } catch (error) {
+    console.error('Erro ao alterar senha:', error)
+    res.status(500).json({ error: 'Erro ao alterar senha' })
+  }
+})
+
 // Athletes routes
 app.get('/api/athletes', async (req, res) => {
   try {
