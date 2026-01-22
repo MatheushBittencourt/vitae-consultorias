@@ -20,7 +20,7 @@ const screenshots: Screenshot[] = [
   
   // Treinamento
   { id: '4', title: 'Criação de Treinos', description: 'Monte treinos personalizados', category: 'training', device: 'desktop', imagePath: '/screenshots/4.png' },
-  { id: '5', title: 'Biblioteca de Exercícios', description: 'Mais de 500 exercícios com vídeos', category: 'training', device: 'desktop', imagePath: '/screenshots/5.png' },
+  { id: '5', title: 'Biblioteca de Exercícios', description: 'Cadastre exercícios com vídeos demonstrativos', category: 'training', device: 'desktop', imagePath: '/screenshots/5.png' },
   
   // Nutrição
   { id: '6', title: 'Plano Alimentar', description: 'Dietas com cálculo automático de macros', category: 'nutrition', device: 'desktop', imagePath: '/screenshots/6.png' },
