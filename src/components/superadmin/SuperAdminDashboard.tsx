@@ -33,7 +33,8 @@ import {
   Lock,
   Save,
   Shield,
-  Menu
+  Menu,
+  Key
 } from 'lucide-react';
 import { SuperAdminUser } from './SuperAdminLoginPage';
 import { LogoIcon } from '../ui/Logo';
@@ -171,6 +172,26 @@ export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps
   const [savingPassword, setSavingPassword] = useState(false);
   const [profileMessage, setProfileMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [passwordMessage, setPasswordMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Estado para modal de reset de senha de usuário
+  const [resetPasswordModal, setResetPasswordModal] = useState<{
+    isOpen: boolean;
+    userId: number | null;
+    userName: string;
+    userEmail: string;
+    userType: 'professional' | 'patient';
+  }>({
+    isOpen: false,
+    userId: null,
+    userName: '',
+    userEmail: '',
+    userType: 'professional'
+  });
+  const [resetPasswordForm, setResetPasswordForm] = useState({
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [resettingPassword, setResettingPassword] = useState(false);
 
   const [form, setForm] = useState({
     name: '',
@@ -319,6 +340,56 @@ export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps
       loadData();
     } catch (error) {
       console.error('Erro ao excluir:', error);
+    }
+  };
+
+  // Função para abrir modal de reset de senha
+  const openResetPasswordModal = (userId: number, userName: string, userEmail: string, userType: 'professional' | 'patient') => {
+    setResetPasswordModal({
+      isOpen: true,
+      userId,
+      userName,
+      userEmail,
+      userType
+    });
+    setResetPasswordForm({ newPassword: '', confirmPassword: '' });
+  };
+
+  // Função para resetar senha do usuário
+  const handleResetPassword = async () => {
+    if (!resetPasswordModal.userId) return;
+    
+    if (resetPasswordForm.newPassword.length < 8) {
+      toast.error('A senha deve ter pelo menos 8 caracteres');
+      return;
+    }
+    
+    if (resetPasswordForm.newPassword !== resetPasswordForm.confirmPassword) {
+      toast.error('As senhas não coincidem');
+      return;
+    }
+
+    setResettingPassword(true);
+    try {
+      const response = await fetch(`${API_URL}/users/${resetPasswordModal.userId}/password`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ newPassword: resetPasswordForm.newPassword })
+      });
+
+      if (response.ok) {
+        toast.success(`Senha de ${resetPasswordModal.userName} alterada com sucesso!`);
+        setResetPasswordModal({ isOpen: false, userId: null, userName: '', userEmail: '', userType: 'professional' });
+        setResetPasswordForm({ newPassword: '', confirmPassword: '' });
+      } else {
+        const error = await response.json();
+        toast.error(error.error || 'Erro ao alterar senha');
+      }
+    } catch (error) {
+      console.error('Erro ao resetar senha:', error);
+      toast.error('Erro ao alterar senha');
+    } finally {
+      setResettingPassword(false);
     }
   };
 
@@ -589,6 +660,13 @@ export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps
                       </p>
                     </div>
                     <div className="flex items-center gap-1 lg:gap-2 flex-shrink-0">
+                      <button
+                        onClick={() => openResetPasswordModal(prof.id, prof.name, prof.email, 'professional')}
+                        className="p-1.5 text-zinc-400 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors"
+                        title="Alterar senha"
+                      >
+                        <Key className="w-4 h-4" />
+                      </button>
                       {getRoleBadge(prof.role)}
                       {prof.is_active ? (
                         <span className="w-2 h-2 bg-lime-500 rounded-full" title="Ativo" />
@@ -623,9 +701,18 @@ export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps
                         <Mail className="w-3 h-3 flex-shrink-0" /> {patient.email}
                       </p>
                     </div>
-                    <div className="text-right text-[10px] lg:text-xs text-zinc-500 flex-shrink-0">
-                      <p>{patient.sport || '-'}</p>
-                      <p>{patient.club || '-'}</p>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <button
+                        onClick={() => openResetPasswordModal(patient.id, patient.name, patient.email, 'patient')}
+                        className="p-1.5 text-zinc-400 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors"
+                        title="Alterar senha"
+                      >
+                        <Key className="w-4 h-4" />
+                      </button>
+                      <div className="text-right text-[10px] lg:text-xs text-zinc-500">
+                        <p>{patient.sport || '-'}</p>
+                        <p>{patient.club || '-'}</p>
+                      </div>
                     </div>
                   </div>
                 ))
@@ -1560,6 +1647,92 @@ export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps
           {renderContent()}
         </div>
       </main>
+
+      {/* Modal de Reset de Senha */}
+      {resetPasswordModal.isOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white w-full max-w-md">
+            <div className="p-6 border-b border-zinc-200 flex items-center justify-between">
+              <h3 className="text-xl font-bold flex items-center gap-2">
+                <Key className="w-5 h-5 text-amber-600" />
+                Alterar Senha
+              </h3>
+              <button 
+                onClick={() => setResetPasswordModal({ isOpen: false, userId: null, userName: '', userEmail: '', userType: 'professional' })}
+                className="text-zinc-400 hover:text-black"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="bg-zinc-50 p-4 rounded-lg">
+                <p className="font-bold">{resetPasswordModal.userName}</p>
+                <p className="text-sm text-zinc-500">{resetPasswordModal.userEmail}</p>
+                <span className={`text-xs px-2 py-1 rounded mt-2 inline-block ${
+                  resetPasswordModal.userType === 'professional' ? 'bg-blue-100 text-blue-700' : 'bg-lime-100 text-lime-700'
+                }`}>
+                  {resetPasswordModal.userType === 'professional' ? 'Profissional' : 'Paciente'}
+                </span>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-bold mb-2">NOVA SENHA</label>
+                <input
+                  type="password"
+                  value={resetPasswordForm.newPassword}
+                  onChange={(e) => setResetPasswordForm({ ...resetPasswordForm, newPassword: e.target.value })}
+                  placeholder="Mínimo 8 caracteres"
+                  className="w-full px-4 py-3 border-2 border-zinc-200 focus:border-amber-500 outline-none"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-bold mb-2">CONFIRMAR SENHA</label>
+                <input
+                  type="password"
+                  value={resetPasswordForm.confirmPassword}
+                  onChange={(e) => setResetPasswordForm({ ...resetPasswordForm, confirmPassword: e.target.value })}
+                  placeholder="Repita a senha"
+                  className="w-full px-4 py-3 border-2 border-zinc-200 focus:border-amber-500 outline-none"
+                />
+              </div>
+              
+              {resetPasswordForm.newPassword && resetPasswordForm.confirmPassword && 
+               resetPasswordForm.newPassword !== resetPasswordForm.confirmPassword && (
+                <p className="text-red-500 text-sm">As senhas não coincidem</p>
+              )}
+              
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setResetPasswordModal({ isOpen: false, userId: null, userName: '', userEmail: '', userType: 'professional' })}
+                  className="flex-1 px-4 py-3 border-2 border-zinc-200 hover:bg-zinc-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleResetPassword}
+                  disabled={resettingPassword || !resetPasswordForm.newPassword || !resetPasswordForm.confirmPassword || resetPasswordForm.newPassword !== resetPasswordForm.confirmPassword}
+                  className="flex-1 px-4 py-3 bg-amber-500 text-white font-bold hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {resettingPassword ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Alterando...
+                    </>
+                  ) : (
+                    <>
+                      <Key className="w-4 h-4" />
+                      Alterar Senha
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add/Edit Modal */}
       {showModal && (
