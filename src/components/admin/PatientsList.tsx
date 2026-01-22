@@ -307,7 +307,7 @@ export function PatientsList({ onSelectPatient, consultancyId }: PatientsListPro
           />
         </Card>
       ) : (
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {filteredPatients.map((patient) => (
             <Card 
               key={patient.id}
@@ -316,49 +316,48 @@ export function PatientsList({ onSelectPatient, consultancyId }: PatientsListPro
               onClick={() => onSelectPatient(patient)}
               className="overflow-hidden"
             >
-              <div className="flex items-center gap-4 p-4 lg:p-5">
-                {/* Avatar */}
-                <Avatar 
-                  name={patient.name} 
-                  src={patient.avatarUrl} 
-                  size="lg"
-                />
+              <div className="flex items-center p-4">
+                {/* Avatar - largura fixa */}
+                <div className="flex-shrink-0 w-12">
+                  <Avatar 
+                    name={patient.name} 
+                    src={patient.avatarUrl} 
+                    size="lg"
+                  />
+                </div>
                 
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-bold text-zinc-900 truncate">{patient.name}</h3>
+                {/* Info - largura fixa para alinhar */}
+                <div className="flex-1 min-w-0 ml-4 mr-4">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <h3 className="font-bold text-zinc-900 truncate max-w-[140px]">{patient.name}</h3>
                     <StatusBadge status={patient.status} size="sm" />
                   </div>
-                  <p className="text-sm text-zinc-500 truncate">{patient.email}</p>
-                  <div className="flex items-center gap-3 mt-2">
+                  <p className="text-sm text-zinc-500 truncate max-w-[200px]">{patient.email}</p>
+                  <div className="mt-1.5">
                     <Badge variant="default" size="sm">{patient.sport}</Badge>
-                    {patient.club && (
-                      <span className="text-xs text-zinc-400">{patient.club}</span>
-                    )}
                   </div>
                 </div>
 
-                {/* Stats (hidden on mobile) */}
-                <div className="hidden md:flex items-center gap-6">
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-zinc-900">{patient.daysInProgram}</p>
-                    <p className="text-xs text-zinc-500">dias</p>
+                {/* Stats - largura fixa alinhada à direita */}
+                <div className="hidden sm:flex items-center gap-4 flex-shrink-0">
+                  <div className="text-center w-14">
+                    <p className="text-2xl font-bold text-zinc-900 leading-none">{patient.daysInProgram}</p>
+                    <p className="text-xs text-zinc-500 mt-0.5">dias</p>
                   </div>
-                  <div className="text-center">
+                  <div className="text-center w-14">
                     <ProgressBadge value={patient.adherence} />
                     <p className="text-xs text-zinc-500 mt-1">aderência</p>
                   </div>
                 </div>
 
-                {/* Actions */}
-                <div className="flex items-center gap-2">
+                {/* Actions - largura fixa */}
+                <div className="flex items-center gap-1 flex-shrink-0 ml-2">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       onSelectPatient(patient);
                     }}
-                    className="p-2.5 rounded-xl hover:bg-zinc-100 text-zinc-600 hover:text-zinc-900 transition-colors"
+                    className="p-2 rounded-lg hover:bg-zinc-100 text-zinc-500 hover:text-zinc-900 transition-colors"
                     title="Ver detalhes"
                   >
                     <Eye className="w-5 h-5" />
@@ -368,7 +367,7 @@ export function PatientsList({ onSelectPatient, consultancyId }: PatientsListPro
                       e.stopPropagation();
                       setShowDeleteConfirm(patient);
                     }}
-                    className="p-2.5 rounded-xl hover:bg-red-50 text-zinc-400 hover:text-red-600 transition-colors"
+                    className="p-2 rounded-lg hover:bg-red-50 text-zinc-400 hover:text-red-600 transition-colors"
                     title="Remover paciente"
                   >
                     <Trash2 className="w-5 h-5" />
@@ -377,7 +376,7 @@ export function PatientsList({ onSelectPatient, consultancyId }: PatientsListPro
               </div>
               
               {/* Mobile stats */}
-              <div className="flex md:hidden items-center justify-between px-4 py-3 bg-zinc-50 border-t border-zinc-100">
+              <div className="flex sm:hidden items-center justify-between px-4 py-2.5 bg-zinc-50 border-t border-zinc-100">
                 <div className="flex items-center gap-4">
                   <span className="text-sm text-zinc-600">
                     <strong>{patient.daysInProgram}</strong> dias
