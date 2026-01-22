@@ -132,12 +132,14 @@ export function NutritionSection({ athleteId }: NutritionSectionProps) {
   };
 
   // Helper to format quantity - remove unnecessary decimals
-  const formatQuantity = (qty: number): string => {
-    if (Number.isInteger(qty)) {
-      return qty.toString();
+  const formatQuantity = (qty: number | string): string => {
+    const num = typeof qty === 'string' ? parseFloat(qty) : qty;
+    if (isNaN(num)) return String(qty);
+    if (Number.isInteger(num)) {
+      return num.toString();
     }
     // Remove trailing zeros after decimal
-    return parseFloat(qty.toFixed(2)).toString();
+    return parseFloat(num.toFixed(2)).toString();
   };
 
   const downloadPDF = () => {
