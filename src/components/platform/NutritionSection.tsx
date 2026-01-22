@@ -10,7 +10,16 @@ const API_URL = '/api';
 
 interface NutritionSectionProps {
   athleteId?: number;
+  primaryColor?: string;
 }
+
+// Helper function to convert hex color to RGB
+const hexToRgb = (hex: string): [number, number, number] => {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result 
+    ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)]
+    : [132, 204, 22]; // Default lime-500
+};
 
 interface NutritionPlan {
   id: number;
@@ -59,7 +68,9 @@ interface MealOption {
   foods: MealFood[];
 }
 
-export function NutritionSection({ athleteId }: NutritionSectionProps) {
+export function NutritionSection({ athleteId, primaryColor = '#84CC16' }: NutritionSectionProps) {
+  // Convert primary color to RGB for jsPDF
+  const brandColor = hexToRgb(primaryColor);
   const [loading, setLoading] = useState(true);
   const [plan, setPlan] = useState<NutritionPlan | null>(null);
   const [expandedMeals, setExpandedMeals] = useState<Set<number>>(new Set());
@@ -164,7 +175,7 @@ export function NutritionSection({ athleteId }: NutritionSectionProps) {
     let yPos = 15;
     
     // Top accent bar
-    doc.setFillColor(132, 204, 22);
+    doc.setFillColor(brandColor[0], brandColor[1], brandColor[2]);
     doc.rect(0, 0, pageWidth, 6, 'F');
     
     // Plan name
@@ -212,7 +223,7 @@ export function NutritionSection({ athleteId }: NutritionSectionProps) {
       doc.roundedRect(margin, yPos, 28, 16, 3, 3, 'F');
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
-      doc.setTextColor(132, 204, 22);
+      doc.setTextColor(brandColor[0], brandColor[1], brandColor[2]);
       doc.text(meal.time?.substring(0, 5) || '--:--', margin + 5, yPos + 11);
       
       // Meal name
@@ -259,7 +270,7 @@ export function NutritionSection({ athleteId }: NutritionSectionProps) {
           body: tableData,
           theme: 'plain',
           headStyles: {
-            fillColor: [132, 204, 22],
+            fillColor: brandColor as [number, number, number],
             textColor: [0, 0, 0],
             fontStyle: 'bold',
             fontSize: 9,

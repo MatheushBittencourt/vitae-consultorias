@@ -15,6 +15,9 @@ export interface PatientUser {
   club: string;
   avatarUrl?: string;
   activeModules: ActiveModule[];
+  primaryColor?: string;
+  consultancyLogo?: string;
+  consultancyName?: string;
 }
 
 interface AvailablePatient {

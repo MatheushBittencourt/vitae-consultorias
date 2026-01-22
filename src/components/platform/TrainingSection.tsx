@@ -14,6 +14,7 @@ const API_URL = '/api';
 
 interface TrainingSectionProps {
   athleteId?: number;
+  primaryColor?: string;
 }
 
 interface TrainingPlan {
@@ -112,7 +113,17 @@ const TECHNIQUES: Record<string, string> = {
   piramide: 'Pirâmide'
 };
 
-export function TrainingSection({ athleteId }: TrainingSectionProps) {
+// Helper function to convert hex color to RGB
+const hexToRgb = (hex: string): [number, number, number] => {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result 
+    ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)]
+    : [132, 204, 22]; // Default lime-500
+};
+
+export function TrainingSection({ athleteId, primaryColor = '#84CC16' }: TrainingSectionProps) {
+  // Convert primary color to RGB for jsPDF
+  const brandColor = hexToRgb(primaryColor);
   const [plans, setPlans] = useState<TrainingPlan[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<TrainingPlan | null>(null);
   const [trainingDays, setTrainingDays] = useState<TrainingDay[]>([]);
@@ -211,7 +222,7 @@ export function TrainingSection({ athleteId }: TrainingSectionProps) {
       let yPos = 12;
       
       // Top accent bar
-      doc.setFillColor(132, 204, 22);
+      doc.setFillColor(brandColor[0], brandColor[1], brandColor[2]);
       doc.rect(0, 0, pageWidth, 4, 'F');
       
       // Plan name + info on same line
@@ -255,7 +266,7 @@ export function TrainingSection({ athleteId }: TrainingSectionProps) {
         doc.roundedRect(margin, yPos, 14, 14, 2, 2, 'F');
         doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
-        doc.setTextColor(132, 204, 22);
+        doc.setTextColor(brandColor[0], brandColor[1], brandColor[2]);
         doc.text(day.day_letter, margin + 4, yPos + 10);
         
         // Day name
@@ -294,7 +305,7 @@ export function TrainingSection({ athleteId }: TrainingSectionProps) {
             body: tableData,
             theme: 'plain',
             headStyles: {
-              fillColor: [132, 204, 22],
+              fillColor: brandColor as [number, number, number],
               textColor: [0, 0, 0],
               fontStyle: 'bold',
               fontSize: 6,
@@ -326,7 +337,7 @@ export function TrainingSection({ athleteId }: TrainingSectionProps) {
             didParseCell: (data) => {
               // Highlight technique column
               if (data.column.index === 7 && data.cell.raw !== '-' && data.section === 'body') {
-                data.cell.styles.textColor = [132, 204, 22];
+                data.cell.styles.textColor = brandColor;
                 data.cell.styles.fontStyle = 'bold';
               }
               // Style video link column

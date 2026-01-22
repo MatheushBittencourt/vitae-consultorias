@@ -912,10 +912,12 @@ app.post('/api/auth/patient/login', authLimiter, async (req, res) => {
     }
 
     const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT u.id, u.email, u.name, u.avatar_url, u.phone, u.password_hash,
-              a.id as athlete_id, a.sport, a.club, a.position
+      `SELECT u.id, u.email, u.name, u.avatar_url, u.phone, u.password_hash, u.consultancy_id,
+              a.id as athlete_id, a.sport, a.club, a.position,
+              c.primary_color, c.logo_url as consultancy_logo, c.name as consultancy_name
        FROM users u
        LEFT JOIN athletes a ON u.id = a.user_id
+       LEFT JOIN consultancies c ON u.consultancy_id = c.id
        WHERE u.email = ? AND u.role = 'athlete'`,
       [email.toLowerCase()]
     )
@@ -981,7 +983,10 @@ app.post('/api/auth/patient/login', authLimiter, async (req, res) => {
         sport: user.sport || 'Esporte',
         club: user.club || 'Clube',
         position: user.position,
-        activeModules: activeModules
+        activeModules: activeModules,
+        primaryColor: user.primary_color || '#84CC16',
+        consultancyLogo: user.consultancy_logo,
+        consultancyName: user.consultancy_name
       }
     })
   } catch (error) {

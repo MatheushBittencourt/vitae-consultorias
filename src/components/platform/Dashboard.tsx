@@ -35,9 +35,9 @@ export function Dashboard({ onLogout, patient }: DashboardProps) {
       case 'medical':
         return <MedicalSection athleteId={patient.athleteId} />;
       case 'nutrition':
-        return <NutritionSection athleteId={patient.athleteId} />;
+        return <NutritionSection athleteId={patient.athleteId} primaryColor={patient.primaryColor} />;
       case 'training':
-        return <TrainingSection athleteId={patient.athleteId} />;
+        return <TrainingSection athleteId={patient.athleteId} primaryColor={patient.primaryColor} />;
       case 'rehab':
         return <RehabSection athleteId={patient.athleteId} />;
       case 'appointments':
