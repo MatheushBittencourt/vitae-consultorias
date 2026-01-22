@@ -8,26 +8,25 @@ interface Screenshot {
   description: string;
   category: 'dashboard' | 'training' | 'nutrition' | 'patient';
   device: 'desktop' | 'mobile';
-  // Quando tiver as imagens reais, adicione o path aqui
-  // imagePath: string;
+  imagePath?: string; // Caminho da imagem real (quando disponível)
 }
 
-// Placeholder de screenshots - substituir pelos reais depois
+// Screenshots da plataforma
 const screenshots: Screenshot[] = [
   // Dashboard
-  { id: '1', title: 'Dashboard Principal', description: 'Visão geral com métricas e resumos', category: 'dashboard', device: 'desktop' },
-  { id: '2', title: 'Lista de Pacientes', description: 'Gerencie todos os seus pacientes', category: 'dashboard', device: 'desktop' },
-  { id: '3', title: 'Perfil do Paciente', description: 'Histórico completo de cada paciente', category: 'dashboard', device: 'desktop' },
+  { id: '1', title: 'Dashboard Principal', description: 'Visão geral com métricas e resumos', category: 'dashboard', device: 'desktop', imagePath: '/screenshots/1.png' },
+  { id: '2', title: 'Lista de Pacientes', description: 'Gerencie todos os seus pacientes', category: 'dashboard', device: 'desktop', imagePath: '/screenshots/2.png' },
+  { id: '3', title: 'Perfil do Paciente', description: 'Histórico completo de cada paciente', category: 'dashboard', device: 'desktop', imagePath: '/screenshots/3.png' },
   
   // Treinamento
-  { id: '4', title: 'Criação de Treinos', description: 'Monte treinos personalizados', category: 'training', device: 'desktop' },
-  { id: '5', title: 'Biblioteca de Exercícios', description: 'Mais de 500 exercícios com vídeos', category: 'training', device: 'desktop' },
+  { id: '4', title: 'Criação de Treinos', description: 'Monte treinos personalizados', category: 'training', device: 'desktop', imagePath: '/screenshots/4.png' },
+  { id: '5', title: 'Biblioteca de Exercícios', description: 'Mais de 500 exercícios com vídeos', category: 'training', device: 'desktop' }, // Faltando
   
   // Nutrição
-  { id: '6', title: 'Plano Alimentar', description: 'Dietas com cálculo automático de macros', category: 'nutrition', device: 'desktop' },
-  { id: '7', title: 'Lista de Alimentos', description: 'Biblioteca nutricional completa', category: 'nutrition', device: 'desktop' },
+  { id: '6', title: 'Plano Alimentar', description: 'Dietas com cálculo automático de macros', category: 'nutrition', device: 'desktop', imagePath: '/screenshots/6.png' },
+  { id: '7', title: 'Lista de Alimentos', description: 'Biblioteca nutricional completa', category: 'nutrition', device: 'desktop', imagePath: '/screenshots/7.png' },
   
-  // App do Paciente
+  // App do Paciente (faltando todas)
   { id: '8', title: 'App do Paciente', description: 'Seus pacientes acompanham pelo celular', category: 'patient', device: 'mobile' },
   { id: '9', title: 'Treino do Dia', description: 'Visualização clara dos exercícios', category: 'patient', device: 'mobile' },
   { id: '10', title: 'Progresso', description: 'Gráficos de evolução pessoal', category: 'patient', device: 'mobile' },
@@ -130,29 +129,28 @@ export function PlatformPreview() {
                   onClick={() => openLightbox(index)}
                   className="group w-full text-left bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-zinc-200 hover:border-lime-500"
                 >
-                  {/* Screenshot Placeholder */}
-                  <div className={`
-                    relative aspect-video bg-gradient-to-br ${getPlaceholderBg(screenshot.category)}
-                    overflow-hidden
-                  `}>
-                    {/* Placeholder Content */}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="text-center text-white/80">
-                        {screenshot.device === 'mobile' ? (
-                          <Smartphone className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                        ) : (
-                          <Monitor className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                        )}
-                        <p className="text-xs opacity-60">Screenshot em breve</p>
+                  {/* Screenshot */}
+                  <div className="relative aspect-video overflow-hidden">
+                    {screenshot.imagePath ? (
+                      /* Imagem Real */
+                      <img 
+                        src={screenshot.imagePath} 
+                        alt={screenshot.title}
+                        className="w-full h-full object-cover object-top"
+                      />
+                    ) : (
+                      /* Placeholder */
+                      <div className={`w-full h-full bg-gradient-to-br ${getPlaceholderBg(screenshot.category)} flex items-center justify-center`}>
+                        <div className="text-center text-white/80">
+                          {screenshot.device === 'mobile' ? (
+                            <Smartphone className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                          ) : (
+                            <Monitor className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                          )}
+                          <p className="text-xs opacity-60">Em breve</p>
+                        </div>
                       </div>
-                    </div>
-
-                    {/* Decorative elements */}
-                    <div className="absolute top-3 left-3 flex gap-1.5">
-                      <div className="w-2.5 h-2.5 rounded-full bg-white/30" />
-                      <div className="w-2.5 h-2.5 rounded-full bg-white/30" />
-                      <div className="w-2.5 h-2.5 rounded-full bg-white/30" />
-                    </div>
+                    )}
 
                     {/* Hover Overlay */}
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center">
@@ -244,24 +242,28 @@ export function PlatformPreview() {
             className="max-w-5xl w-full mx-4 sm:mx-8"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Screenshot Placeholder (substituir pela imagem real) */}
-            <div className={`
-              aspect-video rounded-xl overflow-hidden shadow-2xl
-              bg-gradient-to-br ${getPlaceholderBg(filteredScreenshots[currentIndex].category)}
-            `}>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center text-white">
-                  {filteredScreenshots[currentIndex].device === 'mobile' ? (
-                    <Smartphone className="w-16 h-16 mx-auto mb-3 opacity-50" />
-                  ) : (
-                    <Monitor className="w-16 h-16 mx-auto mb-3 opacity-50" />
-                  )}
-                  <p className="text-lg opacity-60">Screenshot em breve</p>
-                  <p className="text-sm opacity-40 mt-1">
-                    Adicione a imagem em: /public/screenshots/{filteredScreenshots[currentIndex].id}.png
-                  </p>
+            {/* Screenshot */}
+            <div className="aspect-video rounded-xl overflow-hidden shadow-2xl relative">
+              {filteredScreenshots[currentIndex].imagePath ? (
+                /* Imagem Real */
+                <img 
+                  src={filteredScreenshots[currentIndex].imagePath} 
+                  alt={filteredScreenshots[currentIndex].title}
+                  className="w-full h-full object-contain bg-zinc-900"
+                />
+              ) : (
+                /* Placeholder */
+                <div className={`w-full h-full bg-gradient-to-br ${getPlaceholderBg(filteredScreenshots[currentIndex].category)} flex items-center justify-center`}>
+                  <div className="text-center text-white">
+                    {filteredScreenshots[currentIndex].device === 'mobile' ? (
+                      <Smartphone className="w-16 h-16 mx-auto mb-3 opacity-50" />
+                    ) : (
+                      <Monitor className="w-16 h-16 mx-auto mb-3 opacity-50" />
+                    )}
+                    <p className="text-lg opacity-60">Em breve</p>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Info */}
