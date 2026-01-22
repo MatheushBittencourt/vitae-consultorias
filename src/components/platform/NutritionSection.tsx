@@ -136,77 +136,225 @@ export function NutritionSection({ athleteId }: NutritionSectionProps) {
 
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 16;
+    const contentWidth = pageWidth - (margin * 2);
     
-    // Header
+    // Helper function to draw rounded rectangle
+    const drawRoundedRect = (x: number, y: number, w: number, h: number, r: number, fill: boolean = true) => {
+      doc.roundedRect(x, y, w, h, r, r, fill ? 'F' : 'S');
+    };
+    
+    // === PAGE 1: Cover / Plan Info ===
+    
+    // Background
+    doc.setFillColor(250, 250, 250);
+    doc.rect(0, 0, pageWidth, pageHeight, 'F');
+    
+    // Top accent bar
     doc.setFillColor(132, 204, 22); // lime-500
-    doc.rect(0, 0, pageWidth, 40, 'F');
+    doc.rect(0, 0, pageWidth, 8, 'F');
     
+    // Plan name header
+    let yPos = 35;
     doc.setTextColor(0, 0, 0);
-    doc.setFontSize(24);
+    doc.setFontSize(32);
     doc.setFont('helvetica', 'bold');
-    doc.text('PLANO NUTRICIONAL', 14, 20);
+    doc.text(plan.name.toUpperCase(), margin, yPos);
     
-    doc.setFontSize(12);
+    // Subtitle
+    yPos += 12;
+    doc.setFontSize(14);
     doc.setFont('helvetica', 'normal');
-    doc.text(plan.name, 14, 30);
-
-    // Macros
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(10);
-    let yPos = 55;
+    doc.setTextColor(100, 100, 100);
+    doc.text('Plano Nutricional Personalizado', margin, yPos);
     
-    doc.setFont('helvetica', 'bold');
-    doc.text('METAS DIÁRIAS', 14, yPos);
-    yPos += 10;
+    // Macros cards row
+    yPos += 25;
+    const cardWidth = (contentWidth - 12) / 4;
+    const cardHeight = 40;
+    const macroData = [
+      { label: 'CALORIAS', value: `${plan.daily_calories}`, unit: 'kcal', color: [255, 100, 100] },
+      { label: 'PROTEÍNA', value: `${plan.protein_grams}`, unit: 'g', color: [239, 68, 68] },
+      { label: 'CARBOIDRATO', value: `${plan.carbs_grams}`, unit: 'g', color: [251, 191, 36] },
+      { label: 'GORDURA', value: `${plan.fat_grams}`, unit: 'g', color: [59, 130, 246] }
+    ];
     
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Calorias: ${plan.daily_calories} kcal`, 14, yPos);
-    doc.text(`Proteínas: ${plan.protein_grams}g`, 80, yPos);
-    doc.text(`Carboidratos: ${plan.carbs_grams}g`, 130, yPos);
-    doc.text(`Gorduras: ${plan.fat_grams}g`, 180, yPos);
-    
-    yPos += 15;
-
-    // Meals
-    plan.meals?.forEach((meal) => {
-      if (yPos > 260) {
-        doc.addPage();
-        yPos = 20;
-      }
-
-      // Meal header
-      doc.setFillColor(245, 245, 245);
-      doc.rect(14, yPos - 5, pageWidth - 28, 10, 'F');
+    macroData.forEach((macro, i) => {
+      const x = margin + (i * (cardWidth + 4));
       
+      // Card background
+      doc.setFillColor(255, 255, 255);
+      drawRoundedRect(x, yPos, cardWidth, cardHeight, 3);
+      
+      // Card border
+      doc.setDrawColor(230, 230, 230);
+      doc.setLineWidth(0.5);
+      doc.roundedRect(x, yPos, cardWidth, cardHeight, 3, 3, 'S');
+      
+      // Accent bar at top
+      doc.setFillColor(macro.color[0], macro.color[1], macro.color[2]);
+      doc.rect(x, yPos, cardWidth, 3, 'F');
+      
+      // Label
+      doc.setFontSize(6);
       doc.setFont('helvetica', 'bold');
+      doc.setTextColor(150, 150, 150);
+      doc.text(macro.label, x + 6, yPos + 14);
+      
+      // Value
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text(macro.value, x + 6, yPos + 28);
+      
+      // Unit
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(100, 100, 100);
+      doc.text(macro.unit, x + 6 + doc.getTextWidth(macro.value) + 2, yPos + 28);
+    });
+    
+    // Nutritionist info
+    yPos += cardHeight + 16;
+    doc.setFillColor(255, 255, 255);
+    drawRoundedRect(margin, yPos, contentWidth, 20, 3);
+    doc.setDrawColor(230, 230, 230);
+    doc.roundedRect(margin, yPos, contentWidth, 20, 3, 3, 'S');
+    
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Nutricionista: ${plan.nutritionist_name || 'Não atribuído'}`, margin + 8, yPos + 12);
+    doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, contentWidth - 20, yPos + 12, { align: 'right' });
+    
+    // Meals summary
+    yPos += 35;
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('REFEIÇÕES DO DIA', margin, yPos);
+    
+    yPos += 12;
+    plan.meals?.forEach((meal, idx) => {
+      const mealFoods = meal.foods || [];
+      const primaryFoods = mealFoods.filter(f => f.option_group === 0);
+      const mealTotals = calculateMealTotals(mealFoods, 0);
+      
+      // Meal card
+      doc.setFillColor(255, 255, 255);
+      drawRoundedRect(margin, yPos, contentWidth, 22, 3);
+      doc.setDrawColor(230, 230, 230);
+      doc.roundedRect(margin, yPos, contentWidth, 22, 3, 3, 'S');
+      
+      // Time badge
+      doc.setFillColor(132, 204, 22);
+      drawRoundedRect(margin + 4, yPos + 5, 28, 12, 2);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text(meal.time?.substring(0, 5) || '--:--', margin + 10, yPos + 13);
+      
+      // Meal name
       doc.setFontSize(11);
-      doc.text(`${meal.name} • ${meal.time?.substring(0, 5) || '--:--'}`, 16, yPos + 2);
-      yPos += 12;
-
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(30, 30, 30);
+      doc.text(meal.name, margin + 38, yPos + 10);
+      
+      // Food count
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(100, 100, 100);
+      doc.text(`${primaryFoods.length} alimento(s)`, margin + 38, yPos + 17);
+      
+      // Calories
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(132, 204, 22);
+      doc.text(`${mealTotals.calories} kcal`, contentWidth - 10, yPos + 13, { align: 'right' });
+      
+      yPos += 26;
+    });
+    
+    // === MEALS DETAIL PAGES ===
+    plan.meals?.forEach((meal) => {
+      doc.addPage();
+      
+      // Background
+      doc.setFillColor(250, 250, 250);
+      doc.rect(0, 0, pageWidth, pageHeight, 'F');
+      
+      // Top accent bar
+      doc.setFillColor(132, 204, 22);
+      doc.rect(0, 0, pageWidth, 6, 'F');
+      
+      // Meal header
+      yPos = 25;
+      
+      // Time badge (larger)
+      doc.setFillColor(0, 0, 0);
+      drawRoundedRect(margin, yPos - 10, 36, 24, 4);
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(132, 204, 22);
+      doc.text(meal.time?.substring(0, 5) || '--:--', margin + 6, yPos + 5);
+      
+      // Meal name
+      doc.setFontSize(20);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text(meal.name, margin + 44, yPos);
+      
+      // Meal description if exists
+      if (meal.description) {
+        yPos += 10;
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(100, 100, 100);
+        doc.text(meal.description, margin + 44, yPos);
+      }
+      
+      yPos += 20;
+      
       // Agrupar alimentos por opção
       const optionGroups = getOptionGroups(meal.foods);
       const availableOptions = Object.keys(optionGroups).map(Number).sort((a, b) => a - b);
       
-      availableOptions.forEach((optNum, optIdx) => {
+      availableOptions.forEach((optNum) => {
         const foods = optionGroups[optNum] || [];
         if (foods.length === 0) return;
         
-        if (yPos > 260) {
+        if (yPos > 240) {
           doc.addPage();
-          yPos = 20;
+          doc.setFillColor(250, 250, 250);
+          doc.rect(0, 0, pageWidth, pageHeight, 'F');
+          doc.setFillColor(132, 204, 22);
+          doc.rect(0, 0, pageWidth, 6, 'F');
+          yPos = 25;
         }
-
+        
         // Option label
         if (availableOptions.length > 1) {
+          const isMain = optNum === 0;
+          if (isMain) {
+            doc.setFillColor(220, 252, 231);
+          } else {
+            doc.setFillColor(255, 237, 213);
+          }
+          drawRoundedRect(margin, yPos - 4, contentWidth, 16, 3);
+          
           doc.setFontSize(9);
           doc.setFont('helvetica', 'bold');
-          const optLabel = optNum === 0 ? '🍽️ OPÇÃO PRINCIPAL' : `🔄 SUBSTITUIÇÃO ${optNum}`;
-          doc.setTextColor(optNum === 0 ? 34 : 194, optNum === 0 ? 139 : 65, optNum === 0 ? 34 : 12);
-          doc.text(optLabel, 16, yPos);
-          doc.setTextColor(0, 0, 0);
-          yPos += 6;
+          if (isMain) {
+            doc.setTextColor(22, 101, 52);
+          } else {
+            doc.setTextColor(154, 52, 18);
+          }
+          const optLabel = isMain ? 'OPÇÃO PRINCIPAL' : `SUBSTITUIÇÃO ${optNum}`;
+          doc.text(optLabel, margin + 8, yPos + 6);
+          yPos += 18;
         }
-
+        
         const tableData = foods.map(food => [
           food.name,
           `${food.quantity} ${food.unit}`,
@@ -215,57 +363,80 @@ export function NutritionSection({ athleteId }: NutritionSectionProps) {
           `${food.carbs}g`,
           `${food.fat}g`
         ]);
-
+        
         // Add totals row
         const totals = calculateMealTotals(foods, optNum);
         tableData.push([
-          'TOTAL',
+          'TOTAL DA REFEIÇÃO',
           '',
           `${totals.calories}`,
           `${totals.protein}g`,
           `${totals.carbs}g`,
           `${totals.fat}g`
         ]);
-
+        
         autoTable(doc, {
           startY: yPos,
-          head: [['Alimento', 'Qtd', 'Kcal', 'P', 'C', 'G']],
+          head: [['ALIMENTO', 'QUANTIDADE', 'KCAL', 'PROT', 'CARB', 'GORD']],
           body: tableData,
           theme: 'plain',
-          headStyles: { 
-            fillColor: optNum === 0 ? [132, 204, 22] : [251, 146, 60], 
-            textColor: [255, 255, 255],
-            fontSize: 8,
-            fontStyle: 'bold'
+          headStyles: {
+            fillColor: [0, 0, 0],
+            textColor: [132, 204, 22],
+            fontStyle: 'bold',
+            fontSize: 7,
+            cellPadding: 4
           },
-          bodyStyles: { fontSize: 9 },
+          bodyStyles: {
+            fontSize: 9,
+            cellPadding: 5,
+            textColor: [40, 40, 40],
+            lineColor: [240, 240, 240],
+            lineWidth: 0.5
+          },
+          alternateRowStyles: {
+            fillColor: [255, 255, 255]
+          },
           columnStyles: {
-            0: { cellWidth: 70 },
-            1: { cellWidth: 30 },
-            2: { cellWidth: 20 },
-            3: { cellWidth: 20 },
-            4: { cellWidth: 20 },
-            5: { cellWidth: 20 },
+            0: { cellWidth: 60, fontStyle: 'bold' },
+            1: { cellWidth: 35 },
+            2: { cellWidth: 20, halign: 'center' },
+            3: { cellWidth: 20, halign: 'center' },
+            4: { cellWidth: 20, halign: 'center' },
+            5: { cellWidth: 20, halign: 'center' }
           },
+          margin: { left: margin, right: margin },
           didParseCell: (data) => {
-            if (data.row.index === tableData.length - 1) {
+            // Style totals row
+            if (data.row.index === tableData.length - 1 && data.section === 'body') {
               data.cell.styles.fontStyle = 'bold';
               data.cell.styles.fillColor = [132, 204, 22];
+              data.cell.styles.textColor = [0, 0, 0];
             }
           }
         });
-
-        yPos = (doc as any).lastAutoTable.finalY + 8;
-      }); // End of availableOptions.forEach
-
-      yPos += 5;
+        
+        yPos = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 12;
+      });
     });
-
-    // Footer
-    const today = new Date().toLocaleDateString('pt-BR');
-    doc.setFontSize(8);
-    doc.setTextColor(150, 150, 150);
-    doc.text(`Gerado em ${today} • VITAE`, 14, 290);
+    
+    // Footer on all pages
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      
+      // Footer line
+      doc.setDrawColor(230, 230, 230);
+      doc.setLineWidth(0.5);
+      doc.line(margin, pageHeight - 18, pageWidth - margin, pageHeight - 18);
+      
+      // Footer text
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(150, 150, 150);
+      doc.text(plan.name, margin, pageHeight - 10);
+      doc.text(`Página ${i} de ${pageCount}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
+    }
 
     doc.save(`plano-nutricional-${plan.name.toLowerCase().replace(/\s+/g, '-')}.pdf`);
   };
