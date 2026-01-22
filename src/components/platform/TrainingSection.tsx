@@ -275,7 +275,7 @@ export function TrainingSection({ athleteId }: TrainingSectionProps) {
         yPos += 18;
         
         if (dayExercises.length > 0) {
-          // Compact table
+          // Compact table with video link column
           const tableData = dayExercises.map((ex, idx) => [
             (idx + 1).toString(),
             ex.name,
@@ -284,12 +284,13 @@ export function TrainingSection({ athleteId }: TrainingSectionProps) {
             ex.weight || '-',
             `${ex.rest_seconds}s`,
             ex.tempo || '-',
-            ex.technique !== 'normal' ? TECHNIQUES[ex.technique] : '-'
+            ex.technique !== 'normal' ? TECHNIQUES[ex.technique] : '-',
+            ex.video_url ? 'Ver vídeo' : '-'
           ]);
           
           autoTable(doc, {
             startY: yPos,
-            head: [['#', 'EXERCÍCIO', 'MÚSCULO', 'SÉRIES', 'CARGA', 'DESC.', 'TEMPO', 'TÉCNICA']],
+            head: [['#', 'EXERCÍCIO', 'MÚSCULO', 'SÉRIES', 'CARGA', 'DESC.', 'TEMPO', 'TÉCNICA', 'DEMO']],
             body: tableData,
             theme: 'plain',
             headStyles: {
@@ -310,21 +311,37 @@ export function TrainingSection({ athleteId }: TrainingSectionProps) {
               fillColor: [252, 252, 252]
             },
             columnStyles: {
-              0: { cellWidth: 10, halign: 'center', fontStyle: 'bold' },
-              1: { cellWidth: 58, fontStyle: 'bold' },
-              2: { cellWidth: 28 },
-              3: { cellWidth: 18, halign: 'center', fontStyle: 'bold' },
-              4: { cellWidth: 18, halign: 'center' },
-              5: { cellWidth: 14, halign: 'center' },
-              6: { cellWidth: 18, halign: 'center' },
-              7: { cellWidth: 22 }
+              0: { cellWidth: 8, halign: 'center', fontStyle: 'bold' },
+              1: { cellWidth: 50, fontStyle: 'bold' },
+              2: { cellWidth: 24 },
+              3: { cellWidth: 16, halign: 'center', fontStyle: 'bold' },
+              4: { cellWidth: 16, halign: 'center' },
+              5: { cellWidth: 12, halign: 'center' },
+              6: { cellWidth: 16, halign: 'center' },
+              7: { cellWidth: 20 },
+              8: { cellWidth: 22, halign: 'center' }
             },
             margin: { left: margin, right: margin },
             tableWidth: contentWidth,
             didParseCell: (data) => {
+              // Highlight technique column
               if (data.column.index === 7 && data.cell.raw !== '-' && data.section === 'body') {
                 data.cell.styles.textColor = [132, 204, 22];
                 data.cell.styles.fontStyle = 'bold';
+              }
+              // Style video link column
+              if (data.column.index === 8 && data.cell.raw !== '-' && data.section === 'body') {
+                data.cell.styles.textColor = [59, 130, 246]; // blue
+                data.cell.styles.fontStyle = 'bold';
+              }
+            },
+            didDrawCell: (data) => {
+              // Add clickable link for video column
+              if (data.column.index === 8 && data.section === 'body' && data.row.index < dayExercises.length) {
+                const exercise = dayExercises[data.row.index];
+                if (exercise.video_url) {
+                  doc.link(data.cell.x, data.cell.y, data.cell.width, data.cell.height, { url: exercise.video_url });
+                }
               }
             }
           });
