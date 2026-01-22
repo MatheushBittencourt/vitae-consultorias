@@ -195,182 +195,87 @@ export function TrainingSection({ athleteId }: TrainingSectionProps) {
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
-      const margin = 16;
+      const margin = 12;
       const contentWidth = pageWidth - (margin * 2);
       
-      // Helper function to draw rounded rectangle
-      const drawRoundedRect = (x: number, y: number, w: number, h: number, r: number, fill: boolean = true, stroke: boolean = false) => {
-        doc.roundedRect(x, y, w, h, r, r, fill ? 'F' : stroke ? 'S' : 'FD');
+      // Helper to check if we need new page
+      const checkNewPage = (neededHeight: number, currentY: number): number => {
+        if (currentY + neededHeight > pageHeight - 20) {
+          doc.addPage();
+          return 15;
+        }
+        return currentY;
       };
       
-      // === PAGE 1: Cover / Plan Info ===
-      
-      // Background accent
-      doc.setFillColor(250, 250, 250);
-      doc.rect(0, 0, pageWidth, pageHeight, 'F');
+      // === HEADER (compact) ===
+      let yPos = 12;
       
       // Top accent bar
-      doc.setFillColor(132, 204, 22); // lime-500
-      doc.rect(0, 0, pageWidth, 8, 'F');
+      doc.setFillColor(132, 204, 22);
+      doc.rect(0, 0, pageWidth, 4, 'F');
       
-      // Plan name header
-      let yPos = 35;
+      // Plan name + info on same line
       doc.setTextColor(0, 0, 0);
-      doc.setFontSize(32);
+      doc.setFontSize(16);
       doc.setFont('helvetica', 'bold');
-      doc.text(selectedPlan.name.toUpperCase(), margin, yPos);
+      doc.text(selectedPlan.name.toUpperCase(), margin, yPos + 8);
       
-      // Subtitle
-      yPos += 12;
-      doc.setFontSize(14);
+      // Info inline
+      doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(100, 100, 100);
-      doc.text('Plano de Treinamento Personalizado', margin, yPos);
+      const infoText = `${OBJECTIVES[selectedPlan.objective] || selectedPlan.objective} • ${selectedPlan.duration_weeks} sem • ${selectedPlan.frequency_per_week}x/sem • ${selectedPlan.split_type || '-'}`;
+      doc.text(infoText, pageWidth - margin, yPos + 8, { align: 'right' });
       
-      // Info cards row
-      yPos += 20;
-      const cardWidth = (contentWidth - 12) / 4;
-      const cardHeight = 32;
-      const cardData = [
-        { label: 'OBJETIVO', value: OBJECTIVES[selectedPlan.objective] || selectedPlan.objective },
-        { label: 'DURAÇÃO', value: `${selectedPlan.duration_weeks} semanas` },
-        { label: 'FREQUÊNCIA', value: `${selectedPlan.frequency_per_week}x/semana` },
-        { label: 'DIVISÃO', value: selectedPlan.split_type || '-' }
-      ];
+      yPos += 16;
       
-      cardData.forEach((card, i) => {
-        const x = margin + (i * (cardWidth + 4));
-        
-        // Card background
-        doc.setFillColor(255, 255, 255);
-        drawRoundedRect(x, yPos, cardWidth, cardHeight, 3);
-        
-        // Card border
-        doc.setDrawColor(230, 230, 230);
-        doc.setLineWidth(0.5);
-        doc.roundedRect(x, yPos, cardWidth, cardHeight, 3, 3, 'S');
-        
-        // Label
-        doc.setFontSize(7);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(150, 150, 150);
-        doc.text(card.label, x + 6, yPos + 10);
-        
-        // Value
-        doc.setFontSize(11);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(0, 0, 0);
-        doc.text(card.value, x + 6, yPos + 22);
-      });
-      
-      // Coach and level info
-      yPos += cardHeight + 16;
-      doc.setFillColor(255, 255, 255);
-      drawRoundedRect(margin, yPos, contentWidth, 24, 3);
+      // Separator line
       doc.setDrawColor(230, 230, 230);
-      doc.roundedRect(margin, yPos, contentWidth, 24, 3, 3, 'S');
+      doc.setLineWidth(0.3);
+      doc.line(margin, yPos, pageWidth - margin, yPos);
       
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(100, 100, 100);
-      doc.text(`Treinador: ${selectedPlan.coach_name || 'Não atribuído'}`, margin + 8, yPos + 10);
-      doc.text(`Nível: ${selectedPlan.level || '-'}`, margin + 8, yPos + 18);
-      doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, contentWidth - 20, yPos + 14, { align: 'right' });
+      yPos += 6;
       
-      // Training days summary
-      yPos += 40;
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(0, 0, 0);
-      doc.text('ESTRUTURA DO TREINO', margin, yPos);
-      
-      yPos += 12;
-      trainingDays.forEach((day) => {
+      // === TRAINING DAYS (compact, flowing) ===
+      for (let dayIndex = 0; dayIndex < trainingDays.length; dayIndex++) {
+        const day = trainingDays[dayIndex];
         const dayExercises = exercises[day.id] || [];
         
-        // Day card
-        doc.setFillColor(255, 255, 255);
-        drawRoundedRect(margin, yPos, contentWidth, 20, 3);
-        doc.setDrawColor(230, 230, 230);
-        doc.roundedRect(margin, yPos, contentWidth, 20, 3, 3, 'S');
+        // Estimate height needed for this day
+        const headerHeight = 14;
+        const rowHeight = 7;
+        const tableHeight = headerHeight + (dayExercises.length * rowHeight) + 4;
+        const totalNeeded = 18 + tableHeight;
         
-        // Day letter badge
-        doc.setFillColor(132, 204, 22);
-        drawRoundedRect(margin + 4, yPos + 4, 12, 12, 2);
-        doc.setFontSize(9);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(0, 0, 0);
-        doc.text(day.day_letter, margin + 7, yPos + 12);
+        // Check if we need new page
+        yPos = checkNewPage(totalNeeded, yPos);
         
-        // Day name
+        // Day header (compact)
+        doc.setFillColor(0, 0, 0);
+        doc.roundedRect(margin, yPos, 14, 14, 2, 2, 'F');
         doc.setFontSize(10);
         doc.setFont('helvetica', 'bold');
-        doc.setTextColor(30, 30, 30);
-        doc.text(day.day_name || DAY_NAMES[day.day_of_week], margin + 22, yPos + 9);
-        
-        // Focus muscles
-        doc.setFontSize(8);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(100, 100, 100);
-        doc.text(day.focus_muscles || '', margin + 22, yPos + 16);
-        
-        // Exercise count
-        doc.setFontSize(9);
         doc.setTextColor(132, 204, 22);
-        doc.text(`${dayExercises.length} exercícios`, contentWidth - 10, yPos + 12, { align: 'right' });
-        
-        yPos += 24;
-      });
-      
-      // === TRAINING DAYS PAGES ===
-      for (const day of trainingDays) {
-        const dayExercises = exercises[day.id] || [];
-        
-        // New page for each day
-        doc.addPage();
-        
-        // Background
-        doc.setFillColor(250, 250, 250);
-        doc.rect(0, 0, pageWidth, pageHeight, 'F');
-        
-        // Top accent bar
-        doc.setFillColor(132, 204, 22);
-        doc.rect(0, 0, pageWidth, 6, 'F');
-        
-        // Day header
-        yPos = 25;
-        
-        // Day letter badge (larger)
-        doc.setFillColor(0, 0, 0);
-        drawRoundedRect(margin, yPos - 10, 24, 24, 4);
-        doc.setFontSize(16);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(132, 204, 22);
-        doc.text(day.day_letter, margin + 8, yPos + 5);
+        doc.text(day.day_letter, margin + 4.5, yPos + 10);
         
         // Day name
-        doc.setFontSize(20);
+        doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(0, 0, 0);
-        doc.text(day.day_name || DAY_NAMES[day.day_of_week], margin + 32, yPos);
+        doc.text(day.day_name || DAY_NAMES[day.day_of_week], margin + 18, yPos + 6);
         
-        // Focus muscles badge
+        // Focus muscles (inline)
         if (day.focus_muscles) {
-          yPos += 8;
-          doc.setFillColor(240, 240, 240);
-          const focusText = `Foco: ${day.focus_muscles}`;
-          const focusWidth = doc.getTextWidth(focusText) + 12;
-          drawRoundedRect(margin + 32, yPos - 5, focusWidth, 14, 3);
-          doc.setFontSize(9);
+          doc.setFontSize(8);
           doc.setFont('helvetica', 'normal');
-          doc.setTextColor(80, 80, 80);
-          doc.text(focusText, margin + 38, yPos + 3);
+          doc.setTextColor(120, 120, 120);
+          doc.text(`Foco: ${day.focus_muscles}`, margin + 18, yPos + 12);
         }
         
-        yPos += 20;
+        yPos += 18;
         
         if (dayExercises.length > 0) {
-          // Modern table
+          // Compact table
           const tableData = dayExercises.map((ex, idx) => [
             (idx + 1).toString(),
             ex.name,
@@ -388,38 +293,34 @@ export function TrainingSection({ athleteId }: TrainingSectionProps) {
             body: tableData,
             theme: 'plain',
             headStyles: {
-              fillColor: [0, 0, 0],
-              textColor: [132, 204, 22],
+              fillColor: [132, 204, 22],
+              textColor: [0, 0, 0],
               fontStyle: 'bold',
-              fontSize: 7,
-              cellPadding: 4,
-              halign: 'left'
+              fontSize: 6,
+              cellPadding: 2
             },
             bodyStyles: {
-              fontSize: 9,
-              cellPadding: 5,
+              fontSize: 8,
+              cellPadding: 2,
               textColor: [40, 40, 40],
-              lineColor: [240, 240, 240],
-              lineWidth: 0.5
+              lineColor: [245, 245, 245],
+              lineWidth: 0.2
             },
             alternateRowStyles: {
-              fillColor: [255, 255, 255]
+              fillColor: [252, 252, 252]
             },
             columnStyles: {
-              0: { cellWidth: 10, halign: 'center', fontStyle: 'bold', fillColor: [245, 245, 245] },
-              1: { cellWidth: 48, fontStyle: 'bold' },
-              2: { cellWidth: 28 },
-              3: { cellWidth: 18, halign: 'center', fontStyle: 'bold' },
-              4: { cellWidth: 18, halign: 'center' },
-              5: { cellWidth: 14, halign: 'center' },
-              6: { cellWidth: 18, halign: 'center' },
-              7: { cellWidth: 22 }
+              0: { cellWidth: 8, halign: 'center', fontStyle: 'bold' },
+              1: { cellWidth: 45, fontStyle: 'bold' },
+              2: { cellWidth: 24 },
+              3: { cellWidth: 16, halign: 'center', fontStyle: 'bold' },
+              4: { cellWidth: 16, halign: 'center' },
+              5: { cellWidth: 12, halign: 'center' },
+              6: { cellWidth: 16, halign: 'center' },
+              7: { cellWidth: 20 }
             },
             margin: { left: margin, right: margin },
-            tableLineColor: [230, 230, 230],
-            tableLineWidth: 0.5,
             didParseCell: (data) => {
-              // Highlight technique column if has value
               if (data.column.index === 7 && data.cell.raw !== '-' && data.section === 'body') {
                 data.cell.styles.textColor = [132, 204, 22];
                 data.cell.styles.fontStyle = 'bold';
@@ -427,66 +328,27 @@ export function TrainingSection({ athleteId }: TrainingSectionProps) {
             }
           });
           
-          yPos = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 15;
-          
-          // Exercise notes section (if any have notes)
-          const exercisesWithNotes = dayExercises.filter(ex => ex.notes);
-          if (exercisesWithNotes.length > 0 && yPos < pageHeight - 60) {
-            doc.setFillColor(255, 253, 240);
-            drawRoundedRect(margin, yPos, contentWidth, 8 + (exercisesWithNotes.length * 12), 3);
-            doc.setDrawColor(255, 220, 100);
-            doc.roundedRect(margin, yPos, contentWidth, 8 + (exercisesWithNotes.length * 12), 3, 3, 'S');
-            
-            doc.setFontSize(8);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(180, 140, 0);
-            doc.text('OBSERVAÇÕES:', margin + 6, yPos + 8);
-            
-            doc.setFont('helvetica', 'normal');
-            doc.setTextColor(100, 80, 0);
-            exercisesWithNotes.forEach((ex, i) => {
-              doc.text(`• ${ex.name}: ${ex.notes}`, margin + 6, yPos + 16 + (i * 10));
-            });
-          }
-          
-          // Exercise videos section (if any have video_url)
-          const exercisesWithVideo = dayExercises.filter(ex => ex.video_url);
-          if (exercisesWithVideo.length > 0) {
-            yPos = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
-            if (exercisesWithNotes.length > 0) yPos += 8 + (exercisesWithNotes.length * 12) + 8;
-            
-            if (yPos < pageHeight - 40) {
-              doc.setFontSize(7);
-              doc.setFont('helvetica', 'normal');
-              doc.setTextColor(100, 100, 200);
-              doc.text(`📹 ${exercisesWithVideo.length} exercício(s) com vídeo demonstrativo disponível no app`, margin, yPos);
-            }
-          }
+          yPos = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
         } else {
-          doc.setFillColor(245, 245, 245);
-          drawRoundedRect(margin, yPos, contentWidth, 30, 3);
+          doc.setFontSize(8);
           doc.setTextColor(150, 150, 150);
-          doc.setFontSize(10);
-          doc.text('Nenhum exercício cadastrado para este dia', margin + 10, yPos + 18);
+          doc.text('Nenhum exercício cadastrado', margin + 18, yPos);
+          yPos += 10;
         }
+        
+        // Small gap between days
+        yPos += 4;
       }
       
       // Footer on all pages
       const pageCount = doc.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
-        
-        // Footer line
-        doc.setDrawColor(230, 230, 230);
-        doc.setLineWidth(0.5);
-        doc.line(margin, pageHeight - 18, pageWidth - margin, pageHeight - 18);
-        
-        // Footer text
-        doc.setFontSize(8);
+        doc.setFontSize(7);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(150, 150, 150);
-        doc.text(selectedPlan.name, margin, pageHeight - 10);
-        doc.text(`Página ${i} de ${pageCount}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
+        doc.text(`${selectedPlan.name} • Gerado em ${new Date().toLocaleDateString('pt-BR')}`, margin, pageHeight - 8);
+        doc.text(`${i}/${pageCount}`, pageWidth - margin, pageHeight - 8, { align: 'right' });
       }
       
       // Download
