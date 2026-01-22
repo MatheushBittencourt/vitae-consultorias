@@ -18,6 +18,7 @@ import {
   ChevronDown, ChevronUp, GripVertical, BookOpen
 } from 'lucide-react';
 import api from '../../services/api';
+import { useToast } from '../ui/Toast';
 
 interface RecipeManagerProps {
   consultancyId: number;
@@ -80,6 +81,7 @@ interface FoodLibraryItem {
 }
 
 export function RecipeManager({ consultancyId, userId }: RecipeManagerProps) {
+  const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [foodLibrary, setFoodLibrary] = useState<FoodLibraryItem[]>([]);
@@ -180,7 +182,7 @@ export function RecipeManager({ consultancyId, userId }: RecipeManagerProps) {
       setViewMode('list');
     } catch (error) {
       console.error('Erro ao salvar receita:', error);
-      alert('Erro ao salvar receita');
+      toast.error('Erro ao salvar receita');
     }
   };
 

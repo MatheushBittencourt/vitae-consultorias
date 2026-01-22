@@ -9,6 +9,7 @@ import autoTable from 'jspdf-autotable';
 import { Card, StatCard } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { EmptyState } from '../ui/EmptyState';
+import { useToast } from '../ui/Toast';
 
 const API_URL = '/api';
 
@@ -122,6 +123,7 @@ const hexToRgb = (hex: string): [number, number, number] => {
 };
 
 export function TrainingSection({ athleteId, primaryColor = '#84CC16' }: TrainingSectionProps) {
+  const toast = useToast();
   const [plans, setPlans] = useState<TrainingPlan[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<TrainingPlan | null>(null);
   const [trainingDays, setTrainingDays] = useState<TrainingDay[]>([]);
@@ -442,7 +444,7 @@ export function TrainingSection({ athleteId, primaryColor = '#84CC16' }: Trainin
       
     } catch (error) {
       console.error('Error generating PDF:', error);
-      alert('Erro ao gerar PDF. Tente novamente.');
+      toast.error('Erro ao gerar PDF. Tente novamente.');
     } finally {
       setGeneratingPdf(false);
     }

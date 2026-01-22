@@ -48,6 +48,7 @@ import {
   EnergyCalculator,
   NutritionEvolutionDashboard 
 } from '../nutrition';
+import { useToast } from '../ui/Toast';
 
 interface PatientDetailProps {
   patient: Patient;
@@ -59,6 +60,7 @@ interface PatientDetailProps {
 type Tab = 'info' | 'training' | 'nutrition' | 'medical' | 'rehab' | 'progress' | 'appointments';
 
 export function PatientDetail({ patient, onBack, consultancyId, adminUser }: PatientDetailProps) {
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState<Tab>('info');
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState(patient);
@@ -1950,6 +1952,7 @@ interface FoodForm {
 }
 
 function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient; consultancyId?: number; adminUser: AdminUser }) {
+  const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [plan, setPlan] = useState<NutritionPlan | null>(null);
   const [athleteId, setAthleteId] = useState<number | null>(null);
@@ -2068,7 +2071,7 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
 
   const handleCreatePlan = async () => {
     if (!athleteId) {
-      alert('Erro: Atleta não encontrado');
+      toast.error('Erro: Atleta não encontrado');
       return;
     }
 
@@ -2097,7 +2100,7 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
       loadNutritionPlan();
     } catch (error) {
       console.error('Erro ao criar plano:', error);
-      alert('Erro ao criar plano nutricional');
+      toast.error('Erro ao criar plano nutricional');
     } finally {
       setCreating(false);
     }
@@ -2128,7 +2131,7 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
       loadNutritionPlan();
     } catch (error) {
       console.error('Erro ao atualizar plano:', error);
-      alert('Erro ao atualizar plano nutricional');
+      toast.error('Erro ao atualizar plano nutricional');
     } finally {
       setSaving(false);
     }
@@ -2189,7 +2192,7 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
       loadNutritionPlan();
     } catch (error) {
       console.error('Erro ao salvar refeição:', error);
-      alert('Erro ao salvar refeição');
+      toast.error('Erro ao salvar refeição');
     } finally {
       setSaving(false);
     }
@@ -2281,7 +2284,7 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
       loadNutritionPlan();
     } catch (error) {
       console.error('Erro ao adicionar alimento:', error);
-      alert('Erro ao adicionar alimento');
+      toast.error('Erro ao adicionar alimento');
     } finally {
       setSaving(false);
     }
@@ -3081,6 +3084,7 @@ interface MedicalRecord {
 }
 
 function MedicalTab({ patient }: { patient: Patient }) {
+  const toast = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [records, setRecords] = useState<MedicalRecord[]>([
@@ -3166,7 +3170,7 @@ function MedicalTab({ patient }: { patient: Patient }) {
       const isPdf = file.type === 'application/pdf';
       
       if (!isImage && !isPdf) {
-        alert('Apenas PDF e imagens são permitidos');
+        toast.warning('Apenas PDF e imagens são permitidos');
         return;
       }
 

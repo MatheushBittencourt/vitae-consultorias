@@ -13,6 +13,7 @@ import {
   Camera, Calculator, Activity, Scale, Percent
 } from 'lucide-react';
 import api from '../../services/api';
+import { useToast } from '../ui/Toast';
 
 interface AnthropometricAssessmentProps {
   athleteId: number;
@@ -110,6 +111,7 @@ export function AnthropometricAssessment({
   onSave,
   readOnly = false
 }: AnthropometricAssessmentProps) {
+  const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'basic' | 'circumferences' | 'skinfolds' | 'bioimpedance' | 'photos'>('basic');
@@ -181,7 +183,7 @@ export function AnthropometricAssessment({
 
   const handleSave = async () => {
     if (!formData.weight || !formData.height) {
-      alert('Peso e altura são obrigatórios');
+      toast.warning('Peso e altura são obrigatórios');
       return;
     }
     
@@ -192,7 +194,7 @@ export function AnthropometricAssessment({
       onSave?.();
     } catch (error) {
       console.error('Erro ao salvar avaliação:', error);
-      alert('Erro ao salvar avaliação');
+      toast.error('Erro ao salvar avaliação');
     } finally {
       setSaving(false);
     }

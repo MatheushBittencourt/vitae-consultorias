@@ -13,6 +13,7 @@ import {
   Target, TrendingUp, TrendingDown, Minus, Info
 } from 'lucide-react';
 import api from '../../services/api';
+import { useToast } from '../ui/Toast';
 
 interface EnergyCalculatorProps {
   athleteId: number;
@@ -77,6 +78,7 @@ export function EnergyCalculator({
   initialLeanMass,
   onSave,
 }: EnergyCalculatorProps) {
+  const toast = useToast();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [hasExisting, setHasExisting] = useState(false);
@@ -228,7 +230,7 @@ export function EnergyCalculator({
       onSave?.();
     } catch (error) {
       console.error('Erro ao salvar:', error);
-      alert('Erro ao salvar cálculo');
+      toast.error('Erro ao salvar cálculo');
     } finally {
       setSaving(false);
     }

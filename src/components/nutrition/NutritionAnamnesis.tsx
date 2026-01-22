@@ -13,6 +13,7 @@ import {
   Utensils, Activity, Heart, Droplet, Moon, Target
 } from 'lucide-react';
 import api from '../../services/api';
+import { useToast } from '../ui/Toast';
 
 interface NutritionAnamnesisProps {
   athleteId: number;
@@ -120,6 +121,7 @@ export function NutritionAnamnesis({
   onSave,
   readOnly = false
 }: NutritionAnamnesisProps) {
+  const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [expandedSections, setExpandedSections] = useState<string[]>(['peso', 'habitos']);
@@ -272,7 +274,7 @@ export function NutritionAnamnesis({
       onSave?.();
     } catch (error) {
       console.error('Erro ao salvar anamnese:', error);
-      alert('Erro ao salvar anamnese');
+      toast.error('Erro ao salvar anamnese');
     } finally {
       setSaving(false);
     }

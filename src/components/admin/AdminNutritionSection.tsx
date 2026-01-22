@@ -4,6 +4,7 @@ import { Patient } from './AdminDashboard';
 import { Card, StatCard } from '../ui/Card';
 import { Badge, StatusBadge } from '../ui/Badge';
 import { EmptyState } from '../ui/EmptyState';
+import { useToast } from '../ui/Toast';
 import { NutritionAnamnesis, AnthropometricAssessment, EnergyCalculator, NutritionEvolutionDashboard, RecipeManager } from '../nutrition';
 
 const API_URL = '/api';
@@ -85,6 +86,7 @@ interface AthleteData {
 type ViewMode = 'list' | 'plan' | 'library' | 'anamnesis' | 'anthropometric' | 'energy' | 'evolution' | 'recipes';
 
 export function AdminNutritionSection({ onSelectPatient, consultancyId, adminUserId }: AdminNutritionSectionProps) {
+  const toast = useToast();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [plans, setPlans] = useState<NutritionPlan[]>([]);
   const [athletes, setAthletes] = useState<AthleteData[]>([]);
@@ -439,7 +441,7 @@ export function AdminNutritionSection({ onSelectPatient, consultancyId, adminUse
           nutritionistId={adminUserId || 0}
           athleteName={selectedAthleteForAssessment.name}
           onSave={() => {
-            alert('Anamnese salva com sucesso!');
+            toast.success('Anamnese salva com sucesso!');
           }}
         />
       </div>
@@ -462,7 +464,7 @@ export function AdminNutritionSection({ onSelectPatient, consultancyId, adminUse
           nutritionistId={adminUserId || 0}
           athleteName={selectedAthleteForAssessment.name}
           onSave={() => {
-            alert('Avaliação salva com sucesso!');
+            toast.success('Avaliação salva com sucesso!');
           }}
         />
       </div>
@@ -485,7 +487,7 @@ export function AdminNutritionSection({ onSelectPatient, consultancyId, adminUse
           nutritionistId={adminUserId || 0}
           athleteName={selectedAthleteForAssessment.name}
           onSave={() => {
-            alert('Cálculo salvo com sucesso!');
+            toast.success('Cálculo salvo com sucesso!');
           }}
         />
       </div>

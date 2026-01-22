@@ -16,6 +16,7 @@ import { AdminDashboard } from './components/admin/AdminDashboard';
 import { SuperAdminLoginPage, SuperAdminUser } from './components/superadmin/SuperAdminLoginPage';
 import { SuperAdminDashboard } from './components/superadmin/SuperAdminDashboard';
 import { SignupPage } from './components/SignupPage';
+import { ToastProvider } from './components/ui/Toast';
 
 type AppView = 'site' | 'login' | 'dashboard' | 'admin-login' | 'admin-dashboard' | 'superadmin-login' | 'superadmin-dashboard' | 'signup';
 
@@ -168,91 +169,101 @@ export default function App() {
     setCurrentView('admin-login');
   };
 
-  // Mostrar loading enquanto restaura sessão
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-zinc-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-lime-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-zinc-600">Carregando...</p>
+  // Renderiza o conteúdo baseado na view atual
+  const renderContent = () => {
+    // Mostrar loading enquanto restaura sessão
+    if (isLoading) {
+      return (
+        <div className="min-h-screen bg-zinc-100 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-12 h-12 border-4 border-lime-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-zinc-600">Carregando...</p>
+          </div>
         </div>
+      );
+    }
+
+    // Render Signup page
+    if (currentView === 'signup') {
+      return (
+        <SignupPage 
+          onBack={() => setCurrentView('site')} 
+          onSuccess={handleSignupSuccess}
+          initialPlanId={selectedPlanId}
+        />
+      );
+    }
+
+    // Render Super Admin pages
+    if (currentView === 'superadmin-login') {
+      return (
+        <SuperAdminLoginPage 
+          onLoginSuccess={handleSuperAdminLoginSuccess} 
+          onBack={() => {
+            setCurrentView('site');
+            window.history.replaceState(null, '', window.location.pathname);
+          }} 
+        />
+      );
+    }
+
+    if (currentView === 'superadmin-dashboard' && superAdminUser) {
+      return <SuperAdminDashboard onLogout={handleSuperAdminLogout} user={superAdminUser} />;
+    }
+
+    // Render login pages
+    if (currentView === 'login') {
+      return <LoginPage onLoginSuccess={handleLoginSuccess} onBack={() => setCurrentView('site')} />;
+    }
+
+    if (currentView === 'admin-login') {
+      return <AdminLoginPage onLoginSuccess={handleAdminLoginSuccess} onBack={() => setCurrentView('site')} />;
+    }
+
+    // Render dashboards
+    if (currentView === 'dashboard' && patientUser) {
+      return <Dashboard onLogout={handleLogout} patient={patientUser} />;
+    }
+
+    if (currentView === 'admin-dashboard' && adminUser) {
+      return <AdminDashboard onLogout={handleAdminLogout} adminUser={adminUser} />;
+    }
+
+    // Render main site
+    return (
+      <div className="min-h-screen bg-white">
+        <Header 
+          onLoginClick={handleLoginClick} 
+          onAdminClick={handleAdminLoginClick} 
+          onSuperAdminClick={() => setCurrentView('superadmin-login')}
+          onSignupClick={() => handleSignupClick()}
+        />
+        <Hero 
+          onSignupClick={() => handleSignupClick()} 
+          onWatchDemo={() => setIsVideoModalOpen(true)}
+        />
+        <Impact />
+        <Team />
+        <Method />
+        <PlatformPreview />
+        <Benefits />
+        <Stats onSignupClick={handleSignupClick} />
+        <Contact />
+        
+        {/* Modal de Vídeo de Demonstração */}
+        <VideoModal 
+          isOpen={isVideoModalOpen} 
+          onClose={() => setIsVideoModalOpen(false)}
+          videoUrl={DEMO_VIDEO_URL || undefined}
+        />
       </div>
     );
-  }
+  };
 
-  // Render Signup page
-  if (currentView === 'signup') {
-    return (
-      <SignupPage 
-        onBack={() => setCurrentView('site')} 
-        onSuccess={handleSignupSuccess}
-        initialPlanId={selectedPlanId}
-      />
-    );
-  }
-
-  // Render Super Admin pages
-  if (currentView === 'superadmin-login') {
-    return (
-      <SuperAdminLoginPage 
-        onLoginSuccess={handleSuperAdminLoginSuccess} 
-        onBack={() => {
-          setCurrentView('site');
-          window.history.replaceState(null, '', window.location.pathname);
-        }} 
-      />
-    );
-  }
-
-  if (currentView === 'superadmin-dashboard' && superAdminUser) {
-    return <SuperAdminDashboard onLogout={handleSuperAdminLogout} user={superAdminUser} />;
-  }
-
-  // Render login pages
-  if (currentView === 'login') {
-    return <LoginPage onLoginSuccess={handleLoginSuccess} onBack={() => setCurrentView('site')} />;
-  }
-
-  if (currentView === 'admin-login') {
-    return <AdminLoginPage onLoginSuccess={handleAdminLoginSuccess} onBack={() => setCurrentView('site')} />;
-  }
-
-  // Render dashboards
-  if (currentView === 'dashboard' && patientUser) {
-    return <Dashboard onLogout={handleLogout} patient={patientUser} />;
-  }
-
-  if (currentView === 'admin-dashboard' && adminUser) {
-    return <AdminDashboard onLogout={handleAdminLogout} adminUser={adminUser} />;
-  }
-
-  // Render main site
+  // Envolve todo o app com ToastProvider para notificações customizadas
   return (
-    <div className="min-h-screen bg-white">
-      <Header 
-        onLoginClick={handleLoginClick} 
-        onAdminClick={handleAdminLoginClick} 
-        onSuperAdminClick={() => setCurrentView('superadmin-login')}
-        onSignupClick={() => handleSignupClick()}
-      />
-      <Hero 
-        onSignupClick={() => handleSignupClick()} 
-        onWatchDemo={() => setIsVideoModalOpen(true)}
-      />
-      <Impact />
-      <Team />
-      <Method />
-      <PlatformPreview />
-      <Benefits />
-      <Stats onSignupClick={handleSignupClick} />
-      <Contact />
-      
-      {/* Modal de Vídeo de Demonstração */}
-      <VideoModal 
-        isOpen={isVideoModalOpen} 
-        onClose={() => setIsVideoModalOpen(false)}
-        videoUrl={DEMO_VIDEO_URL || undefined}
-      />
-    </div>
+    <ToastProvider>
+      {renderContent()}
+    </ToastProvider>
   );
 }

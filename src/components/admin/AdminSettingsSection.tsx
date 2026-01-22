@@ -6,6 +6,7 @@ import {
   Building2, Palette, Upload, Image
 } from 'lucide-react';
 import { AdminUser } from './AdminLoginPage';
+import { useToast } from '../ui/Toast';
 
 const API_URL = '/api';
 
@@ -84,6 +85,7 @@ const moduleOptions = [
 ];
 
 export function AdminSettingsSection({ adminUser }: AdminSettingsSectionProps) {
+  const toast = useToast();
   const isAdminRole = adminUser.role === 'admin';
   const [activeTab, setActiveTab] = useState(isAdminRole ? 'team' : 'profile');
   const [loading, setLoading] = useState(true);
@@ -325,7 +327,7 @@ export function AdminSettingsSection({ adminUser }: AdminSettingsSectionProps) {
       setDeleteConfirm(null);
       loadData();
     } catch (error: any) {
-      alert(error.message);
+      toast.error(error.message);
     } finally {
       setSaving(false);
     }
@@ -369,9 +371,9 @@ export function AdminSettingsSection({ adminUser }: AdminSettingsSectionProps) {
       }
       
       loadData();
-      alert('Plano atualizado com sucesso!');
+      toast.success('Plano atualizado com sucesso!');
     } catch (error: any) {
-      alert(error.message);
+      toast.error(error.message);
     } finally {
       setSaving(false);
     }
@@ -410,9 +412,9 @@ export function AdminSettingsSection({ adminUser }: AdminSettingsSectionProps) {
       }
       
       loadData();
-      alert('Personalização salva com sucesso!');
+      toast.success('Personalização salva com sucesso!');
     } catch (error: any) {
-      alert(error.message);
+      toast.error(error.message);
     } finally {
       setSaving(false);
     }
@@ -424,13 +426,13 @@ export function AdminSettingsSection({ adminUser }: AdminSettingsSectionProps) {
     
     // Validar tipo
     if (!file.type.startsWith('image/')) {
-      alert('Por favor, selecione uma imagem');
+      toast.warning('Por favor, selecione uma imagem');
       return;
     }
     
     // Validar tamanho (max 2MB)
     if (file.size > 2 * 1024 * 1024) {
-      alert('A imagem deve ter no máximo 2MB');
+      toast.warning('A imagem deve ter no máximo 2MB');
       return;
     }
     
@@ -447,7 +449,7 @@ export function AdminSettingsSection({ adminUser }: AdminSettingsSectionProps) {
       reader.readAsDataURL(file);
     } catch (error) {
       console.error('Error uploading logo:', error);
-      alert('Erro ao fazer upload da logo');
+      toast.error('Erro ao fazer upload da logo');
       setUploadingLogo(false);
     }
   };

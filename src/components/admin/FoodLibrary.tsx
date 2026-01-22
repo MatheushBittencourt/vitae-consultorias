@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useToast } from '../ui/Toast';
 import { 
   Search, Plus, Filter, Apple, Beef, Wheat, Milk, Leaf, 
   ChevronDown, Edit, Trash2, X, Loader2, Download, Upload,
@@ -69,6 +70,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 export function FoodLibrary({ consultancyId }: FoodLibraryProps) {
+  const toast = useToast();
   const [foods, setFoods] = useState<Food[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -302,7 +304,7 @@ export function FoodLibrary({ consultancyId }: FoodLibraryProps) {
       loadFoods();
     } catch (error) {
       console.error('Erro ao excluir alimento:', error);
-      alert('Erro ao excluir alimento');
+      toast.error('Erro ao excluir alimento');
     }
   }
 }
@@ -439,6 +441,7 @@ function FoodModal({
   onClose: () => void; 
   onSave: () => void;
 }) {
+  const toast = useToast();
   const [formData, setFormData] = useState({
     name: food?.name || '',
     category: food?.category || 'outros',
@@ -478,7 +481,7 @@ function FoodModal({
       onSave();
     } catch (error) {
       console.error('Erro ao salvar alimento:', error);
-      alert('Erro ao salvar alimento');
+      toast.error('Erro ao salvar alimento');
     } finally {
       setSaving(false);
     }

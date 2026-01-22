@@ -8,6 +8,7 @@ import {
 import { Card, StatCard } from '../ui/Card';
 import { Badge, StatusBadge } from '../ui/Badge';
 import { EmptyState } from '../ui/EmptyState';
+import { useToast } from '../ui/Toast';
 
 const API_URL = '/api';
 
@@ -156,6 +157,7 @@ interface AdminTrainingSectionProps {
 type ViewMode = 'list' | 'plan-detail' | 'library';
 
 export function AdminTrainingSection({ consultancyId, adminUser }: AdminTrainingSectionProps) {
+  const toast = useToast();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -337,7 +339,7 @@ export function AdminTrainingSection({ consultancyId, adminUser }: AdminTraining
   const handleSavePlan = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!planForm.athlete_id) {
-      alert('Selecione um atleta');
+      toast.warning('Selecione um atleta');
       return;
     }
 
@@ -364,7 +366,7 @@ export function AdminTrainingSection({ consultancyId, adminUser }: AdminTraining
       }
     } catch (error) {
       console.error('Error saving plan:', error);
-      alert('Erro ao salvar plano');
+      toast.error('Erro ao salvar plano');
     }
   };
 
@@ -618,7 +620,7 @@ export function AdminTrainingSection({ consultancyId, adminUser }: AdminTraining
       await loadInitialData();
     } catch (error) {
       console.error('Error saving library exercise:', error);
-      alert('Erro ao salvar exercício');
+      toast.error('Erro ao salvar exercício');
     }
   };
 

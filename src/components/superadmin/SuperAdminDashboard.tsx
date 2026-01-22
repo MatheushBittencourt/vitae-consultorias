@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import { SuperAdminUser } from './SuperAdminLoginPage';
 import { LogoIcon } from '../ui/Logo';
+import { useToast } from '../ui/Toast';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
@@ -138,6 +139,7 @@ interface SuperAdminDashboardProps {
 }
 
 export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps) {
+  const toast = useToast();
   const [currentView, setCurrentView] = useState<View>('overview');
   const [consultancies, setConsultancies] = useState<Consultancy[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -294,7 +296,7 @@ export function SuperAdminDashboard({ onLogout, user }: SuperAdminDashboardProps
         loadData();
       } else {
         const error = await response.json();
-        alert(error.error || 'Erro ao salvar');
+        toast.error(error.error || 'Erro ao salvar');
       }
     } catch (error) {
       console.error('Erro ao salvar:', error);

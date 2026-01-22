@@ -11,6 +11,7 @@ import {
   UserPlus,
   ArrowUpRight
 } from 'lucide-react';
+import { useToast } from '../ui/Toast';
 import { Patient } from './AdminDashboard';
 import { Card, StatCard } from '../ui/Card';
 import { Avatar } from '../ui/Avatar';
@@ -41,6 +42,7 @@ interface AthleteData {
 }
 
 export function PatientsList({ onSelectPatient, consultancyId }: PatientsListProps) {
+  const toast = useToast();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -110,7 +112,7 @@ export function PatientsList({ onSelectPatient, consultancyId }: PatientsListPro
     setSaving(true);
     
     if (!consultancyId) {
-      alert('Erro: consultoria não identificada');
+      toast.error('Erro: consultoria não identificada');
       setSaving(false);
       return;
     }
@@ -130,7 +132,7 @@ export function PatientsList({ onSelectPatient, consultancyId }: PatientsListPro
       
       if (!userResponse.ok) {
         const error = await userResponse.json();
-        alert(error.error || 'Erro ao criar paciente');
+        toast.error(error.error || 'Erro ao criar paciente');
         return;
       }
       
@@ -142,7 +144,7 @@ export function PatientsList({ onSelectPatient, consultancyId }: PatientsListPro
       loadPatients();
     } catch (error) {
       console.error('Error adding patient:', error);
-      alert('Erro ao criar paciente');
+      toast.error('Erro ao criar paciente');
     } finally {
       setSaving(false);
     }
@@ -159,7 +161,7 @@ export function PatientsList({ onSelectPatient, consultancyId }: PatientsListPro
       
       if (!response.ok) {
         const error = await response.json();
-        alert(error.error || 'Erro ao remover paciente');
+        toast.error(error.error || 'Erro ao remover paciente');
         return;
       }
       
@@ -167,7 +169,7 @@ export function PatientsList({ onSelectPatient, consultancyId }: PatientsListPro
       loadPatients();
     } catch (error) {
       console.error('Error deleting patient:', error);
-      alert('Erro ao remover paciente');
+      toast.error('Erro ao remover paciente');
     } finally {
       setDeletingId(null);
     }

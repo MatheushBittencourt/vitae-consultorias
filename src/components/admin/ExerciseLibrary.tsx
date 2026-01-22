@@ -13,6 +13,7 @@ import {
 import { Card, StatCard } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { EmptyState } from '../ui/EmptyState';
+import { useToast } from '../ui/Toast';
 
 interface ExerciseLibraryProps {
   consultancyId: number;
@@ -89,6 +90,7 @@ const MUSCLE_GROUP_COLORS: Record<string, string> = {
 };
 
 export function ExerciseLibrary({ consultancyId }: ExerciseLibraryProps) {
+  const toast = useToast();
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -146,7 +148,7 @@ export function ExerciseLibrary({ consultancyId }: ExerciseLibraryProps) {
       loadExercises();
     } catch (error) {
       console.error('Erro ao excluir exercício:', error);
-      alert('Erro ao excluir exercício');
+      toast.error('Erro ao excluir exercício');
     } finally {
       setDeleting(false);
     }
@@ -453,6 +455,7 @@ function ExerciseModal({
   onClose: () => void; 
   onSave: () => void;
 }) {
+  const toast = useToast();
   const [formData, setFormData] = useState({
     name: exercise?.name || '',
     description: exercise?.description || '',
@@ -469,7 +472,7 @@ function ExerciseModal({
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
-      alert('Nome do exercício é obrigatório');
+      toast.warning('Nome do exercício é obrigatório');
       return;
     }
 
@@ -498,7 +501,7 @@ function ExerciseModal({
       onSave();
     } catch (error) {
       console.error('Erro ao salvar exercício:', error);
-      alert('Erro ao salvar exercício');
+      toast.error('Erro ao salvar exercício');
     } finally {
       setSaving(false);
     }
