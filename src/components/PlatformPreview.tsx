@@ -29,7 +29,7 @@ const screenshots: Screenshot[] = [
   // App do Paciente (faltando todas)
   { id: '8', title: 'App do Paciente', description: 'Seus pacientes acompanham pelo celular', category: 'patient', device: 'mobile' },
   { id: '9', title: 'Treino do Dia', description: 'Visualização clara dos exercícios', category: 'patient', device: 'mobile' },
-  { id: '10', title: 'Progresso', description: 'Gráficos de evolução pessoal', category: 'patient', device: 'mobile' },
+  { id: '10', title: 'Progresso', description: 'Gráficos de evolução pessoal', category: 'patient', device: 'mobile', imagePath: '/screenshots/10.png' },
 ];
 
 const categories = [
