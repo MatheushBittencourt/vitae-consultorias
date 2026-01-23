@@ -11,6 +11,7 @@ import { MercadoPagoConfig, PreApproval, Payment } from 'mercadopago'
 import { createNutritionAdvancedRoutes } from './routes/nutrition-advanced'
 import { createRecipeRoutes } from './routes/recipes'
 import { createProgressPhotosRoutes } from './routes/progress-photos'
+import { createPhysiotherapyRoutes } from './routes/physiotherapy'
 import path from 'path'
 
 // ===========================================
@@ -4070,6 +4071,12 @@ app.use('/api/recipes', authenticateToken, recipeRouter)
 // ===============================
 const progressPhotosRouter = createProgressPhotosRoutes(pool)
 app.use('/api/progress-photos', authenticateToken, progressPhotosRouter)
+
+// ===============================
+// ROTAS DE FISIOTERAPIA (PROTEGIDAS)
+// ===============================
+const physiotherapyRouter = createPhysiotherapyRoutes(pool)
+app.use('/api/physio', authenticateToken, physiotherapyRouter)
 
 // ===============================
 // SERVIR ARQUIVOS DE UPLOAD

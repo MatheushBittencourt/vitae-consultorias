@@ -47,7 +47,7 @@ const menuSections = [
       { id: 'training' as DashboardView, label: 'Treinamento', icon: Dumbbell, module: 'training' as ActiveModule },
       { id: 'nutrition' as DashboardView, label: 'Nutrição', icon: Apple, module: 'nutrition' as ActiveModule },
       { id: 'medical' as DashboardView, label: 'Medicina', icon: Stethoscope, module: 'medical' as ActiveModule },
-      { id: 'rehab' as DashboardView, label: 'Reabilitação', icon: HeartPulse, module: 'rehab' as ActiveModule },
+      { id: 'rehab' as DashboardView, label: 'Fisioterapia', icon: HeartPulse, module: 'rehab' as ActiveModule },
     ]
   }
 ];
@@ -65,7 +65,7 @@ export function DashboardSidebar({ currentView, onViewChange, onLogout, patient,
       training: 'Personal',
       nutrition: 'Nutrição',
       medical: 'Medicina',
-      rehab: 'Reabilitação'
+      rehab: 'Fisioterapia'
     };
     
     const names = activeModules.map(m => moduleNames[m]);
