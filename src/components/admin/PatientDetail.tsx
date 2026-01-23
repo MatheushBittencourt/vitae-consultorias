@@ -2018,7 +2018,7 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
 
   const loadFoodLibrary = async () => {
     try {
-      const response = await fetch(`/api/food-library?consultancy_id=${consultancyId}`);
+      const response = await fetch(`/api/food-library?consultancy_id=${consultancyId}`, { headers: getAuthHeaders() });
       const data = await response.json();
       setFoodLibrary(data || []);
     } catch (error) {
@@ -2029,7 +2029,7 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
   const loadNutritionPlan = async () => {
     try {
       // Primeiro buscar o athlete_id
-      const athleteRes = await fetch(`/api/athletes?user_id=${patient.id}&consultancy_id=${consultancyId}`);
+      const athleteRes = await fetch(`/api/athletes?user_id=${patient.id}&consultancy_id=${consultancyId}`, { headers: getAuthHeaders() });
       const athletes = await athleteRes.json();
       
       if (athletes.length === 0) {
@@ -2041,14 +2041,14 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
       setAthleteId(athlete.id);
       
       // Buscar planos do atleta
-      const plansRes = await fetch(`/api/nutrition-plans?athlete_id=${athlete.id}`);
+      const plansRes = await fetch(`/api/nutrition-plans?athlete_id=${athlete.id}`, { headers: getAuthHeaders() });
       const plans = await plansRes.json();
       
       const activePlan = plans.find((p: NutritionPlan) => p.status === 'active') || plans[0];
       
       if (activePlan) {
         // Buscar plano completo
-        const completeRes = await fetch(`/api/nutrition-plans/${activePlan.id}/complete`);
+        const completeRes = await fetch(`/api/nutrition-plans/${activePlan.id}/complete`, { headers: getAuthHeaders() });
         const completeData = await completeRes.json();
         setPlan(completeData);
       }
@@ -2218,7 +2218,7 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
     if (!deletingMealId) return;
 
     try {
-      await fetch(`/api/meals/${deletingMealId}`, { method: 'DELETE' });
+      await fetch(`/api/meals/${deletingMealId}`, { method: 'DELETE', headers: getAuthHeaders() });
       loadNutritionPlan();
     } catch (error) {
       console.error('Erro ao excluir refeição:', error);
@@ -2300,7 +2300,7 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
     if (!deletingFoodId) return;
 
     try {
-      await fetch(`/api/meal-foods/${deletingFoodId}`, { method: 'DELETE' });
+      await fetch(`/api/meal-foods/${deletingFoodId}`, { method: 'DELETE', headers: getAuthHeaders() });
       loadNutritionPlan();
     } catch (error) {
       console.error('Erro ao remover alimento:', error);
