@@ -35,7 +35,10 @@ import {
   MapPin,
   ClipboardList,
   Calculator,
-  BarChart3
+  BarChart3,
+  Camera,
+  ZoomIn,
+  Maximize2
 } from 'lucide-react';
 import { Patient } from './AdminDashboard';
 import { AdminUser } from './AdminLoginPage';
@@ -4315,7 +4318,187 @@ function RehabTab({ patient }: { patient: Patient }) {
   );
 }
 
+// Interface para fotos de progresso
+interface ProgressPhoto {
+  id: number;
+  athlete_id: number;
+  photo_date: string;
+  category: 'frente' | 'costas' | 'lateral_esquerda' | 'lateral_direita' | 'outro';
+  filename: string;
+  file_path: string;
+  file_size: number;
+  original_size: number;
+  width: number;
+  height: number;
+  weight?: number;
+  body_fat_percentage?: number;
+  notes?: string;
+  uploaded_by_name: string;
+  created_at: string;
+}
+
+const PHOTO_CATEGORIES: Record<string, string> = {
+  frente: 'Frente',
+  costas: 'Costas',
+  lateral_esquerda: 'Lateral Esq.',
+  lateral_direita: 'Lateral Dir.',
+  outro: 'Outro'
+};
+
 function ProgressTab({ patient }: { patient: Patient }) {
+  const [activeSection, setActiveSection] = useState<'measurements' | 'photos'>('photos');
+  const [photos, setPhotos] = useState<ProgressPhoto[]>([]);
+  const [loadingPhotos, setLoadingPhotos] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showPhotoModal, setShowPhotoModal] = useState<ProgressPhoto | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [athleteId, setAthleteId] = useState<number | null>(null);
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Form para upload
+  const [uploadForm, setUploadForm] = useState({
+    photo_date: new Date().toISOString().split('T')[0],
+    category: 'frente' as string,
+    weight: '',
+    body_fat_percentage: '',
+    notes: ''
+  });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadAthleteAndPhotos();
+  }, [patient.id]);
+
+  const loadAthleteAndPhotos = async () => {
+    try {
+      setLoadingPhotos(true);
+      // Buscar athlete_id
+      const athleteRes = await fetch(`/api/athletes?user_id=${patient.id}`, { headers: getAuthHeaders() });
+      const athletes = await athleteRes.json();
+      
+      if (athletes && athletes.length > 0) {
+        const athlete = athletes[0];
+        setAthleteId(athlete.id);
+        
+        // Buscar fotos
+        const photosRes = await fetch(`/api/progress-photos/${athlete.id}`, { headers: getAuthHeaders() });
+        if (photosRes.ok) {
+          const photosData = await photosRes.json();
+          setPhotos(photosData);
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao carregar fotos:', error);
+    } finally {
+      setLoadingPhotos(false);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        alert('Por favor, selecione apenas imagens');
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        alert('Arquivo muito grande. Máximo 10MB');
+        return;
+      }
+      setSelectedFile(file);
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFile || !athleteId) return;
+
+    try {
+      setUploading(true);
+
+      // Converter para base64
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64 = reader.result as string;
+
+        const response = await fetch('/api/progress-photos/upload', {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            athlete_id: athleteId,
+            photo_date: uploadForm.photo_date,
+            category: uploadForm.category,
+            weight: uploadForm.weight ? parseFloat(uploadForm.weight) : null,
+            body_fat_percentage: uploadForm.body_fat_percentage ? parseFloat(uploadForm.body_fat_percentage) : null,
+            notes: uploadForm.notes,
+            image_data: base64,
+            original_filename: selectedFile.name,
+            mime_type: selectedFile.type
+          })
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          console.log('Upload realizado:', result);
+          setShowUploadModal(false);
+          setSelectedFile(null);
+          setPreviewUrl(null);
+          setUploadForm({
+            photo_date: new Date().toISOString().split('T')[0],
+            category: 'frente',
+            weight: '',
+            body_fat_percentage: '',
+            notes: ''
+          });
+          loadAthleteAndPhotos();
+        } else {
+          const error = await response.json();
+          alert(error.error || 'Erro ao enviar foto');
+        }
+      };
+      reader.readAsDataURL(selectedFile);
+    } catch (error) {
+      console.error('Erro no upload:', error);
+      alert('Erro ao enviar foto');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDeletePhoto = async (photoId: number) => {
+    if (!confirm('Tem certeza que deseja excluir esta foto?')) return;
+
+    try {
+      const response = await fetch(`/api/progress-photos/${photoId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+
+      if (response.ok) {
+        setPhotos(photos.filter(p => p.id !== photoId));
+        setShowPhotoModal(null);
+      }
+    } catch (error) {
+      console.error('Erro ao excluir:', error);
+    }
+  };
+
+  const filteredPhotos = selectedCategory === 'all' 
+    ? photos 
+    : photos.filter(p => p.category === selectedCategory);
+
+  // Agrupar fotos por data
+  const photosByDate = filteredPhotos.reduce((acc, photo) => {
+    const date = photo.photo_date;
+    if (!acc[date]) acc[date] = [];
+    acc[date].push(photo);
+    return acc;
+  }, {} as Record<string, ProgressPhoto[]>);
+
   const progressData = [
     { date: '2024-01-08', weight: 75.5, bodyFat: 12.5, muscleMass: 65.2 },
     { date: '2024-01-01', weight: 76.0, bodyFat: 13.0, muscleMass: 64.8 },
@@ -4325,62 +4508,405 @@ function ProgressTab({ patient }: { patient: Patient }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h2 className="text-xl font-bold">Evolução do Paciente</h2>
-        <button className="flex items-center gap-2 px-4 py-2 bg-lime-500 text-black font-bold hover:bg-lime-400 transition-colors text-sm rounded-md">
-          <Plus className="w-4 h-4" />
-          Registrar Medição
+      {/* Tabs de seção */}
+      <div className="flex gap-2 border-b border-zinc-200 pb-2">
+        <button
+          onClick={() => setActiveSection('photos')}
+          className={`flex items-center gap-2 px-4 py-2 font-bold text-sm rounded-t-lg transition-colors ${
+            activeSection === 'photos'
+              ? 'bg-lime-500 text-black'
+              : 'text-zinc-500 hover:text-zinc-700 hover:bg-zinc-100'
+          }`}
+        >
+          <Camera className="w-4 h-4" />
+          Fotos de Progresso
+        </button>
+        <button
+          onClick={() => setActiveSection('measurements')}
+          className={`flex items-center gap-2 px-4 py-2 font-bold text-sm rounded-t-lg transition-colors ${
+            activeSection === 'measurements'
+              ? 'bg-lime-500 text-black'
+              : 'text-zinc-500 hover:text-zinc-700 hover:bg-zinc-100'
+          }`}
+        >
+          <TrendingUp className="w-4 h-4" />
+          Medições
         </button>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-3 gap-4">
-        <Card className="text-center bg-lime-50 border-lime-200">
-          <div className="text-xl md:text-2xl font-bold text-lime-600">-3.0kg</div>
-          <div className="text-xs text-zinc-600 uppercase font-medium">Peso perdido</div>
-        </Card>
-        <Card className="text-center bg-lime-50 border-lime-200">
-          <div className="text-xl md:text-2xl font-bold text-lime-600">-2.5%</div>
-          <div className="text-xs text-zinc-600 uppercase font-medium">Gordura reduzida</div>
-        </Card>
-        <Card className="text-center bg-lime-50 border-lime-200">
-          <div className="text-xl md:text-2xl font-bold text-lime-600">+1.7kg</div>
-          <div className="text-xs text-zinc-600 uppercase font-medium">Massa muscular</div>
-        </Card>
-      </div>
+      {/* Seção de Fotos */}
+      {activeSection === 'photos' && (
+        <div className="space-y-4">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-bold">Fotos de Progresso</h2>
+              <p className="text-sm text-zinc-500">{photos.length} foto(s) registrada(s)</p>
+            </div>
+            <button 
+              onClick={() => setShowUploadModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-lime-500 text-black font-bold hover:bg-lime-400 transition-colors text-sm rounded-lg"
+            >
+              <Camera className="w-4 h-4" />
+              Nova Foto
+            </button>
+          </div>
 
-      {/* Data Table */}
-      <Card className="p-0 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[400px]">
-            <thead className="bg-zinc-50 border-b border-zinc-200">
-              <tr>
-                <th className="text-left px-4 py-3 font-bold text-xs uppercase text-zinc-500">Data</th>
-                <th className="text-left px-4 py-3 font-bold text-xs uppercase text-zinc-500">Peso (kg)</th>
-                <th className="text-left px-4 py-3 font-bold text-xs uppercase text-zinc-500">% Gordura</th>
-                <th className="text-left px-4 py-3 font-bold text-xs uppercase text-zinc-500">Massa Muscular (kg)</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-100">
-              {progressData.map((record, idx) => (
-                <tr key={idx} className="hover:bg-zinc-50 transition-colors">
-                  <td className="px-4 py-3 text-sm">{new Date(record.date).toLocaleDateString('pt-BR')}</td>
-                  <td className="px-4 py-3 text-sm font-bold">{record.weight}</td>
-                  <td className="px-4 py-3 text-sm">{record.bodyFat}%</td>
-                  <td className="px-4 py-3 text-sm">{record.muscleMass}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {/* Filtro por categoria */}
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setSelectedCategory('all')}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${
+                selectedCategory === 'all' ? 'bg-lime-500 text-black' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+              }`}
+            >
+              Todas
+            </button>
+            {Object.entries(PHOTO_CATEGORIES).map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setSelectedCategory(key)}
+                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${
+                  selectedCategory === key ? 'bg-lime-500 text-black' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {/* Grid de fotos agrupadas por data */}
+          {loadingPhotos ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-lime-500" />
+            </div>
+          ) : Object.keys(photosByDate).length > 0 ? (
+            <div className="space-y-6">
+              {Object.entries(photosByDate)
+                .sort(([a], [b]) => new Date(b).getTime() - new Date(a).getTime())
+                .map(([date, datePhotos]) => (
+                  <div key={date}>
+                    <h3 className="text-sm font-bold text-zinc-500 mb-3 flex items-center gap-2">
+                      <Calendar className="w-4 h-4" />
+                      {new Date(date).toLocaleDateString('pt-BR', { 
+                        weekday: 'long', 
+                        day: 'numeric', 
+                        month: 'long', 
+                        year: 'numeric' 
+                      })}
+                    </h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                      {datePhotos.map((photo) => (
+                        <div 
+                          key={photo.id}
+                          onClick={() => setShowPhotoModal(photo)}
+                          className="relative aspect-[3/4] bg-zinc-100 rounded-lg overflow-hidden cursor-pointer group hover:ring-2 hover:ring-lime-500 transition-all"
+                        >
+                          <img
+                            src={photo.file_path}
+                            alt={`${PHOTO_CATEGORIES[photo.category]} - ${photo.photo_date}`}
+                            className="w-full h-full object-cover"
+                          />
+                          {/* Overlay */}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="absolute bottom-0 left-0 right-0 p-2">
+                              <span className="text-white text-xs font-bold">
+                                {PHOTO_CATEGORIES[photo.category]}
+                              </span>
+                              {photo.weight && (
+                                <span className="text-white/80 text-xs ml-2">
+                                  {photo.weight}kg
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          {/* Badge de categoria */}
+                          <div className="absolute top-2 left-2">
+                            <span className="bg-black/60 text-white text-xs px-2 py-0.5 rounded">
+                              {PHOTO_CATEGORIES[photo.category]}
+                            </span>
+                          </div>
+                          {/* Ícone de zoom */}
+                          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span className="bg-white/90 p-1.5 rounded-full inline-flex">
+                              <ZoomIn className="w-4 h-4 text-zinc-700" />
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+            </div>
+          ) : (
+            <EmptyState
+              icon="search"
+              title="Nenhuma foto registrada"
+              description="Adicione fotos para acompanhar visualmente a evolução do paciente."
+              action={{
+                label: 'Adicionar Primeira Foto',
+                onClick: () => setShowUploadModal(true)
+              }}
+            />
+          )}
         </div>
-      </Card>
+      )}
 
-      {progressData.length === 0 && (
-        <EmptyState
-          icon="search"
-          title="Nenhum dado de progresso"
-          description="Registre medições para acompanhar a evolução do paciente."
-        />
+      {/* Seção de Medições (existente) */}
+      {activeSection === 'measurements' && (
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <h2 className="text-xl font-bold">Evolução do Paciente</h2>
+            <button className="flex items-center gap-2 px-4 py-2 bg-lime-500 text-black font-bold hover:bg-lime-400 transition-colors text-sm rounded-md">
+              <Plus className="w-4 h-4" />
+              Registrar Medição
+            </button>
+          </div>
+
+          {/* Summary Cards */}
+          <div className="grid grid-cols-3 gap-4">
+            <Card className="text-center bg-lime-50 border-lime-200">
+              <div className="text-xl md:text-2xl font-bold text-lime-600">-3.0kg</div>
+              <div className="text-xs text-zinc-600 uppercase font-medium">Peso perdido</div>
+            </Card>
+            <Card className="text-center bg-lime-50 border-lime-200">
+              <div className="text-xl md:text-2xl font-bold text-lime-600">-2.5%</div>
+              <div className="text-xs text-zinc-600 uppercase font-medium">Gordura reduzida</div>
+            </Card>
+            <Card className="text-center bg-lime-50 border-lime-200">
+              <div className="text-xl md:text-2xl font-bold text-lime-600">+1.7kg</div>
+              <div className="text-xs text-zinc-600 uppercase font-medium">Massa muscular</div>
+            </Card>
+          </div>
+
+          {/* Data Table */}
+          <Card className="p-0 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[400px]">
+                <thead className="bg-zinc-50 border-b border-zinc-200">
+                  <tr>
+                    <th className="text-left px-4 py-3 font-bold text-xs uppercase text-zinc-500">Data</th>
+                    <th className="text-left px-4 py-3 font-bold text-xs uppercase text-zinc-500">Peso (kg)</th>
+                    <th className="text-left px-4 py-3 font-bold text-xs uppercase text-zinc-500">% Gordura</th>
+                    <th className="text-left px-4 py-3 font-bold text-xs uppercase text-zinc-500">Massa Muscular (kg)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-100">
+                  {progressData.map((record, idx) => (
+                    <tr key={idx} className="hover:bg-zinc-50 transition-colors">
+                      <td className="px-4 py-3 text-sm">{new Date(record.date).toLocaleDateString('pt-BR')}</td>
+                      <td className="px-4 py-3 text-sm font-bold">{record.weight}</td>
+                      <td className="px-4 py-3 text-sm">{record.bodyFat}%</td>
+                      <td className="px-4 py-3 text-sm">{record.muscleMass}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Modal de Upload */}
+      {showUploadModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-lg max-h-[90vh] overflow-y-auto p-0">
+            <div className="p-4 sm:p-6 border-b border-zinc-200 flex items-center justify-between">
+              <h3 className="text-xl font-bold">Nova Foto de Progresso</h3>
+              <button onClick={() => { setShowUploadModal(false); setSelectedFile(null); setPreviewUrl(null); }} className="p-2 hover:bg-zinc-100 rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 sm:p-6 space-y-4">
+              {/* Área de upload */}
+              <div 
+                onClick={() => fileInputRef.current?.click()}
+                className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${
+                  previewUrl ? 'border-lime-500 bg-lime-50' : 'border-zinc-300 hover:border-lime-500 hover:bg-lime-50'
+                }`}
+              >
+                {previewUrl ? (
+                  <div className="relative">
+                    <img src={previewUrl} alt="Preview" className="max-h-64 mx-auto rounded-lg" />
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); setSelectedFile(null); setPreviewUrl(null); }}
+                      className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <Camera className="w-12 h-12 text-zinc-400 mx-auto mb-3" />
+                    <p className="font-medium text-zinc-700">Clique para selecionar uma foto</p>
+                    <p className="text-sm text-zinc-500 mt-1">ou arraste e solte aqui</p>
+                    <p className="text-xs text-zinc-400 mt-2">JPG, PNG, WebP até 10MB (será compactada automaticamente)</p>
+                  </>
+                )}
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+
+              {/* Campos do formulário */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Data</label>
+                  <input
+                    type="date"
+                    value={uploadForm.photo_date}
+                    onChange={(e) => setUploadForm({ ...uploadForm, photo_date: e.target.value })}
+                    className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Ângulo</label>
+                  <select
+                    value={uploadForm.category}
+                    onChange={(e) => setUploadForm({ ...uploadForm, category: e.target.value })}
+                    className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none text-sm"
+                  >
+                    {Object.entries(PHOTO_CATEGORIES).map(([key, label]) => (
+                      <option key={key} value={key}>{label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Peso (kg)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={uploadForm.weight}
+                    onChange={(e) => setUploadForm({ ...uploadForm, weight: e.target.value })}
+                    placeholder="Ex: 75.5"
+                    className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">% Gordura</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={uploadForm.body_fat_percentage}
+                    onChange={(e) => setUploadForm({ ...uploadForm, body_fat_percentage: e.target.value })}
+                    placeholder="Ex: 12.5"
+                    className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none text-sm"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Observações</label>
+                <textarea
+                  value={uploadForm.notes}
+                  onChange={(e) => setUploadForm({ ...uploadForm, notes: e.target.value })}
+                  placeholder="Notas opcionais sobre esta foto..."
+                  rows={2}
+                  className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none text-sm resize-none"
+                />
+              </div>
+            </div>
+            <div className="p-4 sm:p-6 border-t border-zinc-200 flex gap-3">
+              <button
+                onClick={() => { setShowUploadModal(false); setSelectedFile(null); setPreviewUrl(null); }}
+                className="flex-1 py-2.5 border border-black font-bold hover:bg-black hover:text-white transition-colors rounded-lg text-sm"
+              >
+                CANCELAR
+              </button>
+              <button
+                onClick={handleUpload}
+                disabled={!selectedFile || uploading}
+                className="flex-1 py-2.5 bg-lime-500 text-black font-bold hover:bg-lime-400 transition-colors rounded-lg disabled:opacity-50 text-sm flex items-center justify-center gap-2"
+              >
+                {uploading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    ENVIANDO...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4" />
+                    ENVIAR FOTO
+                  </>
+                )}
+              </button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Modal de Visualização */}
+      {showPhotoModal && (
+        <div 
+          className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowPhotoModal(null)}
+        >
+          <div className="relative max-w-4xl w-full max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+            {/* Botão fechar */}
+            <button
+              onClick={() => setShowPhotoModal(null)}
+              className="absolute -top-12 right-0 text-white/80 hover:text-white p-2"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            
+            {/* Imagem */}
+            <img
+              src={showPhotoModal.file_path}
+              alt={`${PHOTO_CATEGORIES[showPhotoModal.category]}`}
+              className="w-full h-auto max-h-[70vh] object-contain rounded-lg"
+            />
+            
+            {/* Info */}
+            <div className="bg-white rounded-lg mt-4 p-4">
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <div>
+                  <h4 className="font-bold text-lg">{PHOTO_CATEGORIES[showPhotoModal.category]}</h4>
+                  <p className="text-sm text-zinc-500">
+                    {new Date(showPhotoModal.photo_date).toLocaleDateString('pt-BR', { 
+                      weekday: 'long', 
+                      day: 'numeric', 
+                      month: 'long', 
+                      year: 'numeric' 
+                    })}
+                  </p>
+                </div>
+                <div className="flex items-center gap-4 text-sm">
+                  {showPhotoModal.weight && (
+                    <span className="flex items-center gap-1">
+                      <Weight className="w-4 h-4 text-zinc-400" />
+                      <span className="font-bold">{showPhotoModal.weight}kg</span>
+                    </span>
+                  )}
+                  {showPhotoModal.body_fat_percentage && (
+                    <span className="flex items-center gap-1">
+                      <Activity className="w-4 h-4 text-zinc-400" />
+                      <span className="font-bold">{showPhotoModal.body_fat_percentage}%</span>
+                    </span>
+                  )}
+                </div>
+              </div>
+              {showPhotoModal.notes && (
+                <p className="text-sm text-zinc-600 mt-2 p-2 bg-zinc-50 rounded">{showPhotoModal.notes}</p>
+              )}
+              <div className="flex justify-between items-center mt-4 pt-4 border-t border-zinc-200">
+                <span className="text-xs text-zinc-400">
+                  Compactação: {Math.round((1 - showPhotoModal.file_size / showPhotoModal.original_size) * 100)}% economizado
+                </span>
+                <button
+                  onClick={() => handleDeletePhoto(showPhotoModal.id)}
+                  className="flex items-center gap-1 text-red-500 hover:text-red-600 text-sm font-medium"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Excluir
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

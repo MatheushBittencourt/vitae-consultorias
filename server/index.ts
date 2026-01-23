@@ -10,6 +10,8 @@ import { createPool, RowDataPacket } from 'mysql2/promise'
 import { MercadoPagoConfig, PreApproval, Payment } from 'mercadopago'
 import { createNutritionAdvancedRoutes } from './routes/nutrition-advanced'
 import { createRecipeRoutes } from './routes/recipes'
+import { createProgressPhotosRoutes } from './routes/progress-photos'
+import path from 'path'
 
 // ===========================================
 // CONFIGURAÇÃO DE SEGURANÇA - JWT
@@ -4062,6 +4064,18 @@ app.use('/api/nutrition-advanced', authenticateToken, nutritionAdvancedRouter)
 // ===============================
 const recipeRouter = createRecipeRoutes(pool)
 app.use('/api/recipes', authenticateToken, recipeRouter)
+
+// ===============================
+// ROTAS DE FOTOS DE PROGRESSO (PROTEGIDAS)
+// ===============================
+const progressPhotosRouter = createProgressPhotosRoutes(pool)
+app.use('/api/progress-photos', authenticateToken, progressPhotosRouter)
+
+// ===============================
+// SERVIR ARQUIVOS DE UPLOAD
+// ===============================
+const uploadsPath = path.resolve(process.env.UPLOAD_DIR || 'uploads')
+app.use('/uploads', express.static(uploadsPath))
 
 // Start server
 app.listen(PORT, async () => {
