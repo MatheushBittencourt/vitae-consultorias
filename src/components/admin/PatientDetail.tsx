@@ -1942,6 +1942,7 @@ interface MealForm {
 
 interface FoodForm {
   food_id: number | null;
+  recipe_id: number | null;
   name: string;
   quantity: number;
   unit: string;
@@ -1950,6 +1951,25 @@ interface FoodForm {
   carbs: number;
   fat: number;
   option_group: number;
+  notes: string;
+}
+
+interface Recipe {
+  id: number;
+  name: string;
+  description?: string;
+  servings: number;
+  serving_size?: string;
+  calories_per_serving: number;
+  protein_per_serving: number;
+  carbs_per_serving: number;
+  fat_per_serving: number;
+  instructions?: string;
+  ingredients?: Array<{
+    name: string;
+    quantity: number;
+    unit: string;
+  }>;
 }
 
 function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient; consultancyId?: number; adminUser: AdminUser }) {
@@ -1966,7 +1986,9 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
   const [creating, setCreating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [foodLibrary, setFoodLibrary] = useState<Array<{ id: number; name: string; calories: number; protein: number; carbs: number; fat: number; serving_size: string }>>([]);
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [foodSearch, setFoodSearch] = useState('');
+  const [searchType, setSearchType] = useState<'food' | 'recipe'>('food');
   
   const [planForm, setPlanForm] = useState({
     name: `Plano Nutricional - ${patient.name}`,
@@ -1984,6 +2006,7 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
 
   const [foodForm, setFoodForm] = useState<FoodForm>({
     food_id: null,
+    recipe_id: null,
     name: '',
     quantity: 1,
     unit: 'porção',
@@ -1991,7 +2014,8 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
     protein: 0,
     carbs: 0,
     fat: 0,
-    option_group: 0
+    option_group: 0,
+    notes: ''
   });
 
   // Delete confirmation modals
@@ -2014,6 +2038,7 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
   useEffect(() => {
     loadNutritionPlan();
     loadFoodLibrary();
+    loadRecipes();
   }, [patient.id, consultancyId]);
 
   const loadFoodLibrary = async () => {
@@ -2023,6 +2048,16 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
       setFoodLibrary(data || []);
     } catch (error) {
       console.error('Erro ao carregar biblioteca:', error);
+    }
+  };
+
+  const loadRecipes = async () => {
+    try {
+      const response = await fetch(`/api/recipes?consultancy_id=${consultancyId}`, { headers: getAuthHeaders() });
+      const data = await response.json();
+      setRecipes(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar receitas:', error);
     }
   };
 
@@ -2232,6 +2267,7 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
     setEditingMealId(mealId);
     setFoodForm({
       food_id: null,
+      recipe_id: null,
       name: '',
       quantity: 1,
       unit: 'porção',
@@ -2239,9 +2275,11 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
       protein: 0,
       carbs: 0,
       fat: 0,
-      option_group: optionGroup
+      option_group: optionGroup,
+      notes: ''
     });
     setFoodSearch('');
+    setSearchType('food');
     setShowFoodModal(true);
   };
 
@@ -2249,14 +2287,71 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
     setFoodForm({
       ...foodForm,
       food_id: food.id,
+      recipe_id: null,
       name: food.name,
       calories: food.calories,
       protein: food.protein,
       carbs: food.carbs,
       fat: food.fat,
-      unit: food.serving_size || 'porção'
+      unit: food.serving_size || 'porção',
+      notes: ''
     });
     setFoodSearch(food.name);
+  };
+
+  const selectRecipe = async (recipe: Recipe) => {
+    // Buscar detalhes completos da receita (incluindo ingredientes)
+    try {
+      const response = await fetch(`/api/recipes/${recipe.id}`, { headers: getAuthHeaders() });
+      const fullRecipe = await response.json();
+      
+      // Montar lista de ingredientes
+      const ingredientsList = fullRecipe.ingredients?.map((ing: any) => 
+        `• ${ing.quantity} ${ing.unit} de ${ing.name}`
+      ).join('\n') || '';
+      
+      // Montar notas com ingredientes e modo de preparo
+      let notes = '';
+      if (ingredientsList) {
+        notes += `📋 INGREDIENTES:\n${ingredientsList}`;
+      }
+      if (fullRecipe.instructions) {
+        notes += `\n\n👨‍🍳 MODO DE PREPARO:\n${fullRecipe.instructions}`;
+      }
+      if (fullRecipe.tips) {
+        notes += `\n\n💡 DICAS:\n${fullRecipe.tips}`;
+      }
+
+      setFoodForm({
+        ...foodForm,
+        food_id: null,
+        recipe_id: recipe.id,
+        name: `🍽️ ${recipe.name}`,
+        calories: recipe.calories_per_serving || 0,
+        protein: recipe.protein_per_serving || 0,
+        carbs: recipe.carbs_per_serving || 0,
+        fat: recipe.fat_per_serving || 0,
+        unit: recipe.serving_size || 'porção',
+        notes: notes
+      });
+      setFoodSearch(recipe.name);
+    } catch (error) {
+      console.error('Erro ao carregar receita:', error);
+      // Fallback se não conseguir carregar detalhes
+      setFoodForm({
+        ...foodForm,
+        food_id: null,
+        recipe_id: recipe.id,
+        name: `🍽️ ${recipe.name}`,
+        calories: recipe.calories_per_serving || 0,
+        protein: recipe.protein_per_serving || 0,
+        carbs: recipe.carbs_per_serving || 0,
+        fat: recipe.fat_per_serving || 0,
+        unit: recipe.serving_size || 'porção',
+        notes: ''
+      });
+      setFoodSearch(recipe.name);
+    }
   };
 
   const handleSaveFood = async () => {
@@ -2277,7 +2372,8 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
           protein: foodForm.protein * foodForm.quantity,
           carbs: foodForm.carbs * foodForm.quantity,
           fat: foodForm.fat * foodForm.quantity,
-          option_group: foodForm.option_group
+          option_group: foodForm.option_group,
+          notes: foodForm.notes
         })
       });
 
@@ -2312,6 +2408,10 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
 
   const filteredFoods = foodLibrary.filter(f => 
     f.name.toLowerCase().includes(foodSearch.toLowerCase())
+  ).slice(0, 10);
+
+  const filteredRecipes = recipes.filter(r => 
+    r.name.toLowerCase().includes(foodSearch.toLowerCase())
   ).slice(0, 10);
 
   const subViewOptions = [
@@ -2843,22 +2943,48 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
                   </button>
                 </div>
                 <div className="p-6 space-y-4 overflow-y-auto flex-1">
-                  {/* Busca na biblioteca */}
+                  {/* Tabs Alimentos/Receitas */}
+                  <div className="flex gap-2 mb-4">
+                    <button
+                      onClick={() => { setSearchType('food'); setFoodSearch(''); }}
+                      className={`flex-1 py-2 px-4 rounded-lg font-bold text-sm transition-colors ${
+                        searchType === 'food' 
+                          ? 'bg-lime-500 text-black' 
+                          : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+                      }`}
+                    >
+                      🥗 Alimentos
+                    </button>
+                    <button
+                      onClick={() => { setSearchType('recipe'); setFoodSearch(''); }}
+                      className={`flex-1 py-2 px-4 rounded-lg font-bold text-sm transition-colors ${
+                        searchType === 'recipe' 
+                          ? 'bg-amber-500 text-black' 
+                          : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+                      }`}
+                    >
+                      👨‍🍳 Receitas
+                    </button>
+                  </div>
+
+                  {/* Busca */}
                   <div>
-                    <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Buscar na Biblioteca</label>
+                    <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">
+                      {searchType === 'food' ? 'Buscar Alimento' : 'Buscar Receita'}
+                    </label>
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
                       <input
                         type="text"
                         value={foodSearch}
                         onChange={(e) => setFoodSearch(e.target.value)}
-                        placeholder="Digite para buscar..."
+                        placeholder={searchType === 'food' ? 'Ex: Frango, Arroz...' : 'Ex: Panqueca, Omelete...'}
                         className="w-full pl-10 pr-4 py-2.5 border border-zinc-200 rounded-lg focus:border-lime-500 outline-none"
                       />
                     </div>
                     
-                    {/* Resultados da busca */}
-                    {foodSearch && filteredFoods.length > 0 && (
+                    {/* Resultados da busca - Alimentos */}
+                    {searchType === 'food' && foodSearch && filteredFoods.length > 0 && (
                       <div className="mt-2 border border-zinc-200 rounded-lg max-h-48 overflow-y-auto">
                         {filteredFoods.map(food => (
                           <button
@@ -2874,6 +3000,36 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
                             </div>
                           </button>
                         ))}
+                      </div>
+                    )}
+
+                    {/* Resultados da busca - Receitas */}
+                    {searchType === 'recipe' && foodSearch && filteredRecipes.length > 0 && (
+                      <div className="mt-2 border border-zinc-200 rounded-lg max-h-48 overflow-y-auto">
+                        {filteredRecipes.map(recipe => (
+                          <button
+                            key={recipe.id}
+                            onClick={() => selectRecipe(recipe)}
+                            className={`w-full text-left px-4 py-2 hover:bg-amber-50 border-b border-zinc-100 last:border-b-0 ${
+                              foodForm.recipe_id === recipe.id ? 'bg-amber-50' : ''
+                            }`}
+                          >
+                            <div className="font-medium">🍽️ {recipe.name}</div>
+                            <div className="text-xs text-zinc-500">
+                              {recipe.calories_per_serving}kcal/porção | P:{recipe.protein_per_serving}g | C:{recipe.carbs_per_serving}g | G:{recipe.fat_per_serving}g
+                            </div>
+                            {recipe.description && (
+                              <div className="text-xs text-zinc-400 mt-1 truncate">{recipe.description}</div>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Sem resultados */}
+                    {foodSearch && (searchType === 'food' ? filteredFoods.length === 0 : filteredRecipes.length === 0) && (
+                      <div className="mt-2 p-4 bg-zinc-50 rounded-lg text-center text-zinc-500 text-sm">
+                        Nenhum {searchType === 'food' ? 'alimento' : 'receita'} encontrado
                       </div>
                     )}
                   </div>
@@ -2975,6 +3131,16 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
                         <span><strong>{(foodForm.carbs * foodForm.quantity).toFixed(1)}</strong>g carb</span>
                         <span><strong>{(foodForm.fat * foodForm.quantity).toFixed(1)}</strong>g gord</span>
                       </div>
+                    </div>
+                  )}
+
+                  {/* Notas da receita (ingredientes e modo de preparo) */}
+                  {foodForm.notes && (
+                    <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
+                      <p className="text-xs font-bold text-amber-700 mb-2 uppercase">Detalhes da Receita</p>
+                      <pre className="text-sm text-zinc-700 whitespace-pre-wrap font-sans leading-relaxed max-h-48 overflow-y-auto">
+                        {foodForm.notes}
+                      </pre>
                     </div>
                   )}
                 </div>
