@@ -38,7 +38,9 @@ import {
   BarChart3,
   Camera,
   ZoomIn,
-  Maximize2
+  Maximize2,
+  CheckCircle,
+  TrendingDown
 } from 'lucide-react';
 import { Patient } from './AdminDashboard';
 import { AdminUser } from './AdminLoginPage';
@@ -78,7 +80,7 @@ export function PatientDetail({ patient, onBack, consultancyId, adminUser }: Pat
     { id: 'training' as Tab, label: 'Treinamento', icon: Dumbbell, module: 'training' },
     { id: 'nutrition' as Tab, label: 'Nutrição', icon: Apple, module: 'nutrition' },
     { id: 'medical' as Tab, label: 'Médico', icon: Stethoscope, module: 'medical' },
-    { id: 'rehab' as Tab, label: 'Reabilitação', icon: HeartPulse, module: 'rehab' },
+    { id: 'rehab' as Tab, label: 'Fisioterapia', icon: HeartPulse, module: 'rehab' },
     { id: 'progress' as Tab, label: 'Progresso', icon: TrendingUp, module: null },
     { id: 'appointments' as Tab, label: 'Agendamentos', icon: Calendar, module: null },
   ];
@@ -216,7 +218,7 @@ export function PatientDetail({ patient, onBack, consultancyId, adminUser }: Pat
           {activeTab === 'training' && <TrainingTab patient={patient} consultancyId={consultancyId} adminUser={adminUser} />}
           {activeTab === 'nutrition' && <NutritionTab patient={patient} consultancyId={consultancyId} adminUser={adminUser} />}
           {activeTab === 'medical' && <MedicalTab patient={patient} />}
-          {activeTab === 'rehab' && <RehabTab patient={patient} />}
+          {activeTab === 'rehab' && <RehabTab patient={patient} consultancyId={consultancyId} />}
           {activeTab === 'progress' && <ProgressTab patient={patient} consultancyId={consultancyId} />}
           {activeTab === 'appointments' && <AppointmentsTab patient={patient} />}
         </div>
@@ -3946,227 +3948,661 @@ function MedicalTab({ patient }: { patient: Patient }) {
   );
 }
 
-interface RehabSession {
-  id: string;
-  date: string;
-  status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
-  injury: string;
-  treatment: string;
-  exercises: string;
-  physio: string;
-  progressNotes: string;
-  nextSession?: string;
+// Interfaces para Fisioterapia
+interface PhysioTreatmentPlan {
+  id: number;
+  athlete_id: number;
+  name: string;
+  condition_treated: string;
+  start_date: string;
+  estimated_end_date: string;
+  frequency: string;
+  total_sessions: number;
+  completed_sessions: number;
+  status: string;
+  physio_name: string;
+  precautions: string;
 }
 
-function RehabTab({ patient }: { patient: Patient }) {
-  const [sessions, setSessions] = useState<RehabSession[]>([
-    { 
-      id: '1', 
-      date: '2024-01-10', 
-      status: 'scheduled', 
-      injury: 'Tendinite patelar', 
-      treatment: 'Exercícios de fortalecimento, crioterapia',
-      exercises: 'Extensão de joelho isométrica, Agachamento parcial, Alongamento quadríceps',
-      physio: 'Dr. Carlos Mendes',
-      progressNotes: 'Paciente apresenta melhora de 40% na dor',
-      nextSession: '2024-01-15'
-    },
-    { 
-      id: '2', 
-      date: '2024-01-05', 
-      status: 'completed', 
-      injury: 'Tendinite patelar', 
-      treatment: 'Alongamentos, mobilização articular',
-      exercises: 'Mobilização patelar, Alongamento de isquiotibiais, Fortalecimento de glúteo',
-      physio: 'Dr. Carlos Mendes',
-      progressNotes: 'Primeira sessão. Avaliação inicial completa.'
-    },
-  ]);
+interface PhysioSession {
+  id: number;
+  athlete_id: number;
+  session_date: string;
+  duration_minutes: number;
+  injury_description: string;
+  treatment: string;
+  exercises: string;
+  progress_notes: string;
+  pain_before: number;
+  pain_after: number;
+  techniques_applied: string;
+  status: string;
+  physio_name: string;
+  next_session: string;
+}
 
+interface PhysioProgress {
+  id: number;
+  record_date: string;
+  pain_level: number;
+  mobility_score: number;
+  strength_score: number;
+  functional_score: number;
+}
+
+function RehabTab({ patient, consultancyId }: { patient: Patient; consultancyId?: number }) {
+  const [loading, setLoading] = useState(true);
+  const [activeSection, setActiveSection] = useState<'overview' | 'sessions' | 'protocols'>('overview');
+  const [athleteId, setAthleteId] = useState<number | null>(null);
+  const [treatmentPlans, setTreatmentPlans] = useState<PhysioTreatmentPlan[]>([]);
+  const [sessions, setSessions] = useState<PhysioSession[]>([]);
+  const [progressData, setProgressData] = useState<PhysioProgress[]>([]);
+  
+  // Modais
   const [showSessionModal, setShowSessionModal] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [editingSession, setEditingSession] = useState<RehabSession | null>(null);
-  const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
-
+  const [showProtocolModal, setShowProtocolModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<{ type: 'session' | 'protocol'; id: number } | null>(null);
+  const [editingSession, setEditingSession] = useState<PhysioSession | null>(null);
+  const [saving, setSaving] = useState(false);
+  
+  // Forms
   const [sessionForm, setSessionForm] = useState({
-    date: '',
-    status: 'scheduled' as RehabSession['status'],
-    injury: '',
+    session_date: new Date().toISOString().slice(0, 16),
+    duration_minutes: 50,
+    treatment_plan_id: '',
+    injury_description: '',
     treatment: '',
     exercises: '',
-    physio: '',
-    progressNotes: '',
-    nextSession: ''
+    progress_notes: '',
+    pain_before: 5,
+    pain_after: 3,
+    techniques_applied: '',
+    next_session: '',
+    status: 'scheduled'
   });
+
+  const [protocolForm, setProtocolForm] = useState({
+    name: '',
+    condition_treated: '',
+    start_date: new Date().toISOString().split('T')[0],
+    estimated_end_date: '',
+    frequency: '2x semana',
+    total_sessions: 10,
+    precautions: ''
+  });
+
+  useEffect(() => {
+    if (consultancyId) {
+      loadData();
+    }
+  }, [patient.id, consultancyId]);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      
+      // Buscar athlete_id
+      const athleteRes = await fetch(`/api/athletes?user_id=${patient.id}&consultancy_id=${consultancyId}`, { headers: getAuthHeaders() });
+      if (!athleteRes.ok) return;
+      
+      const athletes = await athleteRes.json();
+      if (!athletes || athletes.length === 0) {
+        setLoading(false);
+        return;
+      }
+      
+      const athlete = athletes[0];
+      setAthleteId(athlete.id);
+      
+      // Carregar protocolos, sessões e evolução em paralelo
+      const [plansRes, sessionsRes, progressRes] = await Promise.all([
+        fetch(`/api/physio/treatment-plans/${athlete.id}`, { headers: getAuthHeaders() }),
+        fetch(`/api/physio/sessions/${athlete.id}`, { headers: getAuthHeaders() }),
+        fetch(`/api/physio/progress/${athlete.id}`, { headers: getAuthHeaders() })
+      ]);
+      
+      if (plansRes.ok) {
+        const plans = await plansRes.json();
+        setTreatmentPlans(Array.isArray(plans) ? plans : []);
+      }
+      
+      if (sessionsRes.ok) {
+        const sessionsData = await sessionsRes.json();
+        setSessions(Array.isArray(sessionsData) ? sessionsData : []);
+      }
+      
+      if (progressRes.ok) {
+        const progress = await progressRes.json();
+        setProgressData(Array.isArray(progress) ? progress : []);
+      }
+      
+    } catch (error) {
+      console.error('Error loading physio data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveSession = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!athleteId) return;
+    
+    setSaving(true);
+    try {
+      const url = editingSession 
+        ? `/api/physio/sessions/${editingSession.id}`
+        : '/api/physio/sessions';
+      
+      const response = await fetch(url, {
+        method: editingSession ? 'PUT' : 'POST',
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...sessionForm,
+          athlete_id: athleteId,
+          treatment_plan_id: sessionForm.treatment_plan_id ? parseInt(sessionForm.treatment_plan_id) : null
+        })
+      });
+      
+      if (response.ok) {
+        setShowSessionModal(false);
+        setEditingSession(null);
+        loadData();
+      }
+    } catch (error) {
+      console.error('Error saving session:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveProtocol = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!athleteId) return;
+    
+    setSaving(true);
+    try {
+      const response = await fetch('/api/physio/treatment-plans', {
+        method: 'POST',
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...protocolForm,
+          athlete_id: athleteId,
+          total_sessions: parseInt(String(protocolForm.total_sessions))
+        })
+      });
+      
+      if (response.ok) {
+        setShowProtocolModal(false);
+        setProtocolForm({
+          name: '',
+          condition_treated: '',
+          start_date: new Date().toISOString().split('T')[0],
+          estimated_end_date: '',
+          frequency: '2x semana',
+          total_sessions: 10,
+          precautions: ''
+        });
+        loadData();
+      }
+    } catch (error) {
+      console.error('Error saving protocol:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!showDeleteConfirm) return;
+    
+    try {
+      const endpoint = showDeleteConfirm.type === 'session' 
+        ? `/api/physio/sessions/${showDeleteConfirm.id}`
+        : `/api/physio/treatment-plans/${showDeleteConfirm.id}`;
+      
+      const response = await fetch(endpoint, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+      
+      if (response.ok) {
+        setShowDeleteConfirm(null);
+        loadData();
+      }
+    } catch (error) {
+      console.error('Error deleting:', error);
+    }
+  };
+
+  const openEditSession = (session: PhysioSession) => {
+    setEditingSession(session);
+    setSessionForm({
+      session_date: session.session_date?.slice(0, 16) || '',
+      duration_minutes: session.duration_minutes || 50,
+      treatment_plan_id: '',
+      injury_description: session.injury_description || '',
+      treatment: session.treatment || '',
+      exercises: session.exercises || '',
+      progress_notes: session.progress_notes || '',
+      pain_before: session.pain_before ?? 5,
+      pain_after: session.pain_after ?? 3,
+      techniques_applied: session.techniques_applied || '',
+      next_session: session.next_session || '',
+      status: session.status || 'scheduled'
+    });
+    setShowSessionModal(true);
+  };
 
   const openAddSession = () => {
     setEditingSession(null);
     setSessionForm({
-      date: new Date().toISOString().split('T')[0],
-      status: 'scheduled',
-      injury: '',
+      session_date: new Date().toISOString().slice(0, 16),
+      duration_minutes: 50,
+      treatment_plan_id: '',
+      injury_description: '',
       treatment: '',
       exercises: '',
-      physio: '',
-      progressNotes: '',
-      nextSession: ''
+      progress_notes: '',
+      pain_before: 5,
+      pain_after: 3,
+      techniques_applied: '',
+      next_session: '',
+      status: 'scheduled'
     });
     setShowSessionModal(true);
   };
 
-  const openEditSession = (session: RehabSession) => {
-    setEditingSession(session);
-    setSessionForm({
-      date: session.date,
-      status: session.status,
-      injury: session.injury,
-      treatment: session.treatment,
-      exercises: session.exercises,
-      physio: session.physio,
-      progressNotes: session.progressNotes,
-      nextSession: session.nextSession || ''
-    });
-    setShowSessionModal(true);
-  };
-
-  const handleSaveSession = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const newSession: RehabSession = {
-      id: editingSession?.id || Date.now().toString(),
-      date: sessionForm.date,
-      status: sessionForm.status,
-      injury: sessionForm.injury,
-      treatment: sessionForm.treatment,
-      exercises: sessionForm.exercises,
-      physio: sessionForm.physio,
-      progressNotes: sessionForm.progressNotes,
-      nextSession: sessionForm.nextSession || undefined
-    };
-
-    if (editingSession) {
-      setSessions(prev => prev.map(s => s.id === editingSession.id ? newSession : s));
-    } else {
-      setSessions(prev => [newSession, ...prev]);
-    }
-
-    setShowSessionModal(false);
-    setEditingSession(null);
-  };
-
-  const confirmDelete = (sessionId: string) => {
-    setDeletingSessionId(sessionId);
-    setShowDeleteConfirm(true);
-  };
-
-  const handleDeleteSession = () => {
-    if (!deletingSessionId) return;
-    setSessions(prev => prev.filter(s => s.id !== deletingSessionId));
-    setShowDeleteConfirm(false);
-    setDeletingSessionId(null);
-  };
-
-  const getStatusStyle = (status: RehabSession['status']) => {
+  const getStatusStyle = (status: string) => {
     switch (status) {
       case 'completed': return { bg: 'bg-lime-100', text: 'text-lime-700', label: 'CONCLUÍDA' };
-      case 'scheduled': return { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'AGENDADA' };
-      case 'in_progress': return { bg: 'bg-blue-100', text: 'text-blue-700', label: 'EM ANDAMENTO' };
+      case 'scheduled': return { bg: 'bg-blue-100', text: 'text-blue-700', label: 'AGENDADA' };
+      case 'in_progress': return { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'EM ANDAMENTO' };
       case 'cancelled': return { bg: 'bg-zinc-100', text: 'text-zinc-600', label: 'CANCELADA' };
+      case 'active': return { bg: 'bg-lime-100', text: 'text-lime-700', label: 'ATIVO' };
+      case 'paused': return { bg: 'bg-orange-100', text: 'text-orange-700', label: 'PAUSADO' };
+      default: return { bg: 'bg-zinc-100', text: 'text-zinc-600', label: status.toUpperCase() };
     }
   };
+
+  const getPainColor = (pain: number) => {
+    if (pain <= 3) return 'bg-green-100 text-green-700';
+    if (pain <= 6) return 'bg-yellow-100 text-yellow-700';
+    return 'bg-red-100 text-red-700';
+  };
+
+  const activePlan = treatmentPlans.find(p => p.status === 'active');
+  const completedSessions = sessions.filter(s => s.status === 'completed').length;
+  const scheduledSessions = sessions.filter(s => s.status === 'scheduled').length;
+  const latestPain = progressData[0]?.pain_level;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-lime-500" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h2 className="text-xl font-bold">Sessões de Reabilitação</h2>
+      {/* Header com stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="bg-lime-50 p-4 rounded-xl">
+          <div className="flex items-center gap-2 mb-1">
+            <Activity className="w-4 h-4 text-lime-600" />
+            <span className="text-xs text-zinc-500">Protocolo Ativo</span>
+          </div>
+          <div className="font-bold text-lg truncate">{activePlan?.name || 'Nenhum'}</div>
+        </div>
+        <div className="bg-blue-50 p-4 rounded-xl">
+          <div className="flex items-center gap-2 mb-1">
+            <CheckCircle className="w-4 h-4 text-blue-600" />
+            <span className="text-xs text-zinc-500">Sessões Concluídas</span>
+          </div>
+          <div className="font-bold text-lg">{completedSessions}</div>
+        </div>
+        <div className="bg-purple-50 p-4 rounded-xl">
+          <div className="flex items-center gap-2 mb-1">
+            <Calendar className="w-4 h-4 text-purple-600" />
+            <span className="text-xs text-zinc-500">Agendadas</span>
+          </div>
+          <div className="font-bold text-lg">{scheduledSessions}</div>
+        </div>
+        <div className={`p-4 rounded-xl ${latestPain !== undefined ? getPainColor(latestPain) : 'bg-zinc-50'}`}>
+          <div className="flex items-center gap-2 mb-1">
+            <Target className="w-4 h-4" />
+            <span className="text-xs opacity-70">Nível de Dor</span>
+          </div>
+          <div className="font-bold text-lg">{latestPain !== undefined ? `${latestPain}/10` : '-'}</div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-2 border-b border-zinc-200 overflow-x-auto">
+        {[
+          { id: 'overview', label: 'Visão Geral' },
+          { id: 'sessions', label: 'Sessões' },
+          { id: 'protocols', label: 'Protocolos' },
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveSection(tab.id as any)}
+            className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+              activeSection === tab.id
+                ? 'border-lime-500 text-lime-600'
+                : 'border-transparent text-zinc-500 hover:text-zinc-700'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Actions */}
+      <div className="flex flex-wrap gap-2">
         <button 
           onClick={openAddSession}
-          className="flex items-center gap-2 px-4 py-2 bg-lime-500 text-black font-bold hover:bg-lime-400 transition-colors text-sm rounded-md"
+          className="flex items-center gap-2 px-4 py-2 bg-lime-500 text-black font-bold hover:bg-lime-400 transition-colors text-sm rounded-lg"
         >
           <Plus className="w-4 h-4" />
           Nova Sessão
         </button>
+        <button 
+          onClick={() => setShowProtocolModal(true)}
+          className="flex items-center gap-2 px-4 py-2 border-2 border-lime-500 text-lime-600 font-bold hover:bg-lime-50 transition-colors text-sm rounded-lg"
+        >
+          <FileText className="w-4 h-4" />
+          Novo Protocolo
+        </button>
       </div>
 
-      <div className="space-y-4">
-        {sessions.map((session) => {
-          const statusStyle = getStatusStyle(session.status);
-          return (
-            <Card key={session.id} className="p-4 hover:border-zinc-300 transition-colors">
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className={`inline-block px-2 py-1 text-xs font-bold rounded ${statusStyle.bg} ${statusStyle.text}`}>
-                    {statusStyle.label}
-                  </span>
-                  <span className="text-sm text-zinc-500">{new Date(session.date).toLocaleDateString('pt-BR')}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <button 
-                    onClick={() => openEditSession(session)}
-                    className="p-1.5 text-zinc-400 hover:text-lime-600 hover:bg-lime-50 rounded-md transition-colors"
-                    title="Editar sessão"
-                  >
-                    <Edit className="w-4 h-4" />
-                  </button>
-                  <button 
-                    onClick={() => confirmDelete(session.id)}
-                    className="p-1.5 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
-                    title="Excluir sessão"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-              <h3 className="text-lg font-bold mb-1">{session.injury}</h3>
-              <p className="text-sm text-zinc-500 mb-3">{session.physio}</p>
-              
-              <div className="space-y-3 text-sm">
+      {/* Content based on tab */}
+      {activeSection === 'overview' && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Protocolo Ativo */}
+          <Card className="p-6">
+            <h3 className="font-bold mb-4 flex items-center gap-2">
+              <FileText className="w-5 h-5 text-lime-600" />
+              Protocolo Ativo
+            </h3>
+            {activePlan ? (
+              <div className="space-y-4">
                 <div>
-                  <span className="font-medium text-zinc-700">Tratamento: </span>
-                  <span className="text-zinc-600">{session.treatment}</span>
+                  <div className="font-bold text-lg">{activePlan.name}</div>
+                  <div className="text-sm text-zinc-500">{activePlan.condition_treated}</div>
                 </div>
-                {session.exercises && (
-                  <div>
-                    <span className="font-medium text-zinc-700">Exercícios: </span>
-                    <span className="text-zinc-600">{session.exercises}</span>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="bg-zinc-50 p-3 rounded-lg">
+                    <div className="text-zinc-500 text-xs">Progresso</div>
+                    <div className="font-bold">{activePlan.completed_sessions}/{activePlan.total_sessions} sessões</div>
+                  </div>
+                  <div className="bg-zinc-50 p-3 rounded-lg">
+                    <div className="text-zinc-500 text-xs">Frequência</div>
+                    <div className="font-bold">{activePlan.frequency}</div>
+                  </div>
+                </div>
+                <div className="w-full bg-zinc-200 h-2 rounded-full overflow-hidden">
+                  <div 
+                    className="bg-lime-500 h-full rounded-full transition-all"
+                    style={{ width: `${activePlan.total_sessions > 0 ? (activePlan.completed_sessions / activePlan.total_sessions) * 100 : 0}%` }}
+                  />
+                </div>
+                {activePlan.precautions && (
+                  <div className="p-3 bg-amber-50 border-l-4 border-amber-500 rounded-r-lg text-sm">
+                    <span className="font-medium">Precauções: </span>
+                    {activePlan.precautions}
                   </div>
                 )}
-                {session.progressNotes && (
-                  <div className="mt-3 p-3 bg-zinc-50 rounded-md">
-                    <span className="font-medium text-zinc-700">Notas: </span>
-                    <span className="text-zinc-600">{session.progressNotes}</span>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-zinc-500">
+                <FileText className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p>Nenhum protocolo ativo</p>
+                <button 
+                  onClick={() => setShowProtocolModal(true)}
+                  className="mt-3 text-lime-600 hover:text-lime-700 font-medium text-sm"
+                >
+                  + Criar protocolo
+                </button>
+              </div>
+            )}
+          </Card>
+
+          {/* Próxima Sessão */}
+          <Card className="p-6">
+            <h3 className="font-bold mb-4 flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-blue-600" />
+              Próximas Sessões
+            </h3>
+            {sessions.filter(s => s.status === 'scheduled').length > 0 ? (
+              <div className="space-y-3">
+                {sessions.filter(s => s.status === 'scheduled').slice(0, 3).map(session => (
+                  <div key={session.id} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                    <div>
+                      <div className="font-medium">
+                        {new Date(session.session_date).toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' })}
+                      </div>
+                      <div className="text-xs text-zinc-500">
+                        {new Date(session.session_date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                        {session.duration_minutes && ` • ${session.duration_minutes}min`}
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => openEditSession(session)}
+                      className="p-1 text-zinc-400 hover:text-zinc-600"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
                   </div>
-                )}
-                {session.nextSession && (
-                  <div className="mt-3 text-lime-600 font-medium flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    Próxima sessão: {new Date(session.nextSession).toLocaleDateString('pt-BR')}
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-zinc-500">
+                <Calendar className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p>Nenhuma sessão agendada</p>
+                <button 
+                  onClick={openAddSession}
+                  className="mt-3 text-lime-600 hover:text-lime-700 font-medium text-sm"
+                >
+                  + Agendar sessão
+                </button>
+              </div>
+            )}
+          </Card>
+
+          {/* Evolução da Dor */}
+          {progressData.length > 0 && (
+            <Card className="p-6 lg:col-span-2">
+              <h3 className="font-bold mb-4 flex items-center gap-2">
+                <TrendingDown className="w-5 h-5 text-purple-600" />
+                Evolução da Dor
+              </h3>
+              <div className="space-y-3">
+                {progressData.slice(0, 5).map(p => (
+                  <div key={p.id} className="flex items-center gap-4">
+                    <span className="text-sm text-zinc-500 w-24">
+                      {new Date(p.record_date).toLocaleDateString('pt-BR')}
+                    </span>
+                    <div className="flex-1 bg-zinc-200 h-3 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full rounded-full ${
+                          p.pain_level <= 3 ? 'bg-green-500' : 
+                          p.pain_level <= 6 ? 'bg-yellow-500' : 'bg-red-500'
+                        }`}
+                        style={{ width: `${p.pain_level * 10}%` }}
+                      />
+                    </div>
+                    <span className={`px-2 py-1 rounded text-xs font-bold ${getPainColor(p.pain_level)}`}>
+                      {p.pain_level}/10
+                    </span>
                   </div>
-                )}
+                ))}
               </div>
             </Card>
-          );
-        })}
-        {sessions.length === 0 && (
-          <EmptyState
-            icon="calendar"
-            title="Nenhuma sessão de reabilitação"
-            description="Este paciente ainda não possui sessões de reabilitação cadastradas."
-            action={{
-              label: "Adicionar Sessão",
-              onClick: openAddSession
-            }}
-          />
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
-      {/* Add/Edit Session Modal */}
+      {activeSection === 'sessions' && (
+        <div className="space-y-4">
+          {sessions.length === 0 ? (
+            <EmptyState
+              icon="calendar"
+              title="Nenhuma sessão registrada"
+              description="Adicione a primeira sessão de fisioterapia para este paciente."
+              action={{ label: "Nova Sessão", onClick: openAddSession }}
+            />
+          ) : (
+            sessions.map(session => {
+              const statusStyle = getStatusStyle(session.status);
+              return (
+                <Card key={session.id} className="p-4 hover:border-zinc-300 transition-colors">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`inline-block px-2 py-1 text-xs font-bold rounded ${statusStyle.bg} ${statusStyle.text}`}>
+                        {statusStyle.label}
+                      </span>
+                      <span className="text-sm text-zinc-500">
+                        {new Date(session.session_date).toLocaleDateString('pt-BR')}
+                        {' às '}
+                        {new Date(session.session_date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      {session.duration_minutes && (
+                        <span className="text-sm text-zinc-400">• {session.duration_minutes}min</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button 
+                        onClick={() => openEditSession(session)}
+                        className="p-1.5 text-zinc-400 hover:text-lime-600 hover:bg-lime-50 rounded-md transition-colors"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => setShowDeleteConfirm({ type: 'session', id: session.id })}
+                        className="p-1.5 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {session.injury_description && (
+                    <h4 className="text-lg font-bold mb-1">{session.injury_description}</h4>
+                  )}
+                  
+                  {/* Dor antes/depois */}
+                  {session.status === 'completed' && session.pain_before !== null && (
+                    <div className="flex items-center gap-3 mb-3 text-sm">
+                      <span className="text-zinc-500">Dor:</span>
+                      <span className={`px-2 py-0.5 rounded ${getPainColor(session.pain_before)}`}>
+                        {session.pain_before}/10
+                      </span>
+                      <span className="text-zinc-400">→</span>
+                      <span className={`px-2 py-0.5 rounded ${getPainColor(session.pain_after)}`}>
+                        {session.pain_after}/10
+                      </span>
+                    </div>
+                  )}
+                  
+                  <div className="space-y-2 text-sm">
+                    {session.techniques_applied && (
+                      <div>
+                        <span className="font-medium text-zinc-700">Técnicas: </span>
+                        <span className="text-zinc-600">{session.techniques_applied}</span>
+                      </div>
+                    )}
+                    {session.exercises && (
+                      <div>
+                        <span className="font-medium text-zinc-700">Exercícios: </span>
+                        <span className="text-zinc-600">{session.exercises}</span>
+                      </div>
+                    )}
+                    {session.progress_notes && (
+                      <div className="mt-2 p-3 bg-zinc-50 rounded-lg">
+                        <span className="font-medium text-zinc-700">Notas: </span>
+                        <span className="text-zinc-600">{session.progress_notes}</span>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              );
+            })
+          )}
+        </div>
+      )}
+
+      {activeSection === 'protocols' && (
+        <div className="space-y-4">
+          {treatmentPlans.length === 0 ? (
+            <EmptyState
+              icon="calendar"
+              title="Nenhum protocolo cadastrado"
+              description="Crie o primeiro protocolo de tratamento para este paciente."
+              action={{ label: "Novo Protocolo", onClick: () => setShowProtocolModal(true) }}
+            />
+          ) : (
+            treatmentPlans.map(plan => {
+              const statusStyle = getStatusStyle(plan.status);
+              const progress = plan.total_sessions > 0 
+                ? Math.round((plan.completed_sessions / plan.total_sessions) * 100) 
+                : 0;
+              
+              return (
+                <Card key={plan.id} className="p-4">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className="font-bold">{plan.name}</h4>
+                        <span className={`inline-block px-2 py-0.5 text-xs font-bold rounded ${statusStyle.bg} ${statusStyle.text}`}>
+                          {statusStyle.label}
+                        </span>
+                      </div>
+                      <p className="text-sm text-zinc-500">{plan.condition_treated}</p>
+                    </div>
+                    <button 
+                      onClick={() => setShowDeleteConfirm({ type: 'protocol', id: plan.id })}
+                      className="p-1.5 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-3 text-sm mb-3">
+                    <div className="bg-zinc-50 p-2 rounded-lg">
+                      <div className="text-xs text-zinc-500">Início</div>
+                      <div className="font-medium">{new Date(plan.start_date).toLocaleDateString('pt-BR')}</div>
+                    </div>
+                    <div className="bg-zinc-50 p-2 rounded-lg">
+                      <div className="text-xs text-zinc-500">Frequência</div>
+                      <div className="font-medium">{plan.frequency}</div>
+                    </div>
+                    <div className="bg-zinc-50 p-2 rounded-lg">
+                      <div className="text-xs text-zinc-500">Sessões</div>
+                      <div className="font-medium">{plan.completed_sessions}/{plan.total_sessions}</div>
+                    </div>
+                  </div>
+                  
+                  <div className="w-full bg-zinc-200 h-2 rounded-full overflow-hidden">
+                    <div 
+                      className="bg-lime-500 h-full rounded-full transition-all"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                  <div className="text-right text-xs text-zinc-500 mt-1">{progress}% concluído</div>
+                </Card>
+              );
+            })
+          )}
+        </div>
+      )}
+
+      {/* Modal Nova/Editar Sessão */}
       {showSessionModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <Card className="w-full max-w-lg max-h-[90vh] overflow-y-auto p-0">
             <div className="p-6 border-b border-zinc-200 flex items-center justify-between">
               <h3 className="text-xl font-bold">
-                {editingSession ? 'Editar Sessão' : 'Nova Sessão de Reabilitação'}
+                {editingSession ? 'Editar Sessão' : 'Nova Sessão de Fisioterapia'}
               </h3>
               <button onClick={() => { setShowSessionModal(false); setEditingSession(null); }} className="text-zinc-400 hover:text-black p-1">
                 <X className="w-5 h-5" />
@@ -4175,12 +4611,12 @@ function RehabTab({ patient }: { patient: Patient }) {
             <form onSubmit={handleSaveSession} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Data</label>
+                  <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Data e Hora</label>
                   <input 
-                    type="date" 
-                    value={sessionForm.date}
-                    onChange={(e) => setSessionForm({ ...sessionForm, date: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-zinc-200 focus:border-lime-500 outline-none rounded-md text-sm" 
+                    type="datetime-local" 
+                    value={sessionForm.session_date}
+                    onChange={(e) => setSessionForm({ ...sessionForm, session_date: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-zinc-200 focus:border-lime-500 outline-none rounded-lg text-sm" 
                     required
                   />
                 </div>
@@ -4188,9 +4624,8 @@ function RehabTab({ patient }: { patient: Patient }) {
                   <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Status</label>
                   <select 
                     value={sessionForm.status}
-                    onChange={(e) => setSessionForm({ ...sessionForm, status: e.target.value as RehabSession['status'] })}
-                    className="w-full px-4 py-2.5 border border-zinc-200 focus:border-lime-500 outline-none rounded-md text-sm"
-                    required
+                    onChange={(e) => setSessionForm({ ...sessionForm, status: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-zinc-200 focus:border-lime-500 outline-none rounded-lg text-sm"
                   >
                     <option value="scheduled">Agendada</option>
                     <option value="in_progress">Em Andamento</option>
@@ -4199,80 +4634,114 @@ function RehabTab({ patient }: { patient: Patient }) {
                   </select>
                 </div>
               </div>
+              
+              {treatmentPlans.length > 0 && (
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Protocolo (opcional)</label>
+                  <select 
+                    value={sessionForm.treatment_plan_id}
+                    onChange={(e) => setSessionForm({ ...sessionForm, treatment_plan_id: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-zinc-200 focus:border-lime-500 outline-none rounded-lg text-sm"
+                  >
+                    <option value="">Sem protocolo vinculado</option>
+                    {treatmentPlans.filter(p => p.status === 'active').map(p => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Duração (min)</label>
+                  <input 
+                    type="number" 
+                    value={sessionForm.duration_minutes}
+                    onChange={(e) => setSessionForm({ ...sessionForm, duration_minutes: parseInt(e.target.value) })}
+                    className="w-full px-4 py-2.5 border border-zinc-200 focus:border-lime-500 outline-none rounded-lg text-sm" 
+                    min="15"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Dor Antes</label>
+                  <input 
+                    type="number" 
+                    value={sessionForm.pain_before}
+                    onChange={(e) => setSessionForm({ ...sessionForm, pain_before: parseInt(e.target.value) })}
+                    className="w-full px-4 py-2.5 border border-zinc-200 focus:border-lime-500 outline-none rounded-lg text-sm" 
+                    min="0"
+                    max="10"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Dor Depois</label>
+                  <input 
+                    type="number" 
+                    value={sessionForm.pain_after}
+                    onChange={(e) => setSessionForm({ ...sessionForm, pain_after: parseInt(e.target.value) })}
+                    className="w-full px-4 py-2.5 border border-zinc-200 focus:border-lime-500 outline-none rounded-lg text-sm" 
+                    min="0"
+                    max="10"
+                  />
+                </div>
+              </div>
+              
               <div>
-                <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Lesão / Condição</label>
+                <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Condição/Lesão</label>
                 <input 
                   type="text" 
-                  value={sessionForm.injury}
-                  onChange={(e) => setSessionForm({ ...sessionForm, injury: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-zinc-200 focus:border-lime-500 outline-none rounded-md text-sm" 
+                  value={sessionForm.injury_description}
+                  onChange={(e) => setSessionForm({ ...sessionForm, injury_description: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-zinc-200 focus:border-lime-500 outline-none rounded-lg text-sm" 
                   placeholder="Ex: Tendinite patelar, Lesão no ombro..."
-                  required
                 />
               </div>
+              
               <div>
-                <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Fisioterapeuta</label>
-                <input 
-                  type="text" 
-                  value={sessionForm.physio}
-                  onChange={(e) => setSessionForm({ ...sessionForm, physio: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-zinc-200 focus:border-lime-500 outline-none rounded-md text-sm" 
-                  placeholder="Dr. Nome Completo"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Tratamento</label>
+                <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Técnicas Aplicadas</label>
                 <textarea 
-                  value={sessionForm.treatment}
-                  onChange={(e) => setSessionForm({ ...sessionForm, treatment: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-zinc-200 focus:border-lime-500 outline-none h-20 resize-none rounded-md text-sm" 
-                  placeholder="Descrição do tratamento aplicado..."
-                  required
+                  value={sessionForm.techniques_applied}
+                  onChange={(e) => setSessionForm({ ...sessionForm, techniques_applied: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-zinc-200 focus:border-lime-500 outline-none h-16 resize-none rounded-lg text-sm" 
+                  placeholder="Ex: Mobilização articular, alongamentos, fortalecimento..."
                 />
               </div>
+              
               <div>
                 <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Exercícios</label>
                 <textarea 
                   value={sessionForm.exercises}
                   onChange={(e) => setSessionForm({ ...sessionForm, exercises: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-zinc-200 focus:border-lime-500 outline-none h-20 resize-none rounded-md text-sm" 
+                  className="w-full px-4 py-2.5 border border-zinc-200 focus:border-lime-500 outline-none h-16 resize-none rounded-lg text-sm" 
                   placeholder="Lista de exercícios prescritos..."
                 />
               </div>
+              
               <div>
                 <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Notas de Progresso</label>
                 <textarea 
-                  value={sessionForm.progressNotes}
-                  onChange={(e) => setSessionForm({ ...sessionForm, progressNotes: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-zinc-200 focus:border-lime-500 outline-none h-16 resize-none rounded-md text-sm" 
+                  value={sessionForm.progress_notes}
+                  onChange={(e) => setSessionForm({ ...sessionForm, progress_notes: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-zinc-200 focus:border-lime-500 outline-none h-16 resize-none rounded-lg text-sm" 
                   placeholder="Observações sobre a evolução do paciente..."
                 />
               </div>
-              <div>
-                <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Próxima Sessão (opcional)</label>
-                <input 
-                  type="date" 
-                  value={sessionForm.nextSession}
-                  onChange={(e) => setSessionForm({ ...sessionForm, nextSession: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-zinc-200 focus:border-lime-500 outline-none rounded-md text-sm" 
-                />
-              </div>
+              
               <div className="flex gap-3 pt-4">
                 <button 
                   type="button"
-                  onClick={() => {
-                    setShowSessionModal(false);
-                    setEditingSession(null);
-                  }}
-                  className="flex-1 py-2.5 border border-black font-bold hover:bg-black hover:text-white transition-colors text-sm rounded-md"
+                  onClick={() => { setShowSessionModal(false); setEditingSession(null); }}
+                  className="flex-1 py-2.5 border border-zinc-300 font-bold hover:bg-zinc-50 transition-colors text-sm rounded-lg"
+                  disabled={saving}
                 >
                   CANCELAR
                 </button>
                 <button 
                   type="submit"
-                  className="flex-1 py-2.5 bg-lime-500 text-black font-bold hover:bg-lime-400 transition-colors text-sm rounded-md"
+                  className="flex-1 py-2.5 bg-lime-500 text-black font-bold hover:bg-lime-400 transition-colors text-sm rounded-lg flex items-center justify-center gap-2"
+                  disabled={saving}
                 >
+                  {saving && <Loader2 className="w-4 h-4 animate-spin" />}
                   {editingSession ? 'SALVAR' : 'ADICIONAR'}
                 </button>
               </div>
@@ -4281,7 +4750,123 @@ function RehabTab({ patient }: { patient: Patient }) {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
+      {/* Modal Novo Protocolo */}
+      {showProtocolModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-lg max-h-[90vh] overflow-y-auto p-0">
+            <div className="p-6 border-b border-zinc-200 flex items-center justify-between">
+              <h3 className="text-xl font-bold">Novo Protocolo de Tratamento</h3>
+              <button onClick={() => setShowProtocolModal(false)} className="text-zinc-400 hover:text-black p-1">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveProtocol} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Nome do Protocolo *</label>
+                <input 
+                  type="text" 
+                  value={protocolForm.name}
+                  onChange={(e) => setProtocolForm({ ...protocolForm, name: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-zinc-200 focus:border-lime-500 outline-none rounded-lg text-sm" 
+                  placeholder="Ex: Reabilitação de Joelho - Fase 1"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Condição Tratada</label>
+                <input 
+                  type="text" 
+                  value={protocolForm.condition_treated}
+                  onChange={(e) => setProtocolForm({ ...protocolForm, condition_treated: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-zinc-200 focus:border-lime-500 outline-none rounded-lg text-sm" 
+                  placeholder="Ex: Condromalácia Patelar Grau II"
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Data Início</label>
+                  <input 
+                    type="date" 
+                    value={protocolForm.start_date}
+                    onChange={(e) => setProtocolForm({ ...protocolForm, start_date: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-zinc-200 focus:border-lime-500 outline-none rounded-lg text-sm" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Previsão Término</label>
+                  <input 
+                    type="date" 
+                    value={protocolForm.estimated_end_date}
+                    onChange={(e) => setProtocolForm({ ...protocolForm, estimated_end_date: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-zinc-200 focus:border-lime-500 outline-none rounded-lg text-sm" 
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Frequência</label>
+                  <select
+                    value={protocolForm.frequency}
+                    onChange={(e) => setProtocolForm({ ...protocolForm, frequency: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-zinc-200 focus:border-lime-500 outline-none rounded-lg text-sm"
+                  >
+                    <option value="1x semana">1x semana</option>
+                    <option value="2x semana">2x semana</option>
+                    <option value="3x semana">3x semana</option>
+                    <option value="4x semana">4x semana</option>
+                    <option value="5x semana">5x semana</option>
+                    <option value="Diário">Diário</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Total Sessões</label>
+                  <input 
+                    type="number" 
+                    value={protocolForm.total_sessions}
+                    onChange={(e) => setProtocolForm({ ...protocolForm, total_sessions: parseInt(e.target.value) })}
+                    className="w-full px-4 py-2.5 border border-zinc-200 focus:border-lime-500 outline-none rounded-lg text-sm" 
+                    min="1"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-xs font-bold mb-2 text-zinc-500 uppercase">Precauções</label>
+                <textarea 
+                  value={protocolForm.precautions}
+                  onChange={(e) => setProtocolForm({ ...protocolForm, precautions: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-zinc-200 focus:border-lime-500 outline-none h-20 resize-none rounded-lg text-sm" 
+                  placeholder="Contraindicações, cuidados especiais..."
+                />
+              </div>
+              
+              <div className="flex gap-3 pt-4">
+                <button 
+                  type="button"
+                  onClick={() => setShowProtocolModal(false)}
+                  className="flex-1 py-2.5 border border-zinc-300 font-bold hover:bg-zinc-50 transition-colors text-sm rounded-lg"
+                  disabled={saving}
+                >
+                  CANCELAR
+                </button>
+                <button 
+                  type="submit"
+                  className="flex-1 py-2.5 bg-lime-500 text-black font-bold hover:bg-lime-400 transition-colors text-sm rounded-lg flex items-center justify-center gap-2"
+                  disabled={saving}
+                >
+                  {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+                  CRIAR PROTOCOLO
+                </button>
+              </div>
+            </form>
+          </Card>
+        </div>
+      )}
+
+      {/* Modal de Confirmação de Exclusão */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <Card className="w-full max-w-sm p-6">
@@ -4289,24 +4874,23 @@ function RehabTab({ patient }: { patient: Patient }) {
               <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Trash2 className="w-6 h-6 text-red-500" />
               </div>
-              <h3 className="text-xl font-bold mb-2">Excluir Sessão</h3>
+              <h3 className="text-xl font-bold mb-2">
+                Excluir {showDeleteConfirm.type === 'session' ? 'Sessão' : 'Protocolo'}
+              </h3>
               <p className="text-zinc-600 text-sm">
-                Tem certeza que deseja excluir esta sessão de reabilitação? Esta ação não pode ser desfeita.
+                Tem certeza que deseja excluir? Esta ação não pode ser desfeita.
               </p>
             </div>
             <div className="flex gap-3">
               <button 
-                onClick={() => {
-                  setShowDeleteConfirm(false);
-                  setDeletingSessionId(null);
-                }}
-                className="flex-1 py-2.5 border border-zinc-300 font-bold hover:border-black transition-colors text-sm rounded-md"
+                onClick={() => setShowDeleteConfirm(null)}
+                className="flex-1 py-2.5 border border-zinc-300 font-bold hover:bg-zinc-50 transition-colors text-sm rounded-lg"
               >
                 CANCELAR
               </button>
               <button 
-                onClick={handleDeleteSession}
-                className="flex-1 py-2.5 bg-red-500 text-white font-bold hover:bg-red-600 transition-colors text-sm rounded-md"
+                onClick={handleDelete}
+                className="flex-1 py-2.5 bg-red-500 text-white font-bold hover:bg-red-600 transition-colors text-sm rounded-lg"
               >
                 EXCLUIR
               </button>
