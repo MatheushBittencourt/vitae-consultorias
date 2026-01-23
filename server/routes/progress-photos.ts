@@ -38,12 +38,17 @@ const sanitizeError = (error: unknown, isProduction: boolean): string => {
 // ===========================================
 // Configurações de upload
 // ===========================================
-const UPLOAD_DIR = process.env.UPLOAD_DIR || 'uploads/progress-photos';
+// Usar caminho absoluto baseado no diretório do projeto
+const PROJECT_ROOT = process.cwd();
+const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(PROJECT_ROOT, 'uploads', 'progress-photos');
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB limite original
 const COMPRESSION_QUALITY = 80; // Qualidade JPEG após compressão (0-100)
 const MAX_WIDTH = 1920; // Largura máxima após redimensionamento
 const MAX_HEIGHT = 1920; // Altura máxima após redimensionamento
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
+
+// Log do diretório de upload ao iniciar
+console.log(`📁 Progress photos upload directory: ${UPLOAD_DIR}`);
 
 // Categorias válidas
 const VALID_CATEGORIES = ['frente', 'costas', 'lateral_esquerda', 'lateral_direita', 'outro'];
@@ -53,11 +58,11 @@ export function createProgressPhotosRoutes(pool: Pool): Router {
 
   // Garantir que o diretório de upload existe
   const ensureUploadDir = () => {
-    const fullPath = path.resolve(UPLOAD_DIR);
-    if (!fs.existsSync(fullPath)) {
-      fs.mkdirSync(fullPath, { recursive: true });
+    if (!fs.existsSync(UPLOAD_DIR)) {
+      console.log(`📁 Creating upload directory: ${UPLOAD_DIR}`);
+      fs.mkdirSync(UPLOAD_DIR, { recursive: true });
     }
-    return fullPath;
+    return UPLOAD_DIR;
   };
 
   /**
@@ -214,10 +219,20 @@ export function createProgressPhotosRoutes(pool: Pool): Router {
       }
       
       // Salvar arquivo
+      console.log(`📸 Saving photo to: ${filePath}`);
       fs.writeFileSync(filePath, compressedBuffer);
       
+      // Verificar se o arquivo foi salvo
+      if (!fs.existsSync(filePath)) {
+        console.error(`❌ Failed to save file: ${filePath}`);
+        return res.status(500).json({ error: 'Erro ao salvar arquivo' });
+      }
+      
+      const savedFileStats = fs.statSync(filePath);
+      console.log(`✅ Photo saved successfully: ${savedFileStats.size} bytes`);
+      
       const finalSize = compressedBuffer.length;
-      const compressionRatio = Math.round((1 - finalSize / originalSize) * 100);
+      const compressionRatio = originalSize > 0 ? Math.round((1 - finalSize / originalSize) * 100) : 0;
       
       // Salvar no banco
       const [result] = await pool.query<ResultSetHeader>(

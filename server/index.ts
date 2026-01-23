@@ -4074,7 +4074,8 @@ app.use('/api/progress-photos', authenticateToken, progressPhotosRouter)
 // ===============================
 // SERVIR ARQUIVOS DE UPLOAD
 // ===============================
-const uploadsPath = path.resolve(process.env.UPLOAD_DIR || 'uploads')
+const uploadsPath = path.join(process.cwd(), 'uploads')
+console.log(`📁 Serving uploads from: ${uploadsPath}`)
 app.use('/uploads', express.static(uploadsPath))
 
 // Start server
