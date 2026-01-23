@@ -158,6 +158,7 @@ export function PatientsList({ onSelectPatient, consultancyId }: PatientsListPro
     try {
       const response = await fetch(`${API_URL}/superadmin/consultancies/${consultancyId}/users/${patient.id}`, {
         method: 'DELETE',
+        headers: getAuthHeaders()
       });
       
       if (!response.ok) {

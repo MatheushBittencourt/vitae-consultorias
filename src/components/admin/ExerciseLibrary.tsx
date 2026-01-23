@@ -143,7 +143,8 @@ export function ExerciseLibrary({ consultancyId }: ExerciseLibraryProps) {
     setDeleting(true);
     try {
       await fetch(`${API_URL}/exercise-library/${showDeleteModal.id}?consultancy_id=${consultancyId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: getAuthHeaders()
       });
       setShowDeleteModal(null);
       loadExercises();

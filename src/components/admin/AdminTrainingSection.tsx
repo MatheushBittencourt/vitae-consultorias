@@ -630,7 +630,8 @@ export function AdminTrainingSection({ consultancyId, adminUser }: AdminTraining
     
     try {
       await fetch(`${API_URL}/exercise-library/${showDeleteConfirm.id}?consultancy_id=${consultancyId}`, { 
-        method: 'DELETE' 
+        method: 'DELETE',
+        headers: getAuthHeaders()
       });
       setShowDeleteConfirm(null);
       await loadInitialData();

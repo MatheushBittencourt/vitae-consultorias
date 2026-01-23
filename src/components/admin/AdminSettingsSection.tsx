@@ -183,8 +183,8 @@ export function AdminSettingsSection({ adminUser }: AdminSettingsSectionProps) {
     setLoading(true);
     try {
       const [consultancyRes, professionalsRes] = await Promise.all([
-        fetch(`${API_URL}/consultancy/${consultancyId}`).then(r => r.json()),
-        fetch(`${API_URL}/consultancy/${consultancyId}/professionals`).then(r => r.json()),
+        fetch(`${API_URL}/consultancy/${consultancyId}`, { headers: getAuthHeaders() }).then(r => r.json()),
+        fetch(`${API_URL}/consultancy/${consultancyId}/professionals`, { headers: getAuthHeaders() }).then(r => r.json()),
       ]);
       
       setConsultancy(consultancyRes);
@@ -316,7 +316,7 @@ export function AdminSettingsSection({ adminUser }: AdminSettingsSectionProps) {
     try {
       const response = await fetch(
         `${API_URL}/consultancy/${consultancyId}/professionals/${deleteConfirm.id}`,
-        { method: 'DELETE' }
+        { method: 'DELETE', headers: getAuthHeaders() }
       );
       
       const data = await response.json();
