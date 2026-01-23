@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Menu, Dumbbell, Apple, ArrowLeft } from 'lucide-react';
+import { Menu, Dumbbell, Apple, ArrowLeft, ChefHat } from 'lucide-react';
 import { AdminSidebar } from './AdminSidebar';
 import { AdminOverview } from './AdminOverview';
 import { PatientsList } from './PatientsList';
@@ -12,10 +12,10 @@ import { FoodLibrary } from './FoodLibrary';
 import { ExerciseLibrary } from './ExerciseLibrary';
 import { Card } from '../ui/Card';
 
-type LibrarySubView = 'main' | 'exercises' | 'foods';
+type LibrarySubView = 'main' | 'exercises' | 'foods' | 'recipes';
 
 // Componente para Biblioteca
-function LibrarySection({ consultancyId }: { consultancyId: number }) {
+function LibrarySection({ consultancyId, adminUserId }: { consultancyId: number; adminUserId: number }) {
   const [subView, setSubView] = useState<LibrarySubView>('main');
 
   if (subView === 'foods') {
@@ -48,6 +48,21 @@ function LibrarySection({ consultancyId }: { consultancyId: number }) {
     );
   }
 
+  if (subView === 'recipes') {
+    return (
+      <div className="space-y-6">
+        <button
+          onClick={() => setSubView('main')}
+          className="flex items-center gap-2 text-zinc-600 hover:text-black transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Voltar para Biblioteca
+        </button>
+        <RecipeManager consultancyId={consultancyId} userId={adminUserId} />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between">
@@ -55,11 +70,11 @@ function LibrarySection({ consultancyId }: { consultancyId: number }) {
           <h1 className="text-4xl lg:text-5xl font-bold tracking-tighter mb-2">
             <span className="text-purple-500">BIBLIOTECA</span>
           </h1>
-          <p className="text-lg lg:text-xl text-zinc-600">Banco de exercícios, alimentos e templates</p>
+          <p className="text-lg lg:text-xl text-zinc-600">Banco de exercícios, alimentos e receitas</p>
         </div>
       </div>
       
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         <Card 
           className="p-6 hover:shadow-lg transition-shadow cursor-pointer group hover:border-lime-500"
           onClick={() => setSubView('exercises')}
@@ -70,11 +85,11 @@ function LibrarySection({ consultancyId }: { consultancyId: number }) {
             </div>
             <div>
               <h3 className="text-xl font-bold text-zinc-900">Exercícios</h3>
-              <p className="text-zinc-500">Banco de exercícios global</p>
+              <p className="text-zinc-500">Banco de exercícios</p>
             </div>
           </div>
           <p className="mt-4 text-sm text-zinc-600">
-            Acesse e gerencie o banco de exercícios com vídeos, descrições e categorias.
+            Gerencie exercícios com vídeos e descrições.
           </p>
         </Card>
         
@@ -88,11 +103,29 @@ function LibrarySection({ consultancyId }: { consultancyId: number }) {
             </div>
             <div>
               <h3 className="text-xl font-bold text-zinc-900">Alimentos</h3>
-              <p className="text-zinc-500">Tabela TACO e personalizados</p>
+              <p className="text-zinc-500">Tabela TACO</p>
             </div>
           </div>
           <p className="mt-4 text-sm text-zinc-600">
-            Consulte informações nutricionais e adicione alimentos personalizados.
+            Consulte informações nutricionais.
+          </p>
+        </Card>
+        
+        <Card 
+          className="p-6 hover:shadow-lg transition-shadow cursor-pointer group hover:border-amber-500"
+          onClick={() => setSubView('recipes')}
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 bg-amber-500/10 rounded-2xl flex items-center justify-center group-hover:bg-amber-500/20 transition-colors">
+              <ChefHat className="w-7 h-7 text-amber-600" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-zinc-900">Receitas</h3>
+              <p className="text-zinc-500">Receitas saudáveis</p>
+            </div>
+          </div>
+          <p className="mt-4 text-sm text-zinc-600">
+            Crie e gerencie receitas com cálculo nutricional.
           </p>
         </Card>
       </div>
@@ -111,7 +144,6 @@ export type AdminView =
   | 'patient-detail'
   | 'appointments' 
   | 'settings'
-  | 'recipes'
   | 'library';
 
 export interface Patient {
@@ -168,10 +200,8 @@ export function AdminDashboard({ onLogout, adminUser }: AdminDashboardProps) {
         );
       case 'appointments':
         return <AdminAppointmentsSection consultancyId={consultancyId} />;
-      case 'recipes':
-        return <RecipeManager consultancyId={consultancyId} userId={adminUser.id} />;
       case 'library':
-        return <LibrarySection consultancyId={consultancyId} />;
+        return <LibrarySection consultancyId={consultancyId} adminUserId={adminUser.id} />;
       case 'settings':
         return <AdminSettingsSection adminUser={adminUser} />;
       default:
@@ -187,7 +217,6 @@ export function AdminDashboard({ onLogout, adminUser }: AdminDashboardProps) {
       'patient-detail': selectedPatient?.name || 'Paciente',
       appointments: 'Agendamentos',
       settings: 'Configurações',
-      recipes: 'Receitas',
       library: 'Biblioteca'
     };
     return titles[currentView] || 'Dashboard';

@@ -12,7 +12,6 @@ import {
   ChevronRight,
   X,
   Sparkles,
-  ChefHat,
   BookOpen
 } from 'lucide-react';
 import { AdminView } from './AdminDashboard';
@@ -39,7 +38,6 @@ const menuItems = [
 
 // Ferramentas (recursos globais)
 const toolItems = [
-  { id: 'recipes' as AdminView, label: 'Receitas', icon: ChefHat, module: 'nutrition' },
   { id: 'library' as AdminView, label: 'Biblioteca', icon: BookOpen, module: null },
 ];
 
