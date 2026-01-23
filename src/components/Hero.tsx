@@ -202,7 +202,7 @@ export function Hero({ onSignupClick, onWatchDemo }: HeroProps) {
             <div className="space-y-2 sm:space-y-4 pt-6 sm:pt-12">
               <div className="h-[35%] sm:h-[40%] overflow-hidden rounded-lg shadow-lg">
                 <ImageWithFallback
-                  src="https://images.unsplash.com/photo-1581093458791-9f3c3250a8b0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmaXRuZXNzJTIwYXBwfGVufDF8fHx8MTc2ODA3ODM1OHww&ixlib=rb-4.1.0&q=80&w=1080"
+                  src="https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=1080&q=80&fit=crop"
                   alt="Aplicativo de fitness mostrando treino personalizado"
                   className="w-full h-full hover:scale-105 transition-transform duration-500"
                 />
