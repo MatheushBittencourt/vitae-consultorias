@@ -3556,11 +3556,11 @@ app.get('/api/meal-foods', authenticateToken, async (req, res) => {
 
 app.post('/api/meal-foods', authenticateToken, async (req, res) => {
   try {
-    const { meal_id, food_id, name, quantity, unit, calories, protein, carbs, fat, notes, order_index, option_group } = req.body
+    const { meal_id, food_id, recipe_id, name, quantity, unit, calories, protein, carbs, fat, notes, order_index, option_group } = req.body
     const [result] = await pool.query(
-      `INSERT INTO meal_foods (meal_id, food_id, name, quantity, unit, calories, protein, carbs, fat, notes, order_index, option_group)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [meal_id, food_id || null, name, quantity || 1, unit || 'porção', calories || 0, protein || 0, carbs || 0, fat || 0, notes, order_index || 0, option_group || 0]
+      `INSERT INTO meal_foods (meal_id, food_id, recipe_id, name, quantity, unit, calories, protein, carbs, fat, notes, order_index, option_group)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [meal_id, food_id || null, recipe_id || null, name, quantity || 1, unit || 'porção', calories || 0, protein || 0, carbs || 0, fat || 0, notes, order_index || 0, option_group || 0]
     )
     res.status(201).json({ id: (result as { insertId: number }).insertId, message: 'Alimento adicionado à refeição' })
   } catch (error) {
@@ -3670,9 +3670,40 @@ app.get('/api/nutrition-plans/:id/complete', authenticateToken, async (req, res)
         [meal.id]
       )
       
+      // Para cada alimento, verificar se é uma receita e buscar ingredientes
+      const foodsWithIngredients = await Promise.all(foodRows.map(async (food: RowDataPacket) => {
+        // Se tiver recipe_id, buscar informações da receita e ingredientes
+        if (food.recipe_id) {
+          // Buscar dados da receita
+          const [recipeRows] = await pool.query<RowDataPacket[]>(
+            'SELECT id, name, servings, serving_size, instructions FROM recipes WHERE id = ?',
+            [food.recipe_id]
+          )
+          
+          // Buscar ingredientes da receita
+          const [ingredientRows] = await pool.query<RowDataPacket[]>(
+            `SELECT ri.*, fl.name as food_library_name 
+             FROM recipe_ingredients ri
+             LEFT JOIN food_library fl ON ri.food_id = fl.id
+             WHERE ri.recipe_id = ?
+             ORDER BY ri.order_index`,
+            [food.recipe_id]
+          )
+          
+          return {
+            ...food,
+            is_recipe: true,
+            recipe: recipeRows[0] || null,
+            recipe_ingredients: ingredientRows
+          }
+        }
+        
+        return { ...food, is_recipe: false }
+      }))
+      
       // Agrupar alimentos por option_group
       const optionGroups: Record<number, RowDataPacket[]> = {}
-      foodRows.forEach((food: RowDataPacket) => {
+      foodsWithIngredients.forEach((food: RowDataPacket) => {
         const group = food.option_group || 0
         if (!optionGroups[group]) optionGroups[group] = []
         optionGroups[group].push(food)
@@ -3685,7 +3716,7 @@ app.get('/api/nutrition-plans/:id/complete', authenticateToken, async (req, res)
         foods: foods
       })).sort((a, b) => a.optionNumber - b.optionNumber)
       
-      return { ...meal, options, foods: foodRows }
+      return { ...meal, options, foods: foodsWithIngredients }
     }))
     
     res.json({ ...plan, meals: mealsWithFoods })

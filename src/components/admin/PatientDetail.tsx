@@ -2033,6 +2033,22 @@ interface NutritionMeal {
   foods?: NutritionFood[];
 }
 
+interface RecipeIngredient {
+  id: number;
+  recipe_id: number;
+  food_id?: number;
+  name: string;
+  quantity: number;
+  unit: string;
+  calories?: number;
+  protein?: number;
+  carbs?: number;
+  fat?: number;
+  preparation_notes?: string;
+  is_optional?: boolean;
+  order_index: number;
+}
+
 interface NutritionFood {
   id: number;
   name: string;
@@ -2043,6 +2059,17 @@ interface NutritionFood {
   carbs: number;
   fat: number;
   option_group: number;
+  // Recipe support
+  recipe_id?: number;
+  is_recipe?: boolean;
+  recipe?: {
+    id: number;
+    name: string;
+    servings: number;
+    serving_size?: string;
+    instructions?: string;
+  };
+  recipe_ingredients?: RecipeIngredient[];
 }
 
 type NutritionSubView = 'plan' | 'anamnesis' | 'anthropometric' | 'energy' | 'evolution';
@@ -2478,6 +2505,7 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
         body: JSON.stringify({
           meal_id: editingMealId,
           food_id: foodForm.food_id,
+          recipe_id: foodForm.recipe_id,
           name: foodForm.name,
           quantity: foodForm.quantity,
           unit: foodForm.unit,
@@ -2817,20 +2845,48 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
                       {hasMainFoods ? (
                         <div className="space-y-2">
                           {optionGroups[0].map((food) => (
-                            <div key={food.id} className="flex items-center justify-between py-1.5 px-3 bg-lime-50 rounded-lg group">
-                              <div className="flex-1">
-                                <span className="font-medium text-zinc-800">{food.name}</span>
-                                <span className="text-zinc-500 ml-2">({food.quantity} {food.unit})</span>
-                                <span className="text-xs text-zinc-400 ml-2">
-                                  {food.calories}kcal | P:{food.protein}g | C:{food.carbs}g | G:{food.fat}g
-                                </span>
+                            <div key={food.id} className={`py-2 px-3 rounded-lg group ${food.is_recipe ? 'bg-amber-50 border border-amber-200' : 'bg-lime-50'}`}>
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                  {food.is_recipe && (
+                                    <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-600 bg-amber-100 px-2 py-0.5 rounded mb-1">
+                                      🍽️ RECEITA
+                                    </span>
+                                  )}
+                                  <div className="flex items-center flex-wrap gap-x-2">
+                                    <span className="font-medium text-zinc-800">{food.name}</span>
+                                    <span className="text-zinc-500 text-sm">({food.quantity} {food.unit})</span>
+                                    <span className="text-xs text-zinc-400">
+                                      {food.calories}kcal | P:{food.protein}g | C:{food.carbs}g | G:{food.fat}g
+                                    </span>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => confirmDeleteFood(food.id)}
+                                  className="p-1 text-zinc-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
                               </div>
-                              <button
-                                onClick={() => confirmDeleteFood(food.id)}
-                                className="p-1 text-zinc-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                              >
-                                <X className="w-4 h-4" />
-                              </button>
+                              
+                              {/* Ingredientes da receita */}
+                              {food.is_recipe && food.recipe_ingredients && food.recipe_ingredients.length > 0 && (
+                                <div className="mt-2 pt-2 border-t border-amber-200">
+                                  <div className="text-xs font-semibold text-amber-700 mb-1.5">📋 Ingredientes:</div>
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
+                                    {food.recipe_ingredients.map((ing, idx) => (
+                                      <div key={idx} className="flex items-center gap-2 text-xs text-zinc-600 bg-white/60 px-2 py-1 rounded">
+                                        <span className="w-1.5 h-1.5 bg-amber-400 rounded-full flex-shrink-0" />
+                                        <span>
+                                          <span className="font-medium">{ing.quantity} {ing.unit}</span>
+                                          <span className="text-zinc-500"> de </span>
+                                          <span>{ing.name}</span>
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>
@@ -2855,18 +2911,44 @@ function NutritionTab({ patient, consultancyId, adminUser }: { patient: Patient;
                           <div className="text-xs font-bold mb-2 text-orange-500 flex items-center justify-between">
                             <span>🔄 SUBSTITUIÇÃO {optNum}</span>
                           </div>
-                          <div className="space-y-1">
+                          <div className="space-y-2">
                             {foods.map((food) => (
-                              <div key={food.id} className="flex items-center justify-between py-1 px-2 bg-orange-50 rounded group">
-                                <span className="text-sm text-zinc-700">
-                                  {food.name} ({food.quantity} {food.unit})
-                                </span>
-                                <button
-                                  onClick={() => confirmDeleteFood(food.id)}
-                                  className="p-1 text-zinc-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                                >
-                                  <X className="w-3 h-3" />
-                                </button>
+                              <div key={food.id} className={`py-2 px-2 rounded group ${food.is_recipe ? 'bg-amber-50 border border-amber-200' : 'bg-orange-50'}`}>
+                                <div className="flex items-center justify-between">
+                                  <div className="flex-1">
+                                    {food.is_recipe && (
+                                      <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-600 bg-amber-100 px-2 py-0.5 rounded mb-1">
+                                        🍽️ RECEITA
+                                      </span>
+                                    )}
+                                    <div className="text-sm text-zinc-700">
+                                      {food.name} ({food.quantity} {food.unit})
+                                    </div>
+                                  </div>
+                                  <button
+                                    onClick={() => confirmDeleteFood(food.id)}
+                                    className="p-1 text-zinc-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </div>
+                                
+                                {/* Ingredientes da receita em substituição */}
+                                {food.is_recipe && food.recipe_ingredients && food.recipe_ingredients.length > 0 && (
+                                  <div className="mt-2 pt-2 border-t border-amber-200">
+                                    <div className="text-xs font-semibold text-amber-700 mb-1">📋 Ingredientes:</div>
+                                    <div className="space-y-0.5">
+                                      {food.recipe_ingredients.map((ing, idx) => (
+                                        <div key={idx} className="flex items-center gap-1.5 text-xs text-zinc-600">
+                                          <span className="w-1 h-1 bg-amber-400 rounded-full flex-shrink-0" />
+                                          <span>
+                                            <span className="font-medium">{ing.quantity} {ing.unit}</span> {ing.name}
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             ))}
                           </div>
