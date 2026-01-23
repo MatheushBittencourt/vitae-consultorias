@@ -39,7 +39,7 @@ export function Hero({ onSignupClick, onWatchDemo }: HeroProps) {
       <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
           {/* Left - Text */}
-          <div className="order-2 lg:order-1">
+          <div className="order-2 lg:order-1 relative z-20">
             {/* Badge */}
             <div 
               className={`
@@ -74,7 +74,7 @@ export function Hero({ onSignupClick, onWatchDemo }: HeroProps) {
               `}
             >
               <p className="text-lg sm:text-2xl md:text-3xl leading-tight font-medium">
-                Treino. Nutrição. Médico. Reabilitação.
+                Treino. Nutrição. Médico. Fisioterapia.
               </p>
               <p className="text-base sm:text-lg md:text-xl text-zinc-600 leading-relaxed">
                 Uma única plataforma para gerenciar seus pacientes, protocolos e resultados.
@@ -199,7 +199,7 @@ export function Hero({ onSignupClick, onWatchDemo }: HeroProps) {
                 />
               </div>
             </div>
-            <div className="space-y-2 sm:space-y-4 pt-6 sm:pt-12">
+            <div className="space-y-2 sm:space-y-4 pt-4 sm:pt-6">
               <div className="h-[35%] sm:h-[40%] overflow-hidden rounded-lg shadow-lg">
                 <ImageWithFallback
                   src="https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=1080&q=80&fit=crop"
