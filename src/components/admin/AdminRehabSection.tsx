@@ -57,12 +57,25 @@ export function AdminRehabSection({ onSelectPatient, consultancyId }: AdminRehab
         fetch(`${API_URL}/rehab-sessions?consultancy_id=${consultancyId}`, { headers: getAuthHeaders() }),
         fetch(`${API_URL}/athletes?consultancy_id=${consultancyId}`, { headers: getAuthHeaders() })
       ]);
+      
+      // Verificar se as respostas foram bem-sucedidas
+      if (!sessionsRes.ok || !athletesRes.ok) {
+        console.error('API error:', sessionsRes.status, athletesRes.status);
+        setSessions([]);
+        setAthletes([]);
+        return;
+      }
+      
       const sessionsData = await sessionsRes.json();
       const athletesData = await athletesRes.json();
-      setSessions(sessionsData);
-      setAthletes(athletesData);
+      
+      // Garantir que são arrays
+      setSessions(Array.isArray(sessionsData) ? sessionsData : []);
+      setAthletes(Array.isArray(athletesData) ? athletesData : []);
     } catch (error) {
       console.error('Error loading data:', error);
+      setSessions([]);
+      setAthletes([]);
     } finally {
       setLoading(false);
     }

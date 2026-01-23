@@ -79,10 +79,24 @@ export function PatientsList({ onSelectPatient, consultancyId }: PatientsListPro
         return;
       }
       const response = await fetch(`${API_URL}/athletes?consultancy_id=${consultancyId}`, { headers: getAuthHeaders() });
-      const data: AthleteData[] = await response.json();
+      
+      // Verificar se a resposta foi bem-sucedida
+      if (!response.ok) {
+        console.error('API error:', response.status);
+        setPatients([]);
+        return;
+      }
+      
+      const data = await response.json();
+      
+      // Garantir que é array
+      if (!Array.isArray(data)) {
+        setPatients([]);
+        return;
+      }
       
       // Transform API data to Patient interface
-      const transformedPatients: Patient[] = data.map((athlete) => ({
+      const transformedPatients: Patient[] = data.map((athlete: AthleteData) => ({
         id: athlete.user_id,
         name: athlete.name,
         email: athlete.email,
@@ -103,6 +117,7 @@ export function PatientsList({ onSelectPatient, consultancyId }: PatientsListPro
       setPatients(transformedPatients);
     } catch (error) {
       console.error('Error loading patients:', error);
+      setPatients([]);
     } finally {
       setLoading(false);
     }

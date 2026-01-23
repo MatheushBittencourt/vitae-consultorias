@@ -107,26 +107,41 @@ export function AdminOverview({ onNavigate, onSelectPatient, consultancyId }: Ad
         fetch(`${API_URL}/appointments?consultancy_id=${consultancyId}`, { headers: getAuthHeaders() })
       ]);
       
+      // Verificar se as respostas foram bem-sucedidas
+      if (!athletesRes.ok || !appointmentsRes.ok) {
+        console.error('API error:', athletesRes.status, appointmentsRes.status);
+        setAthletes([]);
+        setAppointments([]);
+        setStats({ activePatients: 0, todayAppointments: 0, pendingItems: 0, weeklyGrowth: 0 });
+        return;
+      }
+      
       const athletesData = await athletesRes.json();
       const appointmentsData = await appointmentsRes.json();
       
-      setAthletes(athletesData);
-      setAppointments(appointmentsData);
+      // Garantir que são arrays
+      const safeAthletes = Array.isArray(athletesData) ? athletesData : [];
+      const safeAppointments = Array.isArray(appointmentsData) ? appointmentsData : [];
+      
+      setAthletes(safeAthletes);
+      setAppointments(safeAppointments);
       
       // Calculate stats
       const today = new Date().toISOString().split('T')[0];
-      const todayApts = appointmentsData.filter((a: Appointment) => 
+      const todayApts = safeAppointments.filter((a: Appointment) => 
         a.start_time && a.start_time.split('T')[0] === today
       );
       
       setStats({
-        activePatients: athletesData.length,
+        activePatients: safeAthletes.length,
         todayAppointments: todayApts.length,
-        pendingItems: appointmentsData.filter((a: Appointment) => a.status === 'pending').length,
+        pendingItems: safeAppointments.filter((a: Appointment) => a.status === 'pending').length,
         weeklyGrowth: Math.floor(Math.random() * 15) + 5 // TODO: calcular real
       });
     } catch (error) {
       console.error('Error loading data:', error);
+      setAthletes([]);
+      setAppointments([]);
     } finally {
       setLoading(false);
     }

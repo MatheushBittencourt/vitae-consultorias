@@ -253,21 +253,38 @@ export function AdminTrainingSection({ consultancyId, adminUser }: AdminTraining
         fetch(`${API_URL}/athletes?consultancy_id=${consultancyId}`, { headers: getAuthHeaders() })
       ]);
       
+      // Verificar se as respostas foram bem-sucedidas
+      if (!plansRes.ok || !libraryRes.ok || !athletesRes.ok) {
+        console.error('API error:', plansRes.status, libraryRes.status, athletesRes.status);
+        setPlans([]);
+        setLibrary([]);
+        setAthletes([]);
+        return;
+      }
+      
       const plansData = await plansRes.json();
       const libraryData = await libraryRes.json();
       const athletesData = await athletesRes.json();
       
+      // Garantir que são arrays
+      const safePlans = Array.isArray(plansData) ? plansData : [];
+      const safeLibrary = Array.isArray(libraryData) ? libraryData : [];
+      const safeAthletes = Array.isArray(athletesData) ? athletesData : [];
+      
       // Adicionar nome do atleta aos planos
-      const plansWithAthletes = plansData.map((p: TrainingPlan) => ({
+      const plansWithAthletes = safePlans.map((p: TrainingPlan) => ({
         ...p,
-        athlete_name: athletesData.find((a: Athlete) => a.id === p.athlete_id)?.name || 'Atleta não encontrado'
+        athlete_name: safeAthletes.find((a: Athlete) => a.id === p.athlete_id)?.name || 'Atleta não encontrado'
       }));
       
       setPlans(plansWithAthletes);
-      setLibrary(libraryData);
-      setAthletes(athletesData);
+      setLibrary(safeLibrary);
+      setAthletes(safeAthletes);
     } catch (error) {
       console.error('Error loading data:', error);
+      setPlans([]);
+      setLibrary([]);
+      setAthletes([]);
     } finally {
       setLoading(false);
     }

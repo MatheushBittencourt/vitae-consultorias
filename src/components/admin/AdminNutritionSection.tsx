@@ -172,14 +172,29 @@ export function AdminNutritionSection({ onSelectPatient, consultancyId, adminUse
         fetch(`${API_URL}/athletes?consultancy_id=${consultancyId}`, { headers: getAuthHeaders() }),
         fetch(`${API_URL}/food-library?consultancy_id=${consultancyId}`, { headers: getAuthHeaders() })
       ]);
+      
+      // Verificar se as respostas foram bem-sucedidas
+      if (!plansRes.ok || !athletesRes.ok || !foodRes.ok) {
+        console.error('API error:', plansRes.status, athletesRes.status, foodRes.status);
+        setPlans([]);
+        setAthletes([]);
+        setFoodLibrary([]);
+        return;
+      }
+      
       const plansData = await plansRes.json();
       const athletesData = await athletesRes.json();
       const foodData = await foodRes.json();
-      setPlans(plansData);
-      setAthletes(athletesData);
-      setFoodLibrary(foodData);
+      
+      // Garantir que são arrays
+      setPlans(Array.isArray(plansData) ? plansData : []);
+      setAthletes(Array.isArray(athletesData) ? athletesData : []);
+      setFoodLibrary(Array.isArray(foodData) ? foodData : []);
     } catch (error) {
       console.error('Error loading data:', error);
+      setPlans([]);
+      setAthletes([]);
+      setFoodLibrary([]);
     } finally {
       setLoading(false);
     }

@@ -81,12 +81,25 @@ export function AdminAppointmentsSection({ consultancyId }: AdminAppointmentsSec
         fetch(`${API_URL}/appointments?consultancy_id=${consultancyId}`, { headers: getAuthHeaders() }),
         fetch(`${API_URL}/athletes?consultancy_id=${consultancyId}`, { headers: getAuthHeaders() })
       ]);
+      
+      // Verificar se as respostas foram bem-sucedidas
+      if (!aptsRes.ok || !athletesRes.ok) {
+        console.error('API error:', aptsRes.status, athletesRes.status);
+        setAppointments([]);
+        setAthletes([]);
+        return;
+      }
+      
       const aptsData = await aptsRes.json();
       const athletesData = await athletesRes.json();
-      setAppointments(aptsData);
-      setAthletes(athletesData);
+      
+      // Garantir que são arrays
+      setAppointments(Array.isArray(aptsData) ? aptsData : []);
+      setAthletes(Array.isArray(athletesData) ? athletesData : []);
     } catch (error) {
       console.error('Error loading data:', error);
+      setAppointments([]);
+      setAthletes([]);
     } finally {
       setLoading(false);
     }

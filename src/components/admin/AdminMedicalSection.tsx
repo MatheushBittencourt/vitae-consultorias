@@ -58,12 +58,25 @@ export function AdminMedicalSection({ onSelectPatient, consultancyId }: AdminMed
         fetch(`${API_URL}/medical-records?consultancy_id=${consultancyId}`, { headers: getAuthHeaders() }),
         fetch(`${API_URL}/athletes?consultancy_id=${consultancyId}`, { headers: getAuthHeaders() })
       ]);
+      
+      // Verificar se as respostas foram bem-sucedidas
+      if (!recordsRes.ok || !athletesRes.ok) {
+        console.error('API error:', recordsRes.status, athletesRes.status);
+        setRecords([]);
+        setAthletes([]);
+        return;
+      }
+      
       const recordsData = await recordsRes.json();
       const athletesData = await athletesRes.json();
-      setRecords(recordsData);
-      setAthletes(athletesData);
+      
+      // Garantir que são arrays
+      setRecords(Array.isArray(recordsData) ? recordsData : []);
+      setAthletes(Array.isArray(athletesData) ? athletesData : []);
     } catch (error) {
       console.error('Error loading data:', error);
+      setRecords([]);
+      setAthletes([]);
     } finally {
       setLoading(false);
     }
