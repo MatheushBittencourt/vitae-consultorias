@@ -1245,75 +1245,79 @@ function TrainingTab({ patient, consultancyId, adminUser }: { patient: Patient; 
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Plan Header */}
-      <div className="bg-black text-white p-5 rounded-lg">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <h2 className="text-xl font-bold">{currentPlan?.name}</h2>
-              <span className={`px-2 py-1 text-xs font-bold rounded ${
-                currentPlan?.status === 'active' ? 'bg-lime-500 text-black' : 'bg-zinc-600'
-              }`}>
-                {currentPlan?.status === 'active' ? 'ATIVO' : currentPlan?.status?.toUpperCase()}
-              </span>
-            </div>
-            <div className="flex flex-wrap items-center gap-4 text-sm text-zinc-400">
-              <span className="flex items-center gap-1">
-                <Target className="w-4 h-4" />
-                {OBJECTIVES[currentPlan?.objective || ''] || currentPlan?.objective}
-              </span>
-              <span className="flex items-center gap-1">
-                <Clock className="w-4 h-4" />
-                {currentPlan?.duration_weeks} semanas
-              </span>
-              <span className="flex items-center gap-1">
-                <TrendingUp className="w-4 h-4" />
-                {currentPlan?.frequency_per_week}x/semana
-              </span>
-              {currentPlan?.split_type && (
-                <span className="px-2 py-0.5 bg-lime-500 text-black font-bold text-xs rounded">
-                  {currentPlan.split_type}
-                </span>
-              )}
-            </div>
+      <div className="bg-black text-white p-4 sm:p-5 rounded-xl">
+        {/* Nome e Status */}
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="flex-1 min-w-0">
+            <h2 className="text-lg sm:text-xl font-bold truncate">{currentPlan?.name}</h2>
           </div>
-          <div className="flex gap-2">
-            {plans.length > 1 && (
-              <select 
-                value={selectedPlanId || ''}
-                onChange={(e) => {
-                  const id = Number(e.target.value);
-                  setSelectedPlanId(id);
-                  loadPlanDetails(id);
-                }}
-                className="px-3 py-2 bg-white text-black font-bold text-sm rounded-md"
-              >
-                {plans.map(p => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
-            )}
-            <button
-              onClick={() => setShowEditPlanModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-white text-black font-bold text-sm hover:bg-lime-500 transition-colors rounded-md"
+          <span className={`px-2 py-1 text-xs font-bold rounded flex-shrink-0 ${
+            currentPlan?.status === 'active' ? 'bg-lime-500 text-black' : 'bg-zinc-600'
+          }`}>
+            {currentPlan?.status === 'active' ? 'ATIVO' : currentPlan?.status?.toUpperCase()}
+          </span>
+        </div>
+        
+        {/* Info do plano - Grid em mobile */}
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm text-zinc-400 mb-4">
+          <span className="flex items-center gap-1">
+            <Target className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="truncate">{OBJECTIVES[currentPlan?.objective || ''] || currentPlan?.objective}</span>
+          </span>
+          <span className="flex items-center gap-1">
+            <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            {currentPlan?.duration_weeks} sem
+          </span>
+          <span className="flex items-center gap-1">
+            <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            {currentPlan?.frequency_per_week}x/sem
+          </span>
+          {currentPlan?.split_type && (
+            <span className="px-2 py-0.5 bg-lime-500 text-black font-bold text-xs rounded w-fit">
+              {currentPlan.split_type}
+            </span>
+          )}
+        </div>
+        
+        {/* Ações */}
+        <div className="flex flex-col sm:flex-row gap-2">
+          {plans.length > 1 && (
+            <select 
+              value={selectedPlanId || ''}
+              onChange={(e) => {
+                const id = Number(e.target.value);
+                setSelectedPlanId(id);
+                loadPlanDetails(id);
+              }}
+              className="flex-1 sm:flex-none px-3 py-2 bg-white text-black font-bold text-sm rounded-lg"
             >
-              <Edit className="w-4 h-4" />
-              Editar
-            </button>
-          </div>
+              {plans.map(p => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          )}
+          <button
+            onClick={() => setShowEditPlanModal(true)}
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-white text-black font-bold text-sm hover:bg-lime-500 transition-colors rounded-lg"
+          >
+            <Edit className="w-4 h-4" />
+            <span>Editar Plano</span>
+          </button>
         </div>
       </div>
 
-      {/* Days List */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-xl font-bold">Dias de Treino</h3>
+      {/* Days List Header */}
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-lg sm:text-xl font-bold">Dias de Treino</h3>
         <button
           onClick={openAddDayModal}
-          className="flex items-center gap-2 px-4 py-2 bg-lime-500 text-black font-bold hover:bg-lime-400 text-sm rounded-lg transition-colors"
+          className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-lime-500 text-black font-bold hover:bg-lime-400 text-xs sm:text-sm rounded-lg transition-colors"
         >
           <Plus className="w-4 h-4" />
-          Adicionar Dia
+          <span className="hidden sm:inline">Adicionar Dia</span>
+          <span className="sm:hidden">Novo</span>
         </button>
       </div>
 
@@ -1335,42 +1339,82 @@ function TrainingTab({ patient, consultancyId, adminUser }: { patient: Patient; 
             
             return (
               <Card key={day.id} className="p-0 overflow-hidden">
+                {/* Header do dia - Mobile First */}
                 <div 
-                  className="flex items-center gap-4 p-4 cursor-pointer hover:bg-zinc-50 transition-colors"
+                  className="p-3 sm:p-4 cursor-pointer hover:bg-zinc-50 transition-colors"
                   onClick={() => toggleDay(day.id)}
                 >
-                  <span className="w-12 h-12 flex items-center justify-center bg-lime-500 text-black text-xl font-bold flex-shrink-0 rounded-lg">
-                    {day.day_letter}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h4 className="font-bold">{day.day_name || DAY_OF_WEEK_NAMES[day.day_of_week || 1]}</h4>
-                      <span className="text-sm text-zinc-400">•</span>
-                      <span className="text-sm text-zinc-500">{DAY_OF_WEEK_NAMES[day.day_of_week || 1]}</span>
+                  {/* Linha principal */}
+                  <div className="flex items-start sm:items-center gap-3">
+                    {/* Letra do treino */}
+                    <span className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-lime-500 text-black text-lg sm:text-xl font-bold flex-shrink-0 rounded-lg">
+                      {day.day_letter}
+                    </span>
+                    
+                    {/* Info do dia */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-bold text-sm sm:text-base leading-tight">{day.day_name || DAY_OF_WEEK_NAMES[day.day_of_week || 1]}</h4>
+                          <p className="text-xs sm:text-sm text-zinc-500">{DAY_OF_WEEK_NAMES[day.day_of_week || 1]}</p>
+                        </div>
+                        {/* Chevron - sempre visível */}
+                        <div className="flex items-center gap-1 sm:hidden ml-2">
+                          {isExpanded ? <ChevronUp className="w-5 h-5 text-zinc-400" /> : <ChevronDown className="w-5 h-5 text-zinc-400" />}
+                        </div>
+                      </div>
+                      
+                      {/* Stats linha - mobile */}
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-xs sm:text-sm text-zinc-500">
+                        <span className="font-medium">{dayExercises.length} exercícios</span>
+                        {day.estimated_duration && <span>~{day.estimated_duration} min</span>}
+                      </div>
+                      
+                      {/* Músculos - linha separada em mobile */}
+                      {day.focus_muscles && (
+                        <div className="mt-2">
+                          <Badge variant="success" className="text-xs font-medium">{day.focus_muscles}</Badge>
+                        </div>
+                      )}
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-zinc-500">
-                      {day.focus_muscles && <Badge variant="success" className="font-medium">{day.focus_muscles}</Badge>}
-                      <span>{dayExercises.length} exercícios</span>
-                      <span>~{day.estimated_duration} min</span>
+                    
+                    {/* Ações e Chevron - Desktop */}
+                    <div className="hidden sm:flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={() => openEditDayModal(day)}
+                        className="p-2 text-zinc-400 hover:text-lime-600 hover:bg-lime-50 rounded-md transition-colors"
+                        title="Editar dia"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => confirmDeleteDay(day.id)}
+                        className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                        title="Excluir dia"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                      {isExpanded ? <ChevronUp className="w-5 h-5 text-zinc-400" /> : <ChevronDown className="w-5 h-5 text-zinc-400" />}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                  
+                  {/* Ações Mobile - linha separada */}
+                  <div className="flex sm:hidden items-center justify-end gap-1 mt-2 pt-2 border-t border-zinc-100" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={() => openEditDayModal(day)}
-                      className="p-2 text-zinc-400 hover:text-lime-600 hover:bg-lime-50 rounded-md transition-colors"
-                      title="Editar dia"
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-zinc-600 hover:text-lime-600 hover:bg-lime-50 rounded-md transition-colors"
                     >
-                      <Edit className="w-4 h-4" />
+                      <Edit className="w-3.5 h-3.5" />
+                      Editar
                     </button>
                     <button
                       onClick={() => confirmDeleteDay(day.id)}
-                      className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
-                      title="Excluir dia"
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-zinc-600 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3.5 h-3.5" />
+                      Excluir
                     </button>
                   </div>
-                  {isExpanded ? <ChevronUp className="w-5 h-5 text-zinc-400" /> : <ChevronDown className="w-5 h-5 text-zinc-400" />}
                 </div>
 
                 {isExpanded && (
@@ -1378,61 +1422,130 @@ function TrainingTab({ patient, consultancyId, adminUser }: { patient: Patient; 
                     {dayExercises.length > 0 ? (
                       <div className="divide-y divide-zinc-100">
                         {dayExercises.map((ex, idx) => (
-                          <div key={ex.id} className="flex items-start gap-4 p-4 group hover:bg-zinc-50">
-                            <span className="w-8 h-8 flex items-center justify-center bg-zinc-100 text-zinc-600 font-bold text-sm flex-shrink-0 rounded-md">
-                              {idx + 1}
-                            </span>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                <span className="font-medium">{ex.name}</span>
-                                {ex.video_url && (
-                                  <a href={ex.video_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline">📹 vídeo</a>
-                                )}
-                              </div>
-                              <div className="flex flex-wrap items-center gap-2 text-sm">
-                                <span className={`px-2 py-0.5 text-xs font-bold rounded ${MUSCLE_GROUPS[ex.muscle_group]?.color || 'bg-zinc-100'}`}>
-                                  {MUSCLE_GROUPS[ex.muscle_group]?.name || ex.muscle_group}
-                                </span>
-                                <span className="text-zinc-600">{ex.sets}x {ex.reps}</span>
-                                {ex.weight && <span className="text-zinc-600 font-medium">{ex.weight}</span>}
-                                <span className="text-zinc-400">Desc: {ex.rest_seconds}s</span>
-                                {ex.tempo && <span className="text-zinc-400">Cadência: {ex.tempo}</span>}
+                          <div key={ex.id} className="p-3 sm:p-4 hover:bg-zinc-50 transition-colors">
+                            {/* Layout Mobile First */}
+                            <div className="flex gap-3">
+                              {/* Número do exercício */}
+                              <span className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center bg-lime-100 text-lime-700 font-bold text-xs sm:text-sm flex-shrink-0 rounded-lg">
+                                {idx + 1}
+                              </span>
+                              
+                              {/* Conteúdo principal */}
+                              <div className="flex-1 min-w-0">
+                                {/* Nome e link de vídeo */}
+                                <div className="flex items-start justify-between gap-2">
+                                  <h5 className="font-semibold text-sm sm:text-base text-zinc-900 leading-tight">
+                                    {ex.name}
+                                  </h5>
+                                  {ex.video_url && (
+                                    <a 
+                                      href={ex.video_url} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer" 
+                                      className="flex items-center gap-1 px-2 py-1 text-xs text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors flex-shrink-0"
+                                    >
+                                      <span>📹</span>
+                                      <span className="hidden sm:inline">vídeo</span>
+                                    </a>
+                                  )}
+                                </div>
+                                
+                                {/* Badge do músculo */}
+                                <div className="mt-1.5">
+                                  <span className={`inline-block px-2 py-0.5 text-xs font-bold rounded ${MUSCLE_GROUPS[ex.muscle_group]?.color || 'bg-zinc-100 text-zinc-600'}`}>
+                                    {MUSCLE_GROUPS[ex.muscle_group]?.name || ex.muscle_group}
+                                  </span>
+                                </div>
+                                
+                                {/* Stats do exercício - Grid em mobile */}
+                                <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-x-4 gap-y-1 mt-2 text-xs sm:text-sm">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-zinc-400">Séries:</span>
+                                    <span className="font-semibold text-zinc-700">{ex.sets}x {ex.reps}</span>
+                                  </div>
+                                  {ex.weight && (
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-zinc-400">Carga:</span>
+                                      <span className="font-semibold text-zinc-700">{ex.weight}</span>
+                                    </div>
+                                  )}
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-zinc-400">Desc:</span>
+                                    <span className="text-zinc-600">{ex.rest_seconds}s</span>
+                                  </div>
+                                  {ex.tempo && (
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-zinc-400">Cadência:</span>
+                                      <span className="text-zinc-600">{ex.tempo}</span>
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                {/* Técnica especial */}
                                 {ex.technique !== 'normal' && (
-                                  <Badge variant="info">
-                                    {TECHNIQUES[ex.technique] || ex.technique}
-                                  </Badge>
+                                  <div className="mt-2">
+                                    <Badge variant="info" className="text-xs">
+                                      {TECHNIQUES[ex.technique] || ex.technique}
+                                    </Badge>
+                                  </div>
                                 )}
+                                
+                                {/* Notas */}
+                                {ex.notes && (
+                                  <p className="text-xs text-zinc-500 mt-2 p-2 bg-amber-50 rounded-md">
+                                    💡 {ex.notes}
+                                  </p>
+                                )}
+                                
+                                {/* Ações Mobile */}
+                                <div className="flex sm:hidden items-center gap-2 mt-3 pt-2 border-t border-zinc-100">
+                                  <button
+                                    onClick={() => openEditExerciseModal(ex, day.id)}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-zinc-600 hover:text-lime-600 hover:bg-lime-50 rounded-md transition-colors"
+                                  >
+                                    <Edit className="w-3.5 h-3.5" />
+                                    Editar
+                                  </button>
+                                  <button
+                                    onClick={() => confirmDeleteExercise(ex.id)}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-zinc-600 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                    Excluir
+                                  </button>
+                                </div>
                               </div>
-                              {ex.notes && (
-                                <p className="text-xs text-zinc-500 mt-2 italic">💡 {ex.notes}</p>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button
-                                onClick={() => openEditExerciseModal(ex, day.id)}
-                                className="p-1.5 text-zinc-400 hover:text-lime-600 hover:bg-lime-50 rounded-md transition-colors"
-                              >
-                                <Edit className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => confirmDeleteExercise(ex.id)}
-                                className="p-1.5 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
+                              
+                              {/* Ações Desktop - hover */}
+                              <div className="hidden sm:flex items-start gap-1">
+                                <button
+                                  onClick={() => openEditExerciseModal(ex, day.id)}
+                                  className="p-1.5 text-zinc-400 hover:text-lime-600 hover:bg-lime-50 rounded-md transition-colors"
+                                  title="Editar exercício"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => confirmDeleteExercise(ex.id)}
+                                  className="p-1.5 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                                  title="Excluir exercício"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
                             </div>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <div className="p-4 text-center text-zinc-400 text-sm">
+                      <div className="p-6 text-center text-zinc-400 text-sm">
                         Nenhum exercício configurado para este dia
                       </div>
                     )}
                     <div className="p-3 border-t border-zinc-200 bg-zinc-50">
                       <button
                         onClick={() => openAddExerciseModal(day.id)}
-                        className="w-full flex items-center justify-center gap-2 py-2 text-sm font-medium text-lime-600 hover:bg-lime-100 rounded-lg transition-colors"
+                        className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-semibold text-lime-700 bg-lime-100 hover:bg-lime-200 rounded-lg transition-colors"
                       >
                         <Plus className="w-4 h-4" />
                         Adicionar Exercício
