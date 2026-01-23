@@ -65,6 +65,24 @@ const handleAuthError = (status: number): void => {
   }
 };
 
+// Fetch wrapper que trata 401 automaticamente
+export const fetchWithAuth = async (url: string, options?: RequestInit): Promise<Response> => {
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      ...getAuthHeaders(),
+      ...(options?.headers || {}),
+    },
+  });
+  
+  // Se 401, fazer logout automático
+  if (response.status === 401 || response.status === 403) {
+    handleAuthError(response.status);
+  }
+  
+  return response;
+};
+
 // API client com métodos HTTP e autenticação
 const api = {
   get: async <T>(endpoint: string): Promise<{ data: T }> => {

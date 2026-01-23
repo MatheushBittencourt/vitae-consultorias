@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getAuthHeaders } from '../../services/api';
+import { getAuthHeaders, removeAuthToken } from '../../services/api';
 import { 
   Users, 
   Calendar, 
@@ -110,6 +110,17 @@ export function AdminOverview({ onNavigate, onSelectPatient, consultancyId }: Ad
       // Verificar se as respostas foram bem-sucedidas
       if (!athletesRes.ok || !appointmentsRes.ok) {
         console.error('API error:', athletesRes.status, appointmentsRes.status);
+        
+        // Se 401, fazer logout automático
+        if (athletesRes.status === 401 || appointmentsRes.status === 401) {
+          removeAuthToken();
+          localStorage.removeItem('vitae_admin_session');
+          localStorage.removeItem('vitae_patient_session');
+          localStorage.removeItem('vitae_superadmin_session');
+          window.location.reload();
+          return;
+        }
+        
         setAthletes([]);
         setAppointments([]);
         setStats({ activePatients: 0, todayAppointments: 0, pendingItems: 0, weeklyGrowth: 0 });

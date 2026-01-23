@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getAuthHeaders } from '../../services/api';
+import { getAuthHeaders, removeAuthToken } from '../../services/api';
 import { 
   Plus, 
   Calendar, 
@@ -85,6 +85,17 @@ export function AdminAppointmentsSection({ consultancyId }: AdminAppointmentsSec
       // Verificar se as respostas foram bem-sucedidas
       if (!aptsRes.ok || !athletesRes.ok) {
         console.error('API error:', aptsRes.status, athletesRes.status);
+        
+        // Se 401, fazer logout automático
+        if (aptsRes.status === 401 || athletesRes.status === 401) {
+          removeAuthToken();
+          localStorage.removeItem('vitae_admin_session');
+          localStorage.removeItem('vitae_patient_session');
+          localStorage.removeItem('vitae_superadmin_session');
+          window.location.reload();
+          return;
+        }
+        
         setAppointments([]);
         setAthletes([]);
         return;

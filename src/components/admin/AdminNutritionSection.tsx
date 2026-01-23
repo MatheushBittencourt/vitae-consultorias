@@ -1,4 +1,4 @@
-import { getAuthHeaders } from '../../services/api';
+import { getAuthHeaders, removeAuthToken } from '../../services/api';
 import { useState, useEffect } from 'react';
 import { Plus, Search, Edit, Eye, Loader2, Apple, Trash2, X, ChevronDown, ChevronRight, ArrowLeftRight, Utensils, Book, ArrowLeft, Users, Target, Library, FileText, Ruler, Calculator, ClipboardList } from 'lucide-react';
 import { Patient } from './AdminDashboard';
@@ -176,6 +176,17 @@ export function AdminNutritionSection({ onSelectPatient, consultancyId, adminUse
       // Verificar se as respostas foram bem-sucedidas
       if (!plansRes.ok || !athletesRes.ok || !foodRes.ok) {
         console.error('API error:', plansRes.status, athletesRes.status, foodRes.status);
+        
+        // Se 401, fazer logout automático
+        if (plansRes.status === 401 || athletesRes.status === 401 || foodRes.status === 401) {
+          removeAuthToken();
+          localStorage.removeItem('vitae_admin_session');
+          localStorage.removeItem('vitae_patient_session');
+          localStorage.removeItem('vitae_superadmin_session');
+          window.location.reload();
+          return;
+        }
+        
         setPlans([]);
         setAthletes([]);
         setFoodLibrary([]);

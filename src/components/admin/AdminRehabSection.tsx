@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getAuthHeaders } from '../../services/api';
+import { getAuthHeaders, removeAuthToken } from '../../services/api';
 import { Plus, Search, Edit, Eye, Loader2, Activity, HeartPulse, Calendar, CheckCircle } from 'lucide-react';
 import { Patient } from './AdminDashboard';
 import { Card, StatCard } from '../ui/Card';
@@ -61,6 +61,17 @@ export function AdminRehabSection({ onSelectPatient, consultancyId }: AdminRehab
       // Verificar se as respostas foram bem-sucedidas
       if (!sessionsRes.ok || !athletesRes.ok) {
         console.error('API error:', sessionsRes.status, athletesRes.status);
+        
+        // Se 401, fazer logout automático
+        if (sessionsRes.status === 401 || athletesRes.status === 401) {
+          removeAuthToken();
+          localStorage.removeItem('vitae_admin_session');
+          localStorage.removeItem('vitae_patient_session');
+          localStorage.removeItem('vitae_superadmin_session');
+          window.location.reload();
+          return;
+        }
+        
         setSessions([]);
         setAthletes([]);
         return;

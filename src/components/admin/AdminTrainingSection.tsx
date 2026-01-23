@@ -1,4 +1,4 @@
-import { getAuthHeaders } from '../../services/api';
+import { getAuthHeaders, removeAuthToken } from '../../services/api';
 import { useState, useEffect } from 'react';
 import { 
   Plus, Search, Edit, Dumbbell, Trash2, X, 
@@ -256,6 +256,17 @@ export function AdminTrainingSection({ consultancyId, adminUser }: AdminTraining
       // Verificar se as respostas foram bem-sucedidas
       if (!plansRes.ok || !libraryRes.ok || !athletesRes.ok) {
         console.error('API error:', plansRes.status, libraryRes.status, athletesRes.status);
+        
+        // Se 401, fazer logout automático
+        if (plansRes.status === 401 || libraryRes.status === 401 || athletesRes.status === 401) {
+          removeAuthToken();
+          localStorage.removeItem('vitae_admin_session');
+          localStorage.removeItem('vitae_patient_session');
+          localStorage.removeItem('vitae_superadmin_session');
+          window.location.reload();
+          return;
+        }
+        
         setPlans([]);
         setLibrary([]);
         setAthletes([]);

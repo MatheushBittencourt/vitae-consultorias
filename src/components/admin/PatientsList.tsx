@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getAuthHeaders } from '../../services/api';
+import { getAuthHeaders, removeAuthToken } from '../../services/api';
 import { 
   Search, 
   Plus, 
@@ -83,6 +83,17 @@ export function PatientsList({ onSelectPatient, consultancyId }: PatientsListPro
       // Verificar se a resposta foi bem-sucedida
       if (!response.ok) {
         console.error('API error:', response.status);
+        
+        // Se 401, fazer logout automático
+        if (response.status === 401) {
+          removeAuthToken();
+          localStorage.removeItem('vitae_admin_session');
+          localStorage.removeItem('vitae_patient_session');
+          localStorage.removeItem('vitae_superadmin_session');
+          window.location.reload();
+          return;
+        }
+        
         setPatients([]);
         return;
       }
