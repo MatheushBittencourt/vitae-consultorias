@@ -4493,9 +4493,9 @@ function ProgressTab({ patient, consultancyId }: { patient: Patient; consultancy
     ? photos 
     : photos.filter(p => p.category === selectedCategory);
 
-  // Agrupar fotos por data
+  // Agrupar fotos por data (extrair apenas YYYY-MM-DD se vier como ISO)
   const photosByDate = filteredPhotos.reduce((acc, photo) => {
-    const date = photo.photo_date;
+    const date = photo.photo_date ? photo.photo_date.split('T')[0] : 'sem-data';
     if (!acc[date]) acc[date] = [];
     acc[date].push(photo);
     return acc;
@@ -4597,44 +4597,76 @@ function ProgressTab({ patient, consultancyId }: { patient: Patient; consultancy
                         year: 'numeric' 
                       })}
                     </h3>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                       {datePhotos.map((photo) => (
-                        <div 
+                        <Card 
                           key={photo.id}
+                          className="p-0 overflow-hidden cursor-pointer hover:ring-2 hover:ring-lime-500 transition-all group"
                           onClick={() => setShowPhotoModal(photo)}
-                          className="relative aspect-[3/4] bg-zinc-100 rounded-lg overflow-hidden cursor-pointer group hover:ring-2 hover:ring-lime-500 transition-all"
                         >
-                          <img
-                            src={photo.file_path}
-                            alt={`${PHOTO_CATEGORIES[photo.category]} - ${photo.photo_date}`}
-                            className="w-full h-full object-cover"
-                          />
-                          {/* Overlay */}
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                            <div className="absolute bottom-0 left-0 right-0 p-2">
-                              <span className="text-white text-xs font-bold">
+                          {/* Imagem */}
+                          <div className="relative aspect-[3/4] bg-zinc-200">
+                            <img
+                              src={photo.file_path}
+                              alt={PHOTO_CATEGORIES[photo.category]}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                // Fallback se imagem não carregar
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                target.parentElement!.innerHTML = `
+                                  <div class="w-full h-full flex flex-col items-center justify-center text-zinc-400">
+                                    <svg class="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                    <span class="text-xs">Imagem não disponível</span>
+                                  </div>
+                                `;
+                              }}
+                            />
+                            {/* Badge de categoria */}
+                            <div className="absolute top-2 left-2">
+                              <span className="bg-lime-500 text-black text-xs font-bold px-2 py-1 rounded">
                                 {PHOTO_CATEGORIES[photo.category]}
                               </span>
-                              {photo.weight && (
-                                <span className="text-white/80 text-xs ml-2">
-                                  {photo.weight}kg
-                                </span>
-                              )}
+                            </div>
+                            {/* Ícone de zoom no hover */}
+                            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <span className="bg-white p-2 rounded-full">
+                                <ZoomIn className="w-5 h-5 text-zinc-700" />
+                              </span>
                             </div>
                           </div>
-                          {/* Badge de categoria */}
-                          <div className="absolute top-2 left-2">
-                            <span className="bg-black/60 text-white text-xs px-2 py-0.5 rounded">
-                              {PHOTO_CATEGORIES[photo.category]}
-                            </span>
+                          
+                          {/* Informações abaixo da foto */}
+                          <div className="p-3 space-y-2">
+                            {/* Peso e % gordura */}
+                            <div className="flex items-center gap-3 text-sm">
+                              {photo.weight ? (
+                                <span className="flex items-center gap-1 text-zinc-700">
+                                  <Weight className="w-4 h-4 text-lime-600" />
+                                  <span className="font-bold">{photo.weight}kg</span>
+                                </span>
+                              ) : null}
+                              {photo.body_fat_percentage ? (
+                                <span className="flex items-center gap-1 text-zinc-700">
+                                  <Activity className="w-4 h-4 text-orange-500" />
+                                  <span className="font-bold">{photo.body_fat_percentage}%</span>
+                                </span>
+                              ) : null}
+                              {!photo.weight && !photo.body_fat_percentage && (
+                                <span className="text-zinc-400 text-xs italic">Sem medidas registradas</span>
+                              )}
+                            </div>
+                            
+                            {/* Observações */}
+                            {photo.notes && (
+                              <p className="text-xs text-zinc-500 line-clamp-2 bg-zinc-50 p-2 rounded">
+                                💬 {photo.notes}
+                              </p>
+                            )}
                           </div>
-                          {/* Ícone de zoom */}
-                          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <span className="bg-white/90 p-1.5 rounded-full inline-flex">
-                              <ZoomIn className="w-4 h-4 text-zinc-700" />
-                            </span>
-                          </div>
-                        </div>
+                        </Card>
                       ))}
                     </div>
                   </div>
