@@ -469,12 +469,12 @@ export function TrainingSection({ athleteId, primaryColor = '#84CC16' }: Trainin
 
   if (plans.length === 0) {
     return (
-      <div className="space-y-8">
+      <div className="space-y-6 sm:space-y-8">
         <div>
-          <h1 className="text-4xl sm:text-5xl font-bold tracking-tighter mb-2">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tighter mb-1 sm:mb-2">
             <span className="text-lime-500">TREINAMENTO</span>
           </h1>
-          <p className="text-lg sm:text-xl text-zinc-600">
+          <p className="text-base sm:text-lg lg:text-xl text-zinc-600">
             Seu programa de treino personalizado
           </p>
         </div>
@@ -492,18 +492,18 @@ export function TrainingSection({ athleteId, primaryColor = '#84CC16' }: Trainin
   const todaysExercises = todaysTraining ? exercises[todaysTraining.id] || [] : [];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <h1 className="text-5xl font-bold tracking-tighter mb-2">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tighter mb-1 sm:mb-2">
             <span className="text-lime-500">TREINAMENTO</span>
           </h1>
-          <p className="text-xl text-zinc-600">
+          <p className="text-base sm:text-lg lg:text-xl text-zinc-600">
             Seu programa de treino personalizado
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
           {plans.length > 1 && (
             <select
               value={selectedPlan?.id || ''}
@@ -514,7 +514,7 @@ export function TrainingSection({ athleteId, primaryColor = '#84CC16' }: Trainin
                   loadTrainingDays(plan.id);
                 }
               }}
-              className="px-4 py-3 border-2 border-zinc-200 focus:border-lime-500 outline-none font-bold"
+              className="px-4 py-3 border-2 border-zinc-200 focus:border-lime-500 outline-none font-bold rounded-lg text-sm sm:text-base"
             >
               {plans.map(p => (
                 <option key={p.id} value={p.id}>{p.name}</option>
@@ -524,20 +524,20 @@ export function TrainingSection({ athleteId, primaryColor = '#84CC16' }: Trainin
           <button
             onClick={generatePDF}
             disabled={generatingPdf}
-            className="flex items-center gap-2 bg-black text-white px-6 py-3 font-bold tracking-wider hover:bg-zinc-800 transition-colors disabled:opacity-50"
+            className="flex items-center justify-center gap-2 bg-black text-white px-4 sm:px-6 py-3 font-bold tracking-wider hover:bg-zinc-800 transition-colors disabled:opacity-50 rounded-lg text-sm sm:text-base"
           >
             {generatingPdf ? (
               <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
               <Download className="w-5 h-5" />
             )}
-            BAIXAR PDF
+            <span className="whitespace-nowrap">BAIXAR PDF</span>
           </button>
         </div>
       </div>
 
       {/* Plan Info Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
         <StatCard
           label="Plano"
           value={selectedPlan?.name || '-'}
@@ -572,28 +572,28 @@ export function TrainingSection({ athleteId, primaryColor = '#84CC16' }: Trainin
 
       {/* Today's Training Highlight */}
       {todaysTraining && (
-        <Card className="bg-lime-500 text-black p-6 border-none">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-black text-white flex items-center justify-center rounded-xl">
-                <span className="text-2xl font-bold">{todaysTraining.day_letter}</span>
+        <Card className="bg-lime-500 text-black p-4 sm:p-6 border-none">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-black text-white flex items-center justify-center rounded-xl flex-shrink-0">
+                <span className="text-xl sm:text-2xl font-bold">{todaysTraining.day_letter}</span>
               </div>
               <div>
-                <div className="text-sm font-bold tracking-wider">TREINO DE HOJE • {DAY_NAMES[todayDayOfWeek].toUpperCase()}</div>
-                <div className="text-2xl font-bold">{todaysTraining.day_name}</div>
+                <div className="text-xs sm:text-sm font-bold tracking-wider">TREINO DE HOJE • {DAY_NAMES[todayDayOfWeek].toUpperCase()}</div>
+                <div className="text-xl sm:text-2xl font-bold">{todaysTraining.day_name}</div>
                 {todaysTraining.focus_muscles && (
-                  <Badge className="bg-black/20 text-black mt-1">Foco: {todaysTraining.focus_muscles}</Badge>
+                  <Badge className="bg-black/20 text-black mt-1 text-xs">Foco: {todaysTraining.focus_muscles}</Badge>
                 )}
               </div>
             </div>
-            <div className="text-right">
-              <div className="text-3xl font-bold">{todaysExercises.length}</div>
+            <div className="text-left sm:text-right flex sm:block items-center gap-2">
+              <div className="text-2xl sm:text-3xl font-bold">{todaysExercises.length}</div>
               <div className="text-sm">exercícios</div>
             </div>
           </div>
           <button 
             onClick={() => toggleDay(todaysTraining.id)}
-            className="flex items-center gap-2 bg-black text-white px-6 py-3 font-bold tracking-wider hover:bg-zinc-800 transition-colors rounded-lg"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-black text-white px-4 sm:px-6 py-3 font-bold tracking-wider hover:bg-zinc-800 transition-colors rounded-lg text-sm sm:text-base"
           >
             <Play className="w-5 h-5" />
             {expandedDays.has(todaysTraining.id) ? 'OCULTAR EXERCÍCIOS' : 'VER EXERCÍCIOS'}
@@ -760,16 +760,16 @@ export function TrainingSection({ athleteId, primaryColor = '#84CC16' }: Trainin
       </Card>
 
       {/* Coach Info */}
-      <Card className="bg-black text-white p-6 border-none">
+      <Card className="bg-black text-white p-4 sm:p-6 border-none">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-          <div className="w-16 h-16 bg-zinc-800 rounded-full flex items-center justify-center">
-            <User className="w-8 h-8 text-zinc-600" />
+          <div className="w-14 h-14 sm:w-16 sm:h-16 bg-zinc-800 rounded-full flex items-center justify-center flex-shrink-0">
+            <User className="w-7 h-7 sm:w-8 sm:h-8 text-zinc-600" />
           </div>
-          <div className="flex-1">
-            <div className="text-sm text-zinc-400">Seu Treinador</div>
-            <div className="text-xl font-bold">{selectedPlan?.coach_name || 'Não atribuído'}</div>
+          <div className="flex-1 min-w-0">
+            <div className="text-xs sm:text-sm text-zinc-400">Seu Treinador</div>
+            <div className="text-lg sm:text-xl font-bold truncate">{selectedPlan?.coach_name || 'Não atribuído'}</div>
           </div>
-          <button className="px-6 py-3 bg-lime-500 text-black font-bold tracking-wider hover:bg-lime-400 transition-colors rounded-lg w-full sm:w-auto">
+          <button className="px-4 sm:px-6 py-3 bg-lime-500 text-black font-bold tracking-wider hover:bg-lime-400 transition-colors rounded-lg w-full sm:w-auto text-sm sm:text-base">
             MENSAGEM
           </button>
         </div>

@@ -383,9 +383,9 @@ export function NutritionSection({ athleteId, primaryColor = '#84CC16' }: Nutrit
 
   if (!plan) {
     return (
-      <div className="space-y-8">
+      <div className="space-y-6 sm:space-y-8">
         <div>
-          <h1 className="text-4xl sm:text-5xl font-bold tracking-tighter mb-2">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tighter mb-1 sm:mb-2">
             <span className="text-lime-500">NUTRIÇÃO</span>
           </h1>
         </div>
@@ -399,29 +399,29 @@ export function NutritionSection({ athleteId, primaryColor = '#84CC16' }: Nutrit
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <h1 className="text-5xl font-bold tracking-tighter mb-2">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tighter mb-1 sm:mb-2">
             <span className="text-lime-500">NUTRIÇÃO</span>
           </h1>
-          <p className="text-xl text-zinc-600">{plan.name}</p>
+          <p className="text-base sm:text-lg lg:text-xl text-zinc-600">{plan.name}</p>
           {plan.nutritionist_name && (
             <p className="text-sm text-zinc-500 mt-1">Nutricionista: {plan.nutritionist_name}</p>
           )}
         </div>
         <button 
           onClick={downloadPDF}
-          className="flex items-center gap-2 bg-black text-white px-6 py-3 hover:bg-lime-500 hover:text-black transition-colors"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 bg-black text-white px-4 sm:px-6 py-3 hover:bg-lime-500 hover:text-black transition-colors rounded-lg text-sm sm:text-base"
         >
           <Download className="w-5 h-5" />
-          <span className="font-bold tracking-wider">BAIXAR PDF</span>
+          <span className="font-bold tracking-wider whitespace-nowrap">BAIXAR PDF</span>
         </button>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard
           label="Meta Calórica"
           value={`${plan.daily_calories} kcal`}
@@ -559,11 +559,19 @@ export function NutritionSection({ athleteId, primaryColor = '#84CC16' }: Nutrit
                           </div>
                           
                           {/* Meal Total */}
-                          <div className="mt-4 pt-4 border-t-2 border-lime-500 flex justify-between items-center">
-                            <span className="font-bold">TOTAL DA REFEIÇÃO</span>
-                            <span className="font-bold text-lg">
-                              {Math.round(totals.calories)} kcal • {Math.round(totals.protein)}g P • {Math.round(totals.carbs)}g C • {Math.round(totals.fat)}g G
-                            </span>
+                          <div className="mt-4 pt-4 border-t-2 border-lime-500">
+                            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                              <span className="font-bold text-sm sm:text-base">TOTAL DA REFEIÇÃO</span>
+                              <div className="font-bold text-sm sm:text-lg">
+                                <span className="text-lime-600">{Math.round(totals.calories)} kcal</span>
+                                <span className="mx-1 sm:mx-2 text-zinc-300">•</span>
+                                <span className="text-red-600">{Math.round(totals.protein)}g P</span>
+                                <span className="mx-1 sm:mx-2 text-zinc-300">•</span>
+                                <span className="text-yellow-600">{Math.round(totals.carbs)}g C</span>
+                                <span className="mx-1 sm:mx-2 text-zinc-300">•</span>
+                                <span className="text-blue-600">{Math.round(totals.fat)}g G</span>
+                              </div>
+                            </div>
                           </div>
                         </>
                       );
@@ -577,7 +585,7 @@ export function NutritionSection({ athleteId, primaryColor = '#84CC16' }: Nutrit
       </div>
 
       {/* Tips */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card className="p-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
