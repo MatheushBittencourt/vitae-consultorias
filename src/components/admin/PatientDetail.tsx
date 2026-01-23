@@ -4352,6 +4352,8 @@ function ProgressTab({ patient, consultancyId }: { patient: Patient; consultancy
   const [uploading, setUploading] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showPhotoModal, setShowPhotoModal] = useState<ProgressPhoto | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(null); // ID da foto a excluir
+  const [deleting, setDeleting] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [athleteId, setAthleteId] = useState<number | null>(null);
   
@@ -4472,8 +4474,7 @@ function ProgressTab({ patient, consultancyId }: { patient: Patient; consultancy
   };
 
   const handleDeletePhoto = async (photoId: number) => {
-    if (!confirm('Tem certeza que deseja excluir esta foto?')) return;
-
+    setDeleting(true);
     try {
       const response = await fetch(`/api/progress-photos/${photoId}`, {
         method: 'DELETE',
@@ -4483,9 +4484,12 @@ function ProgressTab({ patient, consultancyId }: { patient: Patient; consultancy
       if (response.ok) {
         setPhotos(photos.filter(p => p.id !== photoId));
         setShowPhotoModal(null);
+        setShowDeleteConfirm(null);
       }
     } catch (error) {
       console.error('Erro ao excluir:', error);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -4878,66 +4882,145 @@ function ProgressTab({ patient, consultancyId }: { patient: Patient; consultancy
           className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4"
           onClick={() => setShowPhotoModal(null)}
         >
-          <div className="relative max-w-4xl w-full max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+          <div className="relative max-w-5xl w-full max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
             {/* Botão fechar */}
             <button
               onClick={() => setShowPhotoModal(null)}
-              className="absolute -top-12 right-0 text-white/80 hover:text-white p-2"
+              className="absolute -top-12 right-0 text-white/80 hover:text-white p-2 z-10"
             >
               <X className="w-6 h-6" />
             </button>
             
-            {/* Imagem */}
-            <img
-              src={showPhotoModal.file_path}
-              alt={`${PHOTO_CATEGORIES[showPhotoModal.category]}`}
-              className="w-full h-auto max-h-[70vh] object-contain rounded-lg"
-            />
-            
-            {/* Info */}
-            <div className="bg-white rounded-lg mt-4 p-4">
-              <div className="flex items-center justify-between flex-wrap gap-3">
-                <div>
-                  <h4 className="font-bold text-lg">{PHOTO_CATEGORIES[showPhotoModal.category]}</h4>
-                  <p className="text-sm text-zinc-500">
-                    {new Date(showPhotoModal.photo_date).toLocaleDateString('pt-BR', { 
-                      weekday: 'long', 
-                      day: 'numeric', 
-                      month: 'long', 
-                      year: 'numeric' 
-                    })}
-                  </p>
-                </div>
-                <div className="flex items-center gap-4 text-sm">
+            {/* Layout lado a lado */}
+            <div className="flex flex-col md:flex-row gap-4 bg-zinc-900 rounded-xl overflow-hidden">
+              {/* Imagem - lado esquerdo */}
+              <div className="flex-1 flex items-center justify-center bg-black p-4">
+                <img
+                  src={showPhotoModal.file_path}
+                  alt={`${PHOTO_CATEGORIES[showPhotoModal.category]}`}
+                  className="max-w-full max-h-[70vh] object-contain rounded-lg"
+                />
+              </div>
+              
+              {/* Info - lado direito */}
+              <div className="w-full md:w-80 bg-white p-6 flex flex-col">
+                {/* Categoria */}
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-lime-100 text-lime-700 text-sm font-medium rounded-full w-fit mb-3">
+                  <Camera className="w-4 h-4" />
+                  {PHOTO_CATEGORIES[showPhotoModal.category]}
+                </span>
+                
+                {/* Data */}
+                <p className="text-sm text-zinc-500 mb-4">
+                  {new Date(showPhotoModal.photo_date).toLocaleDateString('pt-BR', { 
+                    weekday: 'long', 
+                    day: 'numeric', 
+                    month: 'long', 
+                    year: 'numeric' 
+                  })}
+                </p>
+                
+                {/* Métricas */}
+                <div className="space-y-3 mb-4">
                   {showPhotoModal.weight && (
-                    <span className="flex items-center gap-1">
-                      <Weight className="w-4 h-4 text-zinc-400" />
-                      <span className="font-bold">{showPhotoModal.weight}kg</span>
-                    </span>
+                    <div className="flex items-center gap-3 p-3 bg-zinc-50 rounded-lg">
+                      <Weight className="w-5 h-5 text-lime-600" />
+                      <div>
+                        <p className="text-xs text-zinc-500">Peso</p>
+                        <p className="font-bold text-lg">{showPhotoModal.weight} kg</p>
+                      </div>
+                    </div>
                   )}
                   {showPhotoModal.body_fat_percentage && (
-                    <span className="flex items-center gap-1">
-                      <Activity className="w-4 h-4 text-zinc-400" />
-                      <span className="font-bold">{showPhotoModal.body_fat_percentage}%</span>
-                    </span>
+                    <div className="flex items-center gap-3 p-3 bg-zinc-50 rounded-lg">
+                      <Activity className="w-5 h-5 text-amber-600" />
+                      <div>
+                        <p className="text-xs text-zinc-500">Gordura Corporal</p>
+                        <p className="font-bold text-lg">{showPhotoModal.body_fat_percentage}%</p>
+                      </div>
+                    </div>
                   )}
                 </div>
+                
+                {/* Observações */}
+                {showPhotoModal.notes && (
+                  <div className="mb-4">
+                    <p className="text-xs text-zinc-500 mb-1">Observações</p>
+                    <p className="text-sm text-zinc-700 p-3 bg-zinc-50 rounded-lg">{showPhotoModal.notes}</p>
+                  </div>
+                )}
+                
+                {/* Spacer */}
+                <div className="flex-1" />
+                
+                {/* Footer */}
+                <div className="pt-4 border-t border-zinc-200 space-y-3">
+                  <span className="text-xs text-zinc-400 block">
+                    Compactação: {showPhotoModal.original_size > 0 ? Math.round((1 - showPhotoModal.file_size / showPhotoModal.original_size) * 100) : 0}% economizado
+                  </span>
+                  <button
+                    onClick={() => setShowDeleteConfirm(showPhotoModal.id)}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-red-200 text-red-600 hover:bg-red-50 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Excluir Foto
+                  </button>
+                </div>
               </div>
-              {showPhotoModal.notes && (
-                <p className="text-sm text-zinc-600 mt-2 p-2 bg-zinc-50 rounded">{showPhotoModal.notes}</p>
-              )}
-              <div className="flex justify-between items-center mt-4 pt-4 border-t border-zinc-200">
-                <span className="text-xs text-zinc-400">
-                  Compactação: {Math.round((1 - showPhotoModal.file_size / showPhotoModal.original_size) * 100)}% economizado
-                </span>
-                <button
-                  onClick={() => handleDeletePhoto(showPhotoModal.id)}
-                  className="flex items-center gap-1 text-red-500 hover:text-red-600 text-sm font-medium"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Excluir
-                </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmação de Exclusão */}
+      {showDeleteConfirm && (
+        <div 
+          className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] p-4"
+          onClick={() => !deleting && setShowDeleteConfirm(null)}
+        >
+          <div 
+            className="bg-white rounded-xl shadow-xl max-w-md w-full p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                <Trash2 className="w-6 h-6 text-red-600" />
               </div>
+              <div>
+                <h3 className="font-bold text-lg text-zinc-900">Excluir Foto</h3>
+                <p className="text-sm text-zinc-500">Esta ação não pode ser desfeita</p>
+              </div>
+            </div>
+            
+            <p className="text-zinc-600 mb-6">
+              Tem certeza que deseja excluir esta foto de progresso? O arquivo será removido permanentemente do servidor.
+            </p>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(null)}
+                disabled={deleting}
+                className="flex-1 px-4 py-2 border border-zinc-300 text-zinc-700 rounded-lg hover:bg-zinc-50 transition-colors font-medium disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => handleDeletePhoto(showDeleteConfirm)}
+                disabled={deleting}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {deleting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Excluindo...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    Excluir
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>
