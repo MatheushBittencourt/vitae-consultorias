@@ -8,6 +8,30 @@ import { Router, Request, Response } from 'express';
 import { Pool, RowDataPacket, ResultSetHeader } from 'mysql2/promise';
 
 // ===========================================
+// SECURITY: Tipos para autenticação
+// ===========================================
+interface AuthenticatedRequest extends Request {
+  user?: {
+    userId: number;
+    email: string;
+    role: string;
+    consultancyId?: number;
+  };
+}
+
+// ===========================================
+// SECURITY: Sanitização de erros para não expor stack traces
+// ===========================================
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+
+const sanitizeError = (error: unknown, isProduction: boolean): string => {
+  if (!isProduction && error instanceof Error) {
+    return error.message;
+  }
+  return 'Erro interno do servidor';
+};
+
+// ===========================================
 // SECURITY: Whitelist de campos permitidos para queries dinâmicas
 // ===========================================
 const ALLOWED_RECIPE_FIELDS = [
@@ -74,6 +98,35 @@ interface RecipeIngredient {
 export function createRecipeRoutes(pool: Pool): Router {
   const router = Router();
 
+  // ===========================================
+  // SECURITY: Helper para verificar ownership de receita
+  // ===========================================
+  const verifyRecipeOwnership = async (recipeId: string, req: AuthenticatedRequest): Promise<boolean> => {
+    // Superadmin pode acessar qualquer receita
+    if (req.user?.role === 'superadmin') {
+      return true;
+    }
+
+    const [rows] = await pool.query<RowDataPacket[]>(
+      'SELECT consultancy_id, is_global FROM recipes WHERE id = ?',
+      [recipeId]
+    );
+
+    if (rows.length === 0) {
+      return false; // Receita não existe
+    }
+
+    const recipe = rows[0];
+
+    // Receitas globais não podem ser editadas/deletadas por usuários comuns
+    if (recipe.is_global) {
+      return false;
+    }
+
+    // Verificar se pertence à consultoria do usuário
+    return recipe.consultancy_id === req.user?.consultancyId;
+  };
+
   /**
    * Listar receitas
    */
@@ -115,7 +168,7 @@ export function createRecipeRoutes(pool: Pool): Router {
       res.json(rows);
     } catch (error) {
       console.error('Error fetching recipes:', error);
-      res.status(500).json({ error: String(error) });
+      res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) });
     }
   });
 
@@ -165,7 +218,7 @@ export function createRecipeRoutes(pool: Pool): Router {
       });
     } catch (error) {
       console.error('Error fetching recipe:', error);
-      res.status(500).json({ error: String(error) });
+      res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) });
     }
   });
 
@@ -252,16 +305,23 @@ export function createRecipeRoutes(pool: Pool): Router {
       });
     } catch (error) {
       console.error('Error creating recipe:', error);
-      res.status(500).json({ error: String(error) });
+      res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) });
     }
   });
 
   /**
    * Atualizar receita
    */
-  router.put('/:id', async (req: Request, res: Response) => {
+  router.put('/:id', async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { id } = req.params;
+      
+      // SECURITY: Verificar ownership da receita
+      const hasAccess = await verifyRecipeOwnership(id, req);
+      if (!hasAccess) {
+        return res.status(403).json({ error: 'Você não tem permissão para editar esta receita' });
+      }
+      
       const { ingredients, ...recipeData } = req.body;
       
       // Recalcular nutrição se ingredientes foram enviados
@@ -330,21 +390,28 @@ export function createRecipeRoutes(pool: Pool): Router {
       res.json({ message: 'Receita atualizada' });
     } catch (error) {
       console.error('Error updating recipe:', error);
-      res.status(500).json({ error: String(error) });
+      res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) });
     }
   });
 
   /**
    * Deletar receita
    */
-  router.delete('/:id', async (req: Request, res: Response) => {
+  router.delete('/:id', async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { id } = req.params;
+      
+      // SECURITY: Verificar ownership da receita
+      const hasAccess = await verifyRecipeOwnership(id, req);
+      if (!hasAccess) {
+        return res.status(403).json({ error: 'Você não tem permissão para excluir esta receita' });
+      }
+      
       await pool.query('DELETE FROM recipes WHERE id = ?', [id]);
       res.json({ message: 'Receita excluída' });
     } catch (error) {
       console.error('Error deleting recipe:', error);
-      res.status(500).json({ error: String(error) });
+      res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) });
     }
   });
 
@@ -410,7 +477,7 @@ export function createRecipeRoutes(pool: Pool): Router {
       res.status(201).json({ id: newRecipeId, message: 'Receita duplicada' });
     } catch (error) {
       console.error('Error duplicating recipe:', error);
-      res.status(500).json({ error: String(error) });
+      res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) });
     }
   });
 
@@ -429,7 +496,7 @@ export function createRecipeRoutes(pool: Pool): Router {
       res.json(rows);
     } catch (error) {
       console.error('Error fetching categories:', error);
-      res.status(500).json({ error: String(error) });
+      res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) });
     }
   });
 

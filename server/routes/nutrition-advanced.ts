@@ -16,6 +16,18 @@ import { Router, Request, Response } from 'express';
 import { Pool, RowDataPacket, ResultSetHeader } from 'mysql2/promise';
 
 // ===========================================
+// SECURITY: Sanitização de erros para não expor stack traces
+// ===========================================
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+
+const sanitizeError = (error: unknown, isProduction: boolean): string => {
+  if (!isProduction && error instanceof Error) {
+    return error.message;
+  }
+  return 'Erro interno do servidor';
+};
+
+// ===========================================
 // SECURITY: Whitelist de campos permitidos para queries dinâmicas
 // ===========================================
 const ALLOWED_ANAMNESIS_FIELDS = [
@@ -383,7 +395,7 @@ export function createNutritionAdvancedRoutes(pool: Pool): Router {
       res.json(anamnesis);
     } catch (error) {
       console.error('Error fetching anamnesis:', error);
-      res.status(500).json({ error: String(error) });
+      res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) });
     }
   });
 
@@ -459,7 +471,7 @@ export function createNutritionAdvancedRoutes(pool: Pool): Router {
       }
     } catch (error) {
       console.error('Error saving anamnesis:', error);
-      res.status(500).json({ error: String(error) });
+      res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) });
     }
   });
 
@@ -488,7 +500,7 @@ export function createNutritionAdvancedRoutes(pool: Pool): Router {
       res.json(rows);
     } catch (error) {
       console.error('Error fetching anthropometric assessments:', error);
-      res.status(500).json({ error: String(error) });
+      res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) });
     }
   });
 
@@ -512,7 +524,7 @@ export function createNutritionAdvancedRoutes(pool: Pool): Router {
       res.json(rows[0] || null);
     } catch (error) {
       console.error('Error fetching latest assessment:', error);
-      res.status(500).json({ error: String(error) });
+      res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) });
     }
   });
 
@@ -621,7 +633,7 @@ export function createNutritionAdvancedRoutes(pool: Pool): Router {
       });
     } catch (error) {
       console.error('Error creating anthropometric assessment:', error);
-      res.status(500).json({ error: String(error) });
+      res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) });
     }
   });
 
@@ -659,7 +671,7 @@ export function createNutritionAdvancedRoutes(pool: Pool): Router {
       res.json({ message: 'Avaliação atualizada' });
     } catch (error) {
       console.error('Error updating anthropometric assessment:', error);
-      res.status(500).json({ error: String(error) });
+      res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) });
     }
   });
 
@@ -687,7 +699,7 @@ export function createNutritionAdvancedRoutes(pool: Pool): Router {
       res.json(rows[0] || null);
     } catch (error) {
       console.error('Error fetching energy requirements:', error);
-      res.status(500).json({ error: String(error) });
+      res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) });
     }
   });
 
@@ -815,7 +827,7 @@ export function createNutritionAdvancedRoutes(pool: Pool): Router {
       });
     } catch (error) {
       console.error('Error calculating energy requirements:', error);
-      res.status(500).json({ error: String(error) });
+      res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) });
     }
   });
 
@@ -852,7 +864,7 @@ export function createNutritionAdvancedRoutes(pool: Pool): Router {
       });
     } catch (error) {
       console.error('Error previewing energy requirements:', error);
-      res.status(500).json({ error: String(error) });
+      res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) });
     }
   });
 
@@ -881,7 +893,7 @@ export function createNutritionAdvancedRoutes(pool: Pool): Router {
       res.json(rows);
     } catch (error) {
       console.error('Error fetching food recalls:', error);
-      res.status(500).json({ error: String(error) });
+      res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) });
     }
   });
 
@@ -915,7 +927,7 @@ export function createNutritionAdvancedRoutes(pool: Pool): Router {
       });
     } catch (error) {
       console.error('Error fetching food recall:', error);
-      res.status(500).json({ error: String(error) });
+      res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) });
     }
   });
 
@@ -975,7 +987,7 @@ export function createNutritionAdvancedRoutes(pool: Pool): Router {
       res.status(201).json({ id: recallId, message: 'Recordatório criado', totals });
     } catch (error) {
       console.error('Error creating food recall:', error);
-      res.status(500).json({ error: String(error) });
+      res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) });
     }
   });
 
@@ -998,7 +1010,7 @@ export function createNutritionAdvancedRoutes(pool: Pool): Router {
       res.json({ message: 'Recordatório analisado' });
     } catch (error) {
       console.error('Error reviewing food recall:', error);
-      res.status(500).json({ error: String(error) });
+      res.status(500).json({ error: sanitizeError(error, IS_PRODUCTION) });
     }
   });
 
