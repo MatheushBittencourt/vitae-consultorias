@@ -217,7 +217,7 @@ export function PatientDetail({ patient, onBack, consultancyId, adminUser }: Pat
           {activeTab === 'nutrition' && <NutritionTab patient={patient} consultancyId={consultancyId} adminUser={adminUser} />}
           {activeTab === 'medical' && <MedicalTab patient={patient} />}
           {activeTab === 'rehab' && <RehabTab patient={patient} />}
-          {activeTab === 'progress' && <ProgressTab patient={patient} />}
+          {activeTab === 'progress' && <ProgressTab patient={patient} consultancyId={consultancyId} />}
           {activeTab === 'appointments' && <AppointmentsTab patient={patient} />}
         </div>
       </Card>
@@ -4345,7 +4345,7 @@ const PHOTO_CATEGORIES: Record<string, string> = {
   outro: 'Outro'
 };
 
-function ProgressTab({ patient }: { patient: Patient }) {
+function ProgressTab({ patient, consultancyId }: { patient: Patient; consultancyId?: number }) {
   const [activeSection, setActiveSection] = useState<'measurements' | 'photos'>('photos');
   const [photos, setPhotos] = useState<ProgressPhoto[]>([]);
   const [loadingPhotos, setLoadingPhotos] = useState(true);
@@ -4369,14 +4369,16 @@ function ProgressTab({ patient }: { patient: Patient }) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    loadAthleteAndPhotos();
-  }, [patient.id]);
+    if (consultancyId) {
+      loadAthleteAndPhotos();
+    }
+  }, [patient.id, consultancyId]);
 
   const loadAthleteAndPhotos = async () => {
     try {
       setLoadingPhotos(true);
       // Buscar athlete_id
-      const athleteRes = await fetch(`/api/athletes?user_id=${patient.id}`, { headers: getAuthHeaders() });
+      const athleteRes = await fetch(`/api/athletes?user_id=${patient.id}&consultancy_id=${consultancyId}`, { headers: getAuthHeaders() });
       const athletes = await athleteRes.json();
       
       if (athletes && athletes.length > 0) {
