@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "VITAE Consultorias",
+    "slug": "vitae-consultorias",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "scheme": "vitae",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#84cc16"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.vitae.consultorias"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#84cc16"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.vitae.consultorias"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store"
+    ],
+    "extra": {
+      "apiUrl": "https://vitaeconsultorias.com.br/api"
+    }
+  }
+}
