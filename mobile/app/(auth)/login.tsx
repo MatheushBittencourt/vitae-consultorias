@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/contexts/AuthContext';
@@ -19,7 +19,10 @@ import { colors, spacing, fontSize, borderRadius } from '../../src/theme/colors'
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { role } = useLocalSearchParams<{ role: string }>();
   const { login } = useAuth();
+  
+  const isProfessional = role === 'professional';
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -52,7 +55,8 @@ export default function LoginScreen() {
     setIsLoading(true);
     
     try {
-      const result = await login(email, password);
+      const appRole = isProfessional ? 'professional' : 'patient';
+      const result = await login(email, password, appRole);
       
       if (result.success) {
         router.replace('/(tabs)');
@@ -76,18 +80,41 @@ export default function LoginScreen() {
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
+          {/* Header with Back Button */}
+          <View style={styles.headerRow}>
+            <TouchableOpacity 
+              style={styles.backButton}
+              onPress={() => router.back()}
+            >
+              <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
+            </TouchableOpacity>
+          </View>
+
           {/* Logo */}
           <View style={styles.logoContainer}>
-            <View style={styles.logoIcon}>
-              <Text style={styles.logoText}>V</Text>
+            <View style={[
+              styles.logoIcon, 
+              { backgroundColor: isProfessional ? colors.primary.DEFAULT : colors.info.DEFAULT }
+            ]}>
+              <Ionicons 
+                name={isProfessional ? "medical" : "person"} 
+                size={32} 
+                color={isProfessional ? colors.text.primary : colors.text.inverse} 
+              />
             </View>
             <Text style={styles.logoTitle}>VITAE</Text>
-            <Text style={styles.subtitle}>Sua consultoria digital</Text>
+            <View style={styles.roleTag}>
+              <Text style={styles.roleTagText}>
+                {isProfessional ? 'Área do Profissional' : 'Área do Paciente'}
+              </Text>
+            </View>
           </View>
 
           {/* Form */}
           <View style={styles.form}>
-            <Text style={styles.welcomeText}>Bem-vindo de volta!</Text>
+            <Text style={styles.welcomeText}>
+              {isProfessional ? 'Olá, Profissional!' : 'Olá, Paciente!'}
+            </Text>
             <Text style={styles.welcomeSubtext}>
               Faça login para acessar sua conta
             </Text>
@@ -179,35 +206,53 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: spacing.lg,
   },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.background.secondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   logoContainer: {
     alignItems: 'center',
-    marginTop: spacing.xxl,
     marginBottom: spacing.xl,
   },
   logoIcon: {
-    width: 80,
-    height: 80,
-    backgroundColor: colors.primary.DEFAULT,
+    width: 72,
+    height: 72,
     borderRadius: borderRadius.xl,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: spacing.md,
   },
   logoText: {
-    fontSize: 40,
+    fontSize: 36,
     fontWeight: 'bold',
     color: colors.text.primary,
   },
   logoTitle: {
-    fontSize: fontSize['3xl'],
+    fontSize: fontSize['2xl'],
     fontWeight: 'bold',
     color: colors.text.primary,
     letterSpacing: 4,
   },
-  subtitle: {
-    fontSize: fontSize.base,
+  roleTag: {
+    marginTop: spacing.sm,
+    backgroundColor: colors.background.secondary,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
+  },
+  roleTagText: {
+    fontSize: fontSize.sm,
     color: colors.text.secondary,
-    marginTop: spacing.xs,
+    fontWeight: '600',
   },
   form: {
     flex: 1,

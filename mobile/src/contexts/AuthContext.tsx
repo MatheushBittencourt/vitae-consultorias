@@ -15,13 +15,15 @@ interface User {
   role: string;
   athleteId?: number;
   consultancyId?: number;
+  appRole?: 'professional' | 'patient'; // Role selecionado no app
 }
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  isProfessional: boolean;
+  login: (email: string, password: string, appRole?: 'professional' | 'patient') => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   updateUser: (data: Partial<User>) => void;
 }
@@ -53,16 +55,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, appRole: 'professional' | 'patient' = 'patient') => {
     try {
-      const response = await apiLogin(email, password);
+      const response = await apiLogin(email, password, appRole);
       
       if (response.error) {
         return { success: false, error: response.error };
       }
 
       if (response.data?.user) {
-        setUser(response.data.user);
+        const userData = { ...response.data.user, appRole };
+        setUser(userData);
+        await setUserData(userData);
         return { success: true };
       }
 
@@ -86,12 +90,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Verifica se é profissional (pelo role do backend ou pelo appRole selecionado)
+  const isProfessional = user?.role === 'admin' || user?.role === 'professional' || user?.appRole === 'professional';
+
   return (
     <AuthContext.Provider
       value={{
         user,
         isLoading,
         isAuthenticated: !!user,
+        isProfessional,
         login,
         logout,
         updateUser,

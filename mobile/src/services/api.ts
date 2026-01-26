@@ -82,16 +82,21 @@ async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
+  const url = `${API_URL}${endpoint}`;
+  console.log(`📡 API Request: ${options.method || 'GET'} ${url}`);
+  
   try {
     const headers = await getAuthHeaders();
     
-    const response = await fetch(`${API_URL}${endpoint}`, {
+    const response = await fetch(url, {
       ...options,
       headers: {
         ...headers,
         ...options.headers,
       },
     });
+
+    console.log(`📡 API Response: ${response.status} ${response.statusText}`);
 
     // Se não autorizado, limpar token
     if (response.status === 401) {
@@ -100,6 +105,7 @@ async function apiRequest<T>(
     }
 
     const data = await response.json().catch(() => null);
+    console.log('📡 API Data:', data);
 
     if (!response.ok) {
       return {
@@ -110,8 +116,8 @@ async function apiRequest<T>(
 
     return { data, status: response.status };
   } catch (error) {
-    console.error('API Request Error:', error);
-    return { error: 'Erro de conexão', status: 0 };
+    console.error('❌ API Request Error:', error);
+    return { error: 'Erro de conexão. Verifique sua internet.', status: 0 };
   }
 }
 
@@ -126,11 +132,23 @@ export interface LoginResponse {
     name: string;
     email: string;
     role: string;
+    athleteId?: number;
+    consultancyId?: number;
   };
+  activeModules?: string[];
 }
 
-export async function login(email: string, password: string): Promise<ApiResponse<LoginResponse>> {
-  const response = await apiRequest<LoginResponse>('/login', {
+export async function login(
+  email: string, 
+  password: string, 
+  appRole: 'professional' | 'patient' = 'patient'
+): Promise<ApiResponse<LoginResponse>> {
+  // Usar endpoint correto baseado no tipo de usuário
+  const endpoint = appRole === 'professional' 
+    ? '/auth/admin/login' 
+    : '/auth/patient/login';
+  
+  const response = await apiRequest<LoginResponse>(endpoint, {
     method: 'POST',
     body: JSON.stringify({ email, password }),
   });

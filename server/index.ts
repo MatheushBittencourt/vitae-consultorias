@@ -377,15 +377,31 @@ const apiLimiter = rateLimit({
   legacyHeaders: false,
 })
 
-// CORS configurado para permitir frontend
+// CORS configurado para permitir frontend e app mobile
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
+  'http://localhost:8081',
+  'http://localhost:19006',
   process.env.FRONTEND_URL
 ].filter(Boolean)
 
 app.use(cors({
-  origin: IS_PRODUCTION ? process.env.FRONTEND_URL : allowedOrigins,
+  origin: (origin, callback) => {
+    // Permitir requisições sem origin (mobile apps, Postman, etc)
+    if (!origin) {
+      return callback(null, true);
+    }
+    // Permitir origens da lista ou localhost para desenvolvimento
+    if (allowedOrigins.includes(origin) || origin.startsWith('http://localhost') || origin.startsWith('http://192.168')) {
+      return callback(null, true);
+    }
+    // Em produção, permitir o domínio configurado
+    if (IS_PRODUCTION && origin === process.env.FRONTEND_URL) {
+      return callback(null, true);
+    }
+    callback(new Error('Not allowed by CORS'));
+  },
   credentials: true
 }))
 
